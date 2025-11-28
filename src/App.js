@@ -42,7 +42,8 @@ import {
   Wand2, // Imported Wand icon
 } from "lucide-react";
 
-// --- YOUR REAL DATABASE KEYS ---
+// --- FIREBASE CONFIGURATION ---
+// Reverted to hardcoded keys to fix "process is not defined" error in browser
 const firebaseConfig = {
   apiKey: "AIzaSyCj5j6nfOuHPJorbLHv0-CiVmxEwwR-jN8",
   authDomain: "vintage-validator.firebaseapp.com",
@@ -58,7 +59,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = "vintage-validator-v1";
 
-// --- Gemini API Key ---
+// --- GEMINI API CONFIGURATION ---
+// Reverted to hardcoded key to fix "process is not defined" error
 const GEMINI_API_KEY = "AIzaSyB60QaDus_70qQl8KWC1XlsJuh0ZJj0yUE";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -184,6 +186,7 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.ebay.com/sch/i.html?_nkw=${query}&_sacat=0&LH_Sold=1&LH_Complete=1`,
       color: "text-blue-700 bg-blue-50 border-blue-200",
     },
+    // Changed "Google Lens" to "Google Images" to be more accurate for text-based queries and avoid confusion
     {
       name: "Google Images",
       domain: "google.com",
@@ -340,7 +343,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-orange-50 p-4">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-orange-50 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-stone-100">
         <div className="bg-stone-700 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-stone-200">
           <Wand2 className="w-8 h-8 text-amber-50" />
@@ -425,9 +428,10 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[80vh] md:h-auto">
-        <div className="w-full md:w-1/2 bg-stone-900 flex flex-col relative group">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white sm:rounded-2xl w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row">
+        {/* Left: Image Gallery (Fixed height on mobile, full on desktop) */}
+        <div className="w-full md:w-1/2 h-72 md:h-auto bg-stone-900 flex flex-col relative group shrink-0">
           <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black/20 p-4">
             {formData.images.length > 0 ? (
               <img
@@ -487,7 +491,9 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             />
           </div>
         </div>
-        <div className="w-full md:w-1/2 flex flex-col h-full max-h-[90vh] bg-stone-50 border-l border-stone-200">
+
+        {/* Right: Data Entry (Scrollable) */}
+        <div className="w-full md:w-1/2 flex flex-col flex-1 overflow-hidden bg-stone-50 border-l border-stone-200">
           <div className="p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-xl font-bold text-stone-800">Item Details</h2>
