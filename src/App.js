@@ -38,6 +38,9 @@ import {
   LogOut,
   UserCircle,
   Wand2,
+  HelpCircle,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -74,11 +77,17 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
           ", "
         )}.`
       : "";
+  
+  const userAnswersContext = 
+    currentData.clarifications && Object.keys(currentData.clarifications).length > 0
+      ? `\nThe user has answered your previous questions. Use these answers to refine your valuation: ${JSON.stringify(currentData.clarifications)}.`
+      : "";
 
   const prompt = `
     You are an expert antique and vintage appraiser.
     
     ${contextPrompt}
+    ${userAnswersContext}
     
     Analyze the attached images and the user's notes: "${userNotes}".
     
@@ -98,6 +107,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - search_terms_broad: A simplified query (2-4 words MAX) for strict search engines like Ruby Lane/1stDibs.
     - category: The most specific accurate category.
     - sales_blurb: An engaging, professional sales description (2-3 sentences) suitable for the body of an eBay/Etsy listing. Highlight unique features, style, and condition. Do not repeat the title verbatim.
+    - questions: Array of strings (max 3). Ask specific, critical questions to clarify value (e.g., "Is the clasp marked?", "Is it heavy?"). If confident, return empty array.
   `;
 
   const imageParts = images.map((img) => ({
@@ -378,9 +388,11 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   const [formData, setFormData] = useState({
     ...item,
     images: item.images || (item.image ? [item.image] : []),
+    clarifications: item.clarifications || {},
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [showQuestions, setShowQuestions] = useState(true);
   const addPhotoInputRef = useRef(null);
   const marketLinks = useMemo(
     () =>
@@ -544,6 +556,65 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   </>
                 )}
               </button>
+              
+              {/* AI Clarification Questions */}
+              {formData.questions && formData.questions.length > 0 && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl overflow-hidden">
+                  <div 
+                    className="bg-amber-100/50 p-3 flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors"
+                    onClick={() => setShowQuestions(!showQuestions)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-amber-600" />
+                      <span className="text-sm font-bold text-amber-900">
+                        Refine Valuation
+                      </span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold text-amber-600 bg-white/50 px-2 py-0.5 rounded-full">
+                      {formData.questions.length} Questions
+                    </span>
+                  </div>
+                  
+                  {showQuestions && (
+                    <div className="p-4 space-y-4">
+                      <p className="text-xs text-amber-800/80 italic">
+                        The AI needs a bit more detail to give you an accurate price.
+                      </p>
+                      {formData.questions.map((q, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <label className="block text-xs font-semibold text-amber-800">
+                            {q}
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Your answer..."
+                              value={formData.clarifications?.[q] || ""}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  clarifications: {
+                                    ...prev.clarifications,
+                                    [q]: e.target.value,
+                                  },
+                                }))
+                              }
+                              className="flex-1 p-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={handleAnalyze}
+                        className="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Submit Answers & Re-Appraise
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
                 {["keep", "sell", "maybe"].map((status) => (
                   <button
