@@ -17,14 +17,16 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp, } from "firebase/firestore"; import { Camera,
+  serverTimestamp, } from "firebase/firestore"; import {
+  Camera,
   Upload,
   Search,
   Trash2,
   X,
   Check,
   Loader,
-  ExternalLink, Archive,
+  ExternalLink,
+  Archive,
   Image as ImageIcon,
   Plus,
   AlertCircle,
@@ -35,7 +37,8 @@ import {
   Download,
   LogOut,
   UserCircle,
-  Wand2, // Imported Wand icon
+  Wand2,
+  Gem, // Added Gem icon for the diamond
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -58,7 +61,7 @@ const appId = "vintage-validator-v1";
 // --- GEMINI API CONFIGURATION ---
 // Reverted to hardcoded key to fix "process is not defined" error
 const GEMINI_API_KEY = "AIzaSyB60QaDus_70qQl8KWC1XlsJuh0ZJj0yUE";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // --- AI Logic ---
 async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
@@ -341,8 +344,9 @@ const LoginScreen = () => {
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-orange-50 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-stone-100">
-        <div className="bg-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-stone-200">
-          <Search className="w-8 h-8 text-stone-700" />
+        <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative">
+          <Search className="w-20 h-20 text-stone-300 absolute" strokeWidth={1.5} />
+          <Gem className="w-8 h-8 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%]" strokeWidth={2.5} />
         </div>
         <h1 className="text-2xl font-bold text-stone-800 mb-2">
           Vintage Validator
@@ -904,8 +908,9 @@ export default function App() {
       <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-white p-2 rounded-lg border border-stone-200 text-stone-700">
-              <Search className="w-5 h-5" />
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <Search className="w-8 h-8 text-stone-300 absolute" strokeWidth={1.5} />
+              <Gem className="w-3 h-3 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%]" strokeWidth={2.5} />
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-stone-700 via-stone-600 to-stone-800 hidden sm:block">
               Vintage Validator
