@@ -38,7 +38,6 @@ import {
   LogOut,
   UserCircle,
   Wand2,
-  Gem, // Added Gem icon for the diamond
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -344,7 +343,9 @@ const LoginScreen = () => {
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-stone-100">
         <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative">
           <Search className="w-20 h-20 text-stone-300 absolute" strokeWidth={1.5} />
-          <Gem className="w-8 h-8 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%]" strokeWidth={2.5} />
+          <span className="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-2xl bg-gradient-to-br from-amber-400 to-red-600 bg-clip-text text-transparent select-none">
+            globe_book
+          </span>
         </div>
         <h1 className="text-2xl font-bold text-stone-800 mb-2">
           Vintage Validator
@@ -908,7 +909,9 @@ export default function App() {
           <div className="flex items-center gap-2">
             <div className="relative w-8 h-8 flex items-center justify-center">
               <Search className="w-8 h-8 text-stone-300 absolute" strokeWidth={1.5} />
-              <Gem className="w-3 h-3 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%]" strokeWidth={2.5} />
+              <span className="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-[10px] bg-gradient-to-br from-amber-400 to-red-600 bg-clip-text text-transparent select-none">
+                globe_book
+              </span>
             </div>
             <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-stone-700 via-stone-600 to-stone-800 hidden sm:block">
               Vintage Validator
