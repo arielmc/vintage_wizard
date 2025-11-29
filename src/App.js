@@ -17,18 +17,14 @@ import {
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp,
-} from "firebase/firestore";
-import {
-  Camera,
+  serverTimestamp, } from "firebase/firestore"; import { Camera,
   Upload,
   Search,
   Trash2,
   X,
   Check,
   Loader,
-  ExternalLink,
-  Archive,
+  ExternalLink, Archive,
   Image as ImageIcon,
   Plus,
   AlertCircle,
@@ -431,7 +427,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white sm:rounded-2xl w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row">
         {/* Left: Image Gallery (Fixed height on mobile, full on desktop) */}
-        <div className="w-full md:w-1/2 h-72 md:h-auto bg-stone-900 flex flex-col relative group shrink-0">
+        <div className="w-full md:w-1/2 h-56 md:h-auto bg-stone-900 flex flex-col relative group shrink-0">
           <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black/20 p-4">
             {formData.images.length > 0 ? (
               <img
@@ -460,12 +456,12 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               </button>
             )}
           </div>
-          <div className="h-24 bg-stone-900 border-t border-white/10 p-3 flex gap-2 overflow-x-auto items-center">
+          <div className="h-16 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center">
             {formData.images.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setActiveImageIdx(idx)}
-                className={`flex-shrink-0 h-16 w-16 rounded-lg overflow-hidden border-2 transition-all ${
+                className={`flex-shrink-0 h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all ${
                   activeImageIdx === idx
                     ? "border-amber-500 opacity-100"
                     : "border-transparent opacity-50 hover:opacity-100"
@@ -476,7 +472,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             ))}
             <button
               onClick={() => addPhotoInputRef.current?.click()}
-              className="flex-shrink-0 h-16 w-16 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-white/50 hover:text-white transition-colors gap-1"
+              className="flex-shrink-0 h-12 w-12 md:h-16 md:w-16 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-white/50 hover:text-white transition-colors gap-1"
             >
               <Plus size={20} />
               <span className="text-[9px] uppercase font-bold">Add</span>
@@ -494,7 +490,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 
         {/* Right: Data Entry (Scrollable) */}
         <div className="w-full md:w-1/2 flex flex-col flex-1 overflow-hidden bg-stone-50 border-l border-stone-200">
-          <div className="p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
+          <div className="p-4 md:p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-xl font-bold text-stone-800">Item Details</h2>
               <p className="text-xs text-stone-500">
@@ -521,7 +517,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               </button>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
             <div className="flex flex-col gap-4">
               <button
                 onClick={handleAnalyze}
@@ -736,7 +732,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               </div>
             </div>
           </div>
-          <div className="p-4 bg-white border-t border-stone-200 shrink-0">
+          <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0">
             <button
               onClick={() => {
                 onSave({
