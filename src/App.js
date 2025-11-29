@@ -42,15 +42,14 @@ import {
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
-// Reverted to hardcoded keys to fix "process is not defined" error in browser
 const firebaseConfig = {
-  apiKey: "AIzaSyCj5j6nfOuHPJorbLHv0-CiVmxEwwR-jN8",
-  authDomain: "vintage-validator.firebaseapp.com",
-  projectId: "vintage-validator",
-  storageBucket: "vintage-validator.firebasestorage.app",
-  messagingSenderId: "671319569820",
-  appId: "1:671319569820:web:e46e5173d3863d30504459",
-  measurementId: "G-R77YTECSGG",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -59,9 +58,8 @@ const db = getFirestore(app);
 const appId = "vintage-validator-v1";
 
 // --- GEMINI API CONFIGURATION ---
-// Reverted to hardcoded key to fix "process is not defined" error
-const GEMINI_API_KEY = "AIzaSyB60QaDus_70qQl8KWC1XlsJuh0ZJj0yUE";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // --- AI Logic ---
 async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
