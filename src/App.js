@@ -559,9 +559,9 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               
               {/* AI Clarification Questions */}
               {formData.questions && formData.questions.length > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl overflow-hidden">
+                <div className="bg-amber-50 border border-amber-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm mb-4">
                   <div 
-                    className="bg-amber-100/50 p-3 flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors"
+                    className="bg-amber-100/50 p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors active:bg-amber-200"
                     onClick={() => setShowQuestions(!showQuestions)}
                   >
                     <div className="flex items-center gap-2">
@@ -588,6 +588,8 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                           <div className="flex gap-2">
                             <input
                               type="text"
+                              inputMode="text"
+                              enterKeyHint="next"
                               placeholder="Your answer..."
                               value={formData.clarifications?.[q] || ""}
                               onChange={(e) =>
@@ -599,16 +601,16 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                                   },
                                 }))
                               }
-                              className="flex-1 p-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              className="flex-1 p-3 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
                             />
                           </div>
                         </div>
                       ))}
                       <button
                         onClick={handleAnalyze}
-                        className="w-full mt-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                        className="w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md active:scale-95 transition-transform duration-100"
                       >
-                        <RefreshCw className="w-3 h-3" /> Submit Answers & Re-Appraise
+                        <RefreshCw className="w-4 h-4" /> Submit Answers & Re-Appraise
                       </button>
                     </div>
                   )}
