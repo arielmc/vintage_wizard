@@ -478,17 +478,38 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           </div>
           <div className="h-16 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center">
             {formData.images.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveImageIdx(idx)}
-                className={`flex-shrink-0 h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all ${
-                  activeImageIdx === idx
-                    ? "border-amber-500 opacity-100"
-                    : "border-transparent opacity-50 hover:opacity-100"
-                }`}
-              >
-                <img src={img} className="w-full h-full object-cover" />
-              </button>
+              <div key={idx} className="relative group flex-shrink-0 pt-2 pr-2">
+                <button
+                  onClick={() => setActiveImageIdx(idx)}
+                  className={`h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    activeImageIdx === idx
+                      ? "border-amber-500 opacity-100"
+                      : "border-transparent opacity-50 group-hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={img}
+                    className="w-full h-full object-cover"
+                    alt="thumbnail"
+                  />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newImages = formData.images.filter(
+                      (_, i) => i !== idx
+                    );
+                    setFormData((prev) => ({ ...prev, images: newImages }));
+                    if (idx === activeImageIdx) setActiveImageIdx(0);
+                    else if (idx < activeImageIdx)
+                      setActiveImageIdx(activeImageIdx - 1);
+                  }}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10 hover:bg-red-600"
+                  title="Remove image"
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </div>
             ))}
             <button
               onClick={() => addPhotoInputRef.current?.click()}
