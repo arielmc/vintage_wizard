@@ -123,14 +123,19 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
   };
 
   try {
+    console.log("API Key loaded:", GEMINI_API_KEY ? "Yes (length: " + GEMINI_API_KEY.length + ")" : "NO - Missing!");
+    
     const response = await fetch(GEMINI_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok)
-      throw new Error(`Gemini API Error: ${response.statusText}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("Gemini API Error:", response.status, response.statusText, errorBody);
+      throw new Error(`Gemini API Error: ${response.status} - ${errorBody}`);
+    }
     const data = await response.json();
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!resultText) throw new Error("No analysis generated");
