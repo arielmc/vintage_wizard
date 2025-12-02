@@ -43,6 +43,10 @@ import {
   HelpCircle,
   MessageCircle,
   Send,
+  Menu,
+  MoreVertical,
+  Filter,
+  Layers,
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -355,24 +359,26 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-orange-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-stone-100">
-        <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative">
-          <Search className="w-20 h-20 text-stone-300 absolute" strokeWidth={1.5} />
-          <span className="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-2xl bg-gradient-to-br from-amber-400 to-red-600 bg-clip-text text-transparent select-none">
-            globe_book
-          </span>
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#FDFBF7] p-6 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-amber-100/30 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-stone-200/30 rounded-full blur-3xl" />
+
+      <div className="relative z-10 w-full max-w-sm text-center">
+        <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-8 rotate-3 transform hover:rotate-6 transition-all duration-500">
+          <Sparkles className="w-10 h-10 text-amber-600" strokeWidth={1.5} />
         </div>
-        <h1 className="text-2xl font-bold text-stone-800 mb-2">
+        
+        <h1 className="text-4xl font-serif font-bold text-stone-900 mb-3 tracking-tight">
           Vintage Validator
         </h1>
-        <p className="text-stone-500 mb-8">
-          AI-powered inventory and appraisal for your collection.
+        <p className="text-stone-500 mb-10 text-lg font-light leading-relaxed">
+          Curate, value, and manage your<br/>collection with AI.
         </p>
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full bg-stone-800 hover:bg-stone-700 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-3 mb-4 shadow-md"
+          className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-stone-200 active:scale-[0.98]"
         >
           <img
             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -382,9 +388,11 @@ const LoginScreen = () => {
           Sign in with Google
         </button>
 
-        <p className="text-[10px] text-stone-400 mt-6">
-          Login required to ensure data persistence.
-        </p>
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-stone-400 uppercase tracking-widest">
+          <div className="w-8 h-px bg-stone-200" />
+          <span>Secure Access</span>
+          <div className="w-8 h-px bg-stone-200" />
+        </div>
       </div>
     </div>
   );
@@ -862,22 +870,13 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMode, setUploadMode] = useState("single"); // 'single' or 'bulk'
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // Check for redirect result first
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          setUser(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect login failed", error);
-      });
-
-    // Listen for auth state changes
+    // Simply listen for auth state changes.
+    // Firebase handles the redirect result internally and updates this stream.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setAuthLoading(false);
