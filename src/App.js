@@ -351,10 +351,25 @@ const LoginScreen = () => {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
+      // Try popup first (better for desktop)
+      await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error("Login failed", error);
-      alert("Login failed. Check Authorized Domains in Firebase Console.");
+      console.log("Popup failed/closed, falling back to redirect...", error);
+      // If popup is blocked or fails (common on mobile), use redirect
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+         try {
+            const provider = new GoogleAuthProvider();
+            await signInWithRedirect(auth, provider);
+         } catch (redirectError) {
+            console.error("Redirect login failed", redirectError);
+            alert("Login failed. Check console for details.");
+         }
+      } else {
+         console.error("Login error:", error);
+         // Only fallback for specific popup issues, otherwise alert
+         const provider = new GoogleAuthProvider();
+         await signInWithRedirect(auth, provider);
+      }
     }
   };
 
