@@ -47,6 +47,7 @@ import {
   MoreVertical,
   Filter,
   Layers,
+  Grid,
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -203,7 +204,6 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.ebay.com/sch/i.html?_nkw=${query}&_sacat=0&LH_Sold=1&LH_Complete=1`,
       color: "text-blue-700 bg-blue-50 border-blue-200",
     },
-    // Changed "Google Lens" to "Google Images" to be more accurate for text-based queries and avoid confusion
     {
       name: "Google Images",
       domain: "google.com",
@@ -277,7 +277,7 @@ const StatusBadge = ({ status }) => {
   const colors = {
     keep: "bg-green-100 text-green-800 border-green-200",
     sell: "bg-blue-100 text-blue-800 border-blue-200",
-    maybe: "bg-amber-100 text-amber-800 border-amber-200",
+    maybe: "bg-rose-100 text-rose-800 border-rose-200",
     unprocessed: "bg-stone-100 text-stone-800 border-stone-200",
   };
   return (
@@ -288,6 +288,84 @@ const StatusBadge = ({ status }) => {
     >
       {status}
     </span>
+  );
+};
+
+const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
+  const [mode, setMode] = useState("single"); // 'single' (group) or 'bulk' (separate)
+  const [autoAnalyze, setAutoAnalyze] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100">
+        <div className="p-6 border-b border-stone-100 bg-stone-50/50">
+          <h3 className="text-lg font-serif font-bold text-stone-800">Upload {files.length} Photos</h3>
+          <p className="text-sm text-stone-500 mt-1">How should we handle these?</p>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {/* Preview Grid (First 4) */}
+          <div className="grid grid-cols-4 gap-2">
+            {files.slice(0, 4).map((f, i) => (
+              <div key={i} className="aspect-square rounded-lg overflow-hidden bg-stone-100 border border-stone-200 shadow-sm">
+                <img src={URL.createObjectURL(f)} className="w-full h-full object-cover" alt="preview" />
+              </div>
+            ))}
+            {files.length > 4 && (
+              <div className="aspect-square rounded-lg bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 border border-stone-200 shadow-sm">
+                +{files.length - 4}
+              </div>
+            )}
+          </div>
+
+          {/* Options */}
+          <div className="space-y-3">
+            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'single' ? 'border-rose-500 bg-rose-50' : 'border-stone-100 hover:border-stone-200'}`}>
+              <input type="radio" name="uploadMode" checked={mode === 'single'} onChange={() => setMode('single')} className="w-4 h-4 text-rose-600 focus:ring-rose-500" />
+              <div className="flex-1">
+                <span className="block font-bold text-stone-800 text-sm">Create 1 Item</span>
+                <span className="text-xs text-stone-500">Combine all photos into a single entry.</span>
+              </div>
+              <Layers className="w-5 h-5 text-rose-500" />
+            </label>
+
+            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'bulk' ? 'border-rose-500 bg-rose-50' : 'border-stone-100 hover:border-stone-200'}`}>
+              <input type="radio" name="uploadMode" checked={mode === 'bulk'} onChange={() => setMode('bulk')} className="w-4 h-4 text-rose-600 focus:ring-rose-500" />
+              <div className="flex-1">
+                <span className="block font-bold text-stone-800 text-sm">Create {files.length} Separate Items</span>
+                <span className="text-xs text-stone-500">Each photo becomes a new entry.</span>
+              </div>
+              <Grid className="w-5 h-5 text-rose-500" />
+            </label>
+          </div>
+
+          {/* AI Option */}
+          <label className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors">
+            <input 
+              type="checkbox" 
+              checked={autoAnalyze} 
+              onChange={(e) => setAutoAnalyze(e.target.checked)}
+              className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-stone-300" 
+            />
+            <div className="flex-1">
+              <span className="block font-bold text-stone-800 text-sm">Run AI Analysis</span>
+              <span className="text-xs text-stone-500">Auto-generate details immediately.</span>
+            </div>
+            <Sparkles className="w-4 h-4 text-rose-500" />
+          </label>
+        </div>
+
+        <div className="p-4 bg-stone-50 border-t border-stone-100 flex justify-end gap-3">
+          <button onClick={onCancel} className="px-4 py-2 text-stone-500 font-bold text-sm hover:text-stone-700">Cancel</button>
+          <button 
+            onClick={() => onConfirm(mode, autoAnalyze)}
+            className="bg-stone-900 hover:bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95"
+          >
+            Upload & Process
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -309,7 +387,7 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }
     <div
       onClick={handleClick}
       className={`group bg-white rounded-xl shadow-sm transition-all duration-200 border overflow-hidden cursor-pointer flex flex-col h-full relative ${
-        isSelected ? "ring-2 ring-amber-500 border-amber-500" : "border-stone-100 hover:shadow-md"
+        isSelected ? "ring-2 ring-rose-500 border-rose-500" : "border-stone-100 hover:shadow-md"
       }`}
     >
       {/* Selection Overlay */}
@@ -318,7 +396,7 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }
           <div
             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
               isSelected
-                ? "bg-amber-500 border-amber-500"
+                ? "bg-rose-500 border-rose-500"
                 : "bg-white/50 border-white backdrop-blur-sm"
             }`}
           >
@@ -402,12 +480,12 @@ const LoginScreen = () => {
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#FDFBF7] p-6 relative overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-amber-100/30 rounded-full blur-3xl" />
+      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-rose-100/30 rounded-full blur-3xl" />
       <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-stone-200/30 rounded-full blur-3xl" />
 
       <div className="relative z-10 w-full max-w-sm text-center">
         <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-8 rotate-3 transform hover:rotate-6 transition-all duration-500">
-          <Sparkles className="w-10 h-10 text-amber-600" strokeWidth={1.5} />
+          <Sparkles className="w-10 h-10 text-rose-600" strokeWidth={1.5} />
         </div>
         
         <h1 className="text-4xl font-serif font-bold text-stone-900 mb-3 tracking-tight">
@@ -533,7 +611,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   onClick={() => setActiveImageIdx(idx)}
                   className={`h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all ${
                     activeImageIdx === idx
-                      ? "border-amber-500 opacity-100"
+                      ? "border-rose-500 opacity-100"
                       : "border-transparent opacity-50 group-hover:opacity-100"
                   }`}
                 >
@@ -635,30 +713,30 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               
               {/* AI Clarification Questions */}
               {formData.questions && formData.questions.length > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm mb-4">
+                <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm mb-4">
                   <div 
-                    className="bg-amber-100/50 p-4 flex items-center justify-between cursor-pointer hover:bg-amber-100 transition-colors active:bg-amber-200"
+                    className="bg-rose-100/50 p-4 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors active:bg-rose-200"
                     onClick={() => setShowQuestions(!showQuestions)}
                   >
                     <div className="flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4 text-amber-600" />
-                      <span className="text-sm font-bold text-amber-900">
+                      <HelpCircle className="w-4 h-4 text-rose-600" />
+                      <span className="text-sm font-bold text-rose-900">
                         Refine Valuation
                       </span>
                     </div>
-                    <span className="text-[10px] uppercase font-bold text-amber-600 bg-white/50 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
                       {formData.questions.length} Questions
                     </span>
                   </div>
                   
                   {showQuestions && (
                     <div className="p-4 space-y-4">
-                      <p className="text-xs text-amber-800/80 italic">
+                      <p className="text-xs text-rose-800/80 italic">
                         The AI needs a bit more detail to give you an accurate price.
                       </p>
                       {formData.questions.map((q, idx) => (
                         <div key={idx} className="space-y-1">
-                          <label className="block text-xs font-semibold text-amber-800">
+                          <label className="block text-xs font-semibold text-rose-800">
                             {q}
                           </label>
                           <div className="flex gap-2">
@@ -677,14 +755,14 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                                   },
                                 }))
                               }
-                              className="flex-1 p-3 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+                              className="flex-1 p-3 text-sm bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-sm"
                             />
                           </div>
                         </div>
                       ))}
                       <button
                         onClick={handleAnalyze}
-                        className="w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md active:scale-95 transition-transform duration-100"
+                        className="w-full mt-3 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md active:scale-95 transition-transform duration-100"
                       >
                         <RefreshCw className="w-4 h-4" /> Submit Answers & Re-Appraise
                       </button>
@@ -756,7 +834,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, title: e.target.value }))
                   }
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium resize-none text-sm"
+                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium resize-none text-sm"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -771,7 +849,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     onChange={(e) =>
                       setFormData((p) => ({ ...p, category: e.target.value }))
                     }
-                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
                   />
                   <datalist id="category-options">
                     <option value="Jewelry" />
@@ -795,7 +873,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     onChange={(e) =>
                       setFormData((p) => ({ ...p, era: e.target.value }))
                     }
-                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
                   />
                 </div>
               </div>
@@ -809,7 +887,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, materials: e.target.value }))
                   }
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm resize-y"
+                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
                 />
               </div>
               <div>
@@ -823,12 +901,12 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     setFormData((p) => ({ ...p, sales_blurb: e.target.value }))
                   }
                   placeholder="AI generated sales text will appear here..."
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm resize-y"
+                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
                 />
               </div>
               <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 relative">
                 {formData.aiLastRun && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur text-[10px] text-amber-700 px-2 py-0.5 rounded-full border border-amber-100 shadow-sm">
+                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur text-[10px] text-rose-700 px-2 py-0.5 rounded-full border border-rose-100 shadow-sm">
                     <AlertCircle className="w-3 h-3" /> Draft
                   </div>
                 )}
@@ -879,7 +957,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     setFormData((p) => ({ ...p, userNotes: e.target.value }))
                   }
                   rows={4}
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm placeholder:text-stone-400"
+                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm placeholder:text-stone-400"
                 />
               </div>
             </div>
@@ -910,8 +988,7 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadMode, setUploadMode] = useState("single"); // 'single' or 'bulk'
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [stagingFiles, setStagingFiles] = useState([]); // Files waiting for user decision
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
@@ -935,11 +1012,8 @@ export default function App() {
     
     const itemsToProcess = items.filter(item => selectedIds.has(item.id));
     
-    // Process sequentially to avoid rate limits
     for (const item of itemsToProcess) {
-      // Skip if already has valuation or missing images
       if ((item.valuation_low > 0) || !item.images || item.images.length === 0) continue;
-      
       try {
         const analysis = await analyzeImagesWithGemini(
           item.images,
@@ -956,7 +1030,7 @@ export default function App() {
     }
     
     setIsBatchProcessing(false);
-    setSelectedIds(new Set()); // Exit selection mode
+    setSelectedIds(new Set());
     alert("Batch analysis complete!");
   };
 
@@ -971,8 +1045,6 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Simply listen for auth state changes.
-    // Firebase handles the redirect result internally and updates this stream.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setAuthLoading(false);
@@ -996,18 +1068,27 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleFileUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length === 0 || !user) return;
+    if (files.length === 0) return;
+    setStagingFiles(files);
+    // Reset input so same files can be selected again if cancelled
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleConfirmUpload = async (mode, autoAnalyze) => {
+    if (stagingFiles.length === 0 || !user) return;
     setIsUploading(true);
+    setStagingFiles([]); // Close modal immediately
+
     try {
-      if (uploadMode === "single") {
+      if (mode === "single") {
         // Single Item Mode: All photos -> 1 Item
         const compressedImages = [];
-        for (const file of files) {
+        for (const file of stagingFiles) {
           compressedImages.push(await compressImage(file));
         }
-        await addDoc(
+        const docRef = await addDoc(
           collection(db, "artifacts", appId, "users", user.uid, "inventory"),
           {
             images: compressedImages,
@@ -1022,11 +1103,17 @@ export default function App() {
             valuation_high: 0,
           }
         );
+        if (autoAnalyze) {
+           // Trigger background analysis (or sequential)
+           analyzeImagesWithGemini(compressedImages, "", {}).then(analysis => {
+              updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
+           });
+        }
       } else {
-        // Bulk Mode: 1 Photo -> 1 Item (repeated for each file)
-        for (const file of files) {
+        // Bulk Mode: 1 Photo -> 1 Item (repeated)
+        for (const file of stagingFiles) {
           const compressedImage = await compressImage(file);
-          await addDoc(
+          const docRef = await addDoc(
             collection(db, "artifacts", appId, "users", user.uid, "inventory"),
             {
               images: [compressedImage],
@@ -1041,13 +1128,18 @@ export default function App() {
               valuation_high: 0,
             }
           );
+          if (autoAnalyze) {
+             analyzeImagesWithGemini([compressedImage], "", {}).then(analysis => {
+                updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
+             });
+          }
         }
       }
     } catch (error) {
       console.error(error);
+      alert("Upload failed");
     }
     setIsUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleUpdateItem = async (updatedItem) => {
@@ -1152,7 +1244,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
-               <Sparkles className="w-4 h-4 text-amber-400" fill="currentColor" />
+               <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight hidden sm:block">
               Vintage Validator
@@ -1204,33 +1296,12 @@ export default function App() {
 
              {/* Desktop Upload Button */}
              <button
-                onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                className="hidden md:flex bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-amber-200 items-center gap-2 active:scale-95 relative"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="hidden md:flex bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-stone-200 items-center gap-2 active:scale-95"
              >
                 {isUploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <span>Add Item</span>
-                
-                {/* Desktop Menu Dropdown */}
-                {isAddMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
-                     <div className="p-1 space-y-0.5">
-                        <button 
-                           onClick={(e) => { e.stopPropagation(); setUploadMode("single"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                           className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-stone-600 hover:bg-stone-50 flex items-center justify-between"
-                        >
-                           Single Item
-                           {uploadMode === 'single' && <Check className="w-3 h-3 text-amber-600"/>}
-                        </button>
-                        <button 
-                           onClick={(e) => { e.stopPropagation(); setUploadMode("bulk"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                           className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-stone-600 hover:bg-stone-50 flex items-center justify-between"
-                        >
-                           Bulk Upload
-                           {uploadMode === 'bulk' && <Check className="w-3 h-3 text-amber-600"/>}
-                        </button>
-                     </div>
-                  </div>
-                )}
              </button>
           </div>
         </div>
@@ -1293,7 +1364,7 @@ export default function App() {
                  onClick={() => {
                     if (items.length > 0) handleToggleSelect(items[0].id);
                  }}
-                 className="text-xs text-amber-600 font-bold hover:text-amber-700"
+                 className="text-xs text-rose-600 font-bold hover:text-rose-700"
               >
                  Select Items
               </button>
@@ -1337,9 +1408,9 @@ export default function App() {
                   <button 
                      onClick={handleBatchAnalyze}
                      disabled={isBatchProcessing}
-                     className="bg-amber-500 hover:bg-amber-600 text-stone-900 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-900/20 transition-all active:scale-95"
+                     className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95"
                   >
-                     {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-stone-900" />}
+                     {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white" />}
                      <span className="hidden sm:inline">Analyze</span>
                      <span className="sm:hidden">AI</span>
                   </button>
@@ -1350,45 +1421,18 @@ export default function App() {
 
       {/* --- Mobile FAB (Floating Action Button) - Hidden during selection --- */}
       {!isSelectionMode && (
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3 md:hidden">
-         {/* Upload Mode Menu */}
-         {isAddMenuOpen && (
-            <div className="bg-white rounded-2xl shadow-xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200 mb-2 w-48">
-               <div className="p-2 space-y-1">
-                  <button 
-                     onClick={() => { setUploadMode("single"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                     className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${uploadMode === 'single' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
-                  >
-                     Single Item 
-                     {uploadMode === 'single' && <Check className="w-4 h-4 text-amber-600"/>}
-                  </button>
-                  <button 
-                     onClick={() => { setUploadMode("bulk"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                     className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${uploadMode === 'bulk' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
-                  >
-                     Bulk Upload
-                     {uploadMode === 'bulk' && <Check className="w-4 h-4 text-amber-600"/>}
-                  </button>
-               </div>
-               <div className="px-3 py-2 bg-stone-50 border-t border-stone-100">
-                  <p className="text-[10px] text-stone-400 leading-tight font-medium">
-                     {uploadMode === 'single' ? 'Create 1 item from multiple photos.' : 'Create multiple items, 1 photo each.'}
-                  </p>
-               </div>
-            </div>
-         )}
-
+      <div className="fixed bottom-6 right-6 z-30 md:hidden">
          <button
-            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+            onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className={`h-16 w-16 rounded-full shadow-xl shadow-amber-600/30 flex items-center justify-center transition-all active:scale-90 border-2 border-white ${
-               isUploading ? "bg-stone-100 cursor-wait" : "bg-gradient-to-br from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500"
+            className={`h-16 w-16 rounded-full shadow-xl shadow-rose-900/20 flex items-center justify-center transition-all active:scale-90 border-2 border-white ${
+               isUploading ? "bg-stone-100 cursor-wait" : "bg-stone-900 text-white"
             }`}
          >
             {isUploading ? (
                <Loader className="w-8 h-8 animate-spin text-stone-400" />
             ) : (
-               <Plus className={`w-8 h-8 transition-transform duration-300 ${isAddMenuOpen ? "rotate-45" : ""}`} strokeWidth={2.5} />
+               <Plus className="w-8 h-8" strokeWidth={2.5} />
             )}
          </button>
       </div>
@@ -1400,8 +1444,16 @@ export default function App() {
         accept="image/*"
         className="hidden"
         ref={fileInputRef}
-        onChange={handleFileUpload}
+        onChange={handleFileSelect}
       />
+      
+      {stagingFiles.length > 0 && (
+         <UploadStagingModal 
+            files={stagingFiles} 
+            onConfirm={handleConfirmUpload} 
+            onCancel={() => { setStagingFiles([]); if(fileInputRef.current) fileInputRef.current.value = ""; }}
+         />
+      )}
 
       {selectedItem && (
         <EditModal
