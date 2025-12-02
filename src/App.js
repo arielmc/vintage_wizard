@@ -4,6 +4,7 @@ import {
   getAuth,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -861,10 +862,26 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMode, setUploadMode] = useState("single"); // 'single' or 'bulk'
+  const [authLoading, setAuthLoading] = useState(true);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    // Check for redirect result first
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          setUser(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect login failed", error);
+      });
+
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
     return () => unsubscribe();
   }, []);
 
@@ -1022,6 +1039,14 @@ export default function App() {
       ),
     [filteredItems]
   );
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <Loader className="w-8 h-8 animate-spin text-stone-400" />
+      </div>
+    );
+  }
 
   if (!user) return <LoginScreen />;
 
