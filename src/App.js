@@ -291,16 +291,42 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ItemCard = ({ item, onClick }) => {
+const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }) => {
   const displayImage =
     item.images && item.images.length > 0 ? item.images[0] : item.image;
   const imageCount = item.images ? item.images.length : item.image ? 1 : 0;
 
+  const handleClick = (e) => {
+    if (isSelectionMode) {
+      e.stopPropagation();
+      onToggleSelect(item.id);
+    } else {
+      onClick(item);
+    }
+  };
+
   return (
     <div
-      onClick={() => onClick(item)}
-      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden cursor-pointer flex flex-col h-full"
+      onClick={handleClick}
+      className={`group bg-white rounded-xl shadow-sm transition-all duration-200 border overflow-hidden cursor-pointer flex flex-col h-full relative ${
+        isSelected ? "ring-2 ring-amber-500 border-amber-500" : "border-stone-100 hover:shadow-md"
+      }`}
     >
+      {/* Selection Overlay */}
+      {isSelectionMode && (
+        <div className="absolute top-2 left-2 z-20">
+          <div
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              isSelected
+                ? "bg-amber-500 border-amber-500"
+                : "bg-white/50 border-white backdrop-blur-sm"
+            }`}
+          >
+            {isSelected && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
+          </div>
+        </div>
+      )}
+
       <div className="relative aspect-square bg-stone-100 overflow-hidden">
         {displayImage ? (
           <img
@@ -887,7 +913,62 @@ export default function App() {
   const [uploadMode, setUploadMode] = useState("single"); // 'single' or 'bulk'
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const fileInputRef = useRef(null);
+
+  const isSelectionMode = selectedIds.size > 0;
+
+  const handleToggleSelect = (id) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBatchAnalyze = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBatchProcessing(true);
+    
+    const itemsToProcess = items.filter(item => selectedIds.has(item.id));
+    
+    // Process sequentially to avoid rate limits
+    for (const item of itemsToProcess) {
+      // Skip if already has valuation or missing images
+      if ((item.valuation_low > 0) || !item.images || item.images.length === 0) continue;
+      
+      try {
+        const analysis = await analyzeImagesWithGemini(
+          item.images,
+          item.userNotes || "",
+          item
+        );
+        await updateDoc(
+          doc(db, "artifacts", appId, "users", user.uid, "inventory", item.id),
+          { ...analysis, aiLastRun: new Date().toISOString() }
+        );
+      } catch (err) {
+        console.error(`Failed to analyze item ${item.id}`, err);
+      }
+    }
+    
+    setIsBatchProcessing(false);
+    setSelectedIds(new Set()); // Exit selection mode
+    alert("Batch analysis complete!");
+  };
+
+  const handleBatchDelete = async () => {
+    if (!confirm(`Delete ${selectedIds.size} items? This cannot be undone.`)) return;
+    
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await deleteDoc(doc(db, "artifacts", appId, "users", user.uid, "inventory", id));
+    }
+    setSelectedIds(new Set());
+  };
 
   useEffect(() => {
     // Simply listen for auth state changes.
@@ -1065,7 +1146,7 @@ export default function App() {
   if (!user) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-24">
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32">
       {/* --- Header --- */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -1073,12 +1154,12 @@ export default function App() {
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
                <Sparkles className="w-4 h-4 text-amber-400" fill="currentColor" />
             </div>
-            <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight">
+            <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight hidden sm:block">
               Vintage Validator
             </h1>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
              {/* Sync Status (Hidden on small mobile) */}
             <div className="hidden sm:flex flex-col items-end">
                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider flex items-center gap-1">
@@ -1120,6 +1201,37 @@ export default function App() {
                  </button>
                </div>
              </div>
+
+             {/* Desktop Upload Button */}
+             <button
+                onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+                className="hidden md:flex bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-amber-200 items-center gap-2 active:scale-95 relative"
+             >
+                {isUploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>Add Item</span>
+                
+                {/* Desktop Menu Dropdown */}
+                {isAddMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                     <div className="p-1 space-y-0.5">
+                        <button 
+                           onClick={(e) => { e.stopPropagation(); setUploadMode("single"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
+                           className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-stone-600 hover:bg-stone-50 flex items-center justify-between"
+                        >
+                           Single Item
+                           {uploadMode === 'single' && <Check className="w-3 h-3 text-amber-600"/>}
+                        </button>
+                        <button 
+                           onClick={(e) => { e.stopPropagation(); setUploadMode("bulk"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
+                           className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-stone-600 hover:bg-stone-50 flex items-center justify-between"
+                        >
+                           Bulk Upload
+                           {uploadMode === 'bulk' && <Check className="w-3 h-3 text-amber-600"/>}
+                        </button>
+                     </div>
+                  </div>
+                )}
+             </button>
           </div>
         </div>
         
@@ -1174,36 +1286,92 @@ export default function App() {
           </div>
         )}
 
+        {/* Selection Hint */}
+        {items.length > 0 && !isSelectionMode && (
+           <div className="flex justify-end mb-2">
+              <button 
+                 onClick={() => {
+                    if (items.length > 0) handleToggleSelect(items[0].id);
+                 }}
+                 className="text-xs text-amber-600 font-bold hover:text-amber-700"
+              >
+                 Select Items
+              </button>
+           </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {filteredItems.map((item) => (
-            <ItemCard key={item.id} item={item} onClick={setSelectedItem} />
+            <ItemCard 
+               key={item.id} 
+               item={item} 
+               onClick={setSelectedItem}
+               isSelected={selectedIds.has(item.id)}
+               isSelectionMode={isSelectionMode}
+               onToggleSelect={handleToggleSelect}
+            />
           ))}
         </div>
       </main>
 
-      {/* --- FAB (Floating Action Button) --- */}
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
+      {/* --- Batch Action Bar (Fixed Bottom) --- */}
+      {isSelectionMode && (
+         <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-2xl z-40 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-4">
+               <div className="flex items-center gap-3 pl-2">
+                  <div className="bg-stone-700 px-2.5 py-1 rounded-lg text-xs font-bold">
+                     {selectedIds.size} Selected
+                  </div>
+                  <button onClick={() => setSelectedIds(new Set())} className="text-stone-400 hover:text-white text-xs font-medium">
+                     Cancel
+                  </button>
+               </div>
+               <div className="flex items-center gap-2">
+                  <button 
+                     onClick={handleBatchDelete}
+                     className="p-2 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors"
+                     title="Delete Selected"
+                  >
+                     <Trash2 className="w-5 h-5" />
+                  </button>
+                  <button 
+                     onClick={handleBatchAnalyze}
+                     disabled={isBatchProcessing}
+                     className="bg-amber-500 hover:bg-amber-600 text-stone-900 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-amber-900/20 transition-all active:scale-95"
+                  >
+                     {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-stone-900" />}
+                     <span className="hidden sm:inline">Analyze</span>
+                     <span className="sm:hidden">AI</span>
+                  </button>
+               </div>
+            </div>
+         </div>
+      )}
+
+      {/* --- Mobile FAB (Floating Action Button) - Hidden during selection --- */}
+      {!isSelectionMode && (
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3 md:hidden">
          {/* Upload Mode Menu */}
          {isAddMenuOpen && (
             <div className="bg-white rounded-2xl shadow-xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200 mb-2 w-48">
                <div className="p-2 space-y-1">
                   <button 
                      onClick={() => { setUploadMode("single"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                     className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${uploadMode === 'single' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
+                     className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${uploadMode === 'single' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
                   >
                      Single Item 
-                     {uploadMode === 'single' && <Check className="w-3 h-3 text-amber-600"/>}
+                     {uploadMode === 'single' && <Check className="w-4 h-4 text-amber-600"/>}
                   </button>
                   <button 
                      onClick={() => { setUploadMode("bulk"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
-                     className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${uploadMode === 'bulk' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
+                     className={`w-full text-left px-3 py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-between ${uploadMode === 'bulk' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
                   >
                      Bulk Upload
-                     {uploadMode === 'bulk' && <Check className="w-3 h-3 text-amber-600"/>}
+                     {uploadMode === 'bulk' && <Check className="w-4 h-4 text-amber-600"/>}
                   </button>
                </div>
                <div className="px-3 py-2 bg-stone-50 border-t border-stone-100">
-                  <p className="text-[10px] text-stone-400 leading-tight">
+                  <p className="text-[10px] text-stone-400 leading-tight font-medium">
                      {uploadMode === 'single' ? 'Create 1 item from multiple photos.' : 'Create multiple items, 1 photo each.'}
                   </p>
                </div>
@@ -1213,17 +1381,18 @@ export default function App() {
          <button
             onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
             disabled={isUploading}
-            className={`h-14 w-14 rounded-full shadow-lg shadow-amber-900/20 flex items-center justify-center transition-all active:scale-90 ${
-               isUploading ? "bg-stone-100 cursor-wait" : "bg-stone-900 hover:bg-stone-800 text-white"
+            className={`h-16 w-16 rounded-full shadow-xl shadow-amber-600/30 flex items-center justify-center transition-all active:scale-90 border-2 border-white ${
+               isUploading ? "bg-stone-100 cursor-wait" : "bg-gradient-to-br from-amber-500 to-orange-600 text-white hover:from-amber-400 hover:to-orange-500"
             }`}
          >
             {isUploading ? (
-               <Loader className="w-6 h-6 animate-spin text-stone-400" />
+               <Loader className="w-8 h-8 animate-spin text-stone-400" />
             ) : (
-               <Plus className={`w-7 h-7 transition-transform duration-300 ${isAddMenuOpen ? "rotate-45" : ""}`} />
+               <Plus className={`w-8 h-8 transition-transform duration-300 ${isAddMenuOpen ? "rotate-45" : ""}`} strokeWidth={2.5} />
             )}
          </button>
       </div>
+      )}
 
       <input
         type="file"
