@@ -1041,7 +1041,7 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
         <Loader className="w-8 h-8 animate-spin text-stone-400" />
       </div>
     );
@@ -1050,166 +1050,175 @@ export default function App() {
   if (!user) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans text-stone-900 pb-20">
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-24">
+      {/* --- Header --- */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <Search className="w-8 h-8 text-stone-300 absolute" strokeWidth={1.5} />
-              <span className="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-[10px] bg-gradient-to-br from-amber-400 to-red-600 bg-clip-text text-transparent select-none">
-                globe_book
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
+               <Sparkles className="w-4 h-4 text-amber-400" fill="currentColor" />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-stone-700 via-stone-600 to-stone-800 hidden sm:block">
+            <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight">
               Vintage Validator
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider flex items-center gap-1">
-                <Cloud className="w-3 h-3" /> Synced
-              </span>
-              <span className="text-sm font-bold text-emerald-600 font-mono">
-                ${totalLowEst.toLocaleString()} - $
-                {totalHighEst.toLocaleString()}
-              </span>
-            </div>
-            <button
-              onClick={handleExportCSV}
-              disabled={items.length === 0}
-              className="p-2 text-stone-400 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-            {/* USER PROFILE & LOGOUT SECTION */}
-            <div className="h-8 w-px bg-stone-200 mx-1"></div>
-            <div className="flex items-center gap-2">
-              <div className="hidden lg:block text-right leading-tight">
-                <div className="text-xs font-bold text-stone-700">
-                  {user.displayName}
-                </div>
-                <div className="text-[10px] text-stone-500">{user.email}</div>
-              </div>
-              <button
-                onClick={() => signOut(auth)}
-                className="group relative"
-                title="Sign Out / Switch Account"
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="Profile"
-                    className="w-9 h-9 rounded-full border-2 border-white shadow-sm transition-transform group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center border-2 border-white shadow-sm">
-                    <UserCircle className="w-5 h-5 text-stone-400" />
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border border-stone-100 shadow-sm">
-                  <LogOut className="w-3 h-3 text-stone-400 group-hover:text-red-500" />
-                </div>
-              </button>
-            </div>
-            {/* END USER PROFILE */}
-            <div className="flex items-center gap-2 ml-2 bg-white rounded-lg p-1 border border-stone-200 shadow-sm">
-              <button
-                onClick={() => setUploadMode("single")}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  uploadMode === "single"
-                    ? "bg-stone-800 text-white shadow-sm"
-                    : "text-stone-400 hover:bg-stone-50"
-                }`}
-              >
-                Single Item
-              </button>
-              <button
-                onClick={() => setUploadMode("bulk")}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  uploadMode === "bulk"
-                    ? "bg-stone-800 text-white shadow-sm"
-                    : "text-stone-400 hover:bg-stone-50"
-                }`}
-              >
-                Bulk Upload
-              </button>
+          
+          <div className="flex items-center gap-4">
+             {/* Sync Status (Hidden on small mobile) */}
+            <div className="hidden sm:flex flex-col items-end">
+               <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                 <Cloud className="w-3 h-3" /> Synced
+               </span>
             </div>
 
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md flex items-center gap-2 ml-2 active:scale-95"
-            >
-              {isUploading ? (
-                <Loader className="animate-spin w-4 h-4" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">
-                {uploadMode === "single" ? "Add Item Photos" : "Upload All Items"}
-              </span>
-            </button>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-            />
+             {/* Profile Dropdown Trigger (Simplified) */}
+             <div className="relative group cursor-pointer">
+               {user.photoURL ? (
+                 <img
+                   src={user.photoURL}
+                   alt="Profile"
+                   className="w-8 h-8 rounded-full border border-stone-200 shadow-sm"
+                 />
+               ) : (
+                 <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center">
+                   <UserCircle className="w-5 h-5 text-stone-400" />
+                 </div>
+               )}
+               {/* Minimal Dropdown */}
+               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden hidden group-hover:block p-1">
+                 <div className="px-4 py-2 border-b border-stone-50 mb-1">
+                    <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
+                    <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
+                 </div>
+                 <button
+                   onClick={handleExportCSV}
+                   disabled={items.length === 0}
+                   className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
+                 >
+                   <Download className="w-3 h-3" /> Export CSV
+                 </button>
+                 <button
+                    onClick={() => signOut(auth)}
+                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
+                 >
+                    <LogOut className="w-3 h-3" /> Sign Out
+                 </button>
+               </div>
+             </div>
           </div>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-          <div className="flex items-center bg-white p-1 rounded-xl shadow-sm border border-stone-200 w-full sm:w-auto overflow-x-auto">
-            {["all", "keep", "sell", "maybe", "unprocessed"].map((f) => (
+        
+        {/* --- Filter Bar (Sticky Sub-header) --- */}
+        <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
+           {["all", "keep", "sell", "maybe", "unprocessed"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize whitespace-nowrap transition-all ${
+                className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize whitespace-nowrap transition-all border ${
                   filter === f
-                    ? "bg-stone-800 text-white"
-                    : "text-stone-500 hover:bg-stone-50"
+                    ? "bg-stone-900 text-white border-stone-900 shadow-md"
+                    : "bg-white text-stone-500 border-stone-200 hover:border-stone-300"
                 }`}
               >
-                {f}{" "}
-                <span className="text-xs opacity-60 ml-1">
-                  ({items.filter((i) => f === "all" || i.status === f).length})
+                {f}
+                <span className="ml-1.5 opacity-60 text-[10px]">
+                   {items.filter((i) => f === "all" || i.status === f).length}
                 </span>
               </button>
             ))}
-          </div>
-          <div className="text-xs text-stone-400">
-            {filteredItems.length} Items Found
-          </div>
         </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Total Value Banner (Mobile Friendly) */}
+        {(totalLowEst > 0) && (
+           <div className="mb-6 p-4 bg-white rounded-2xl border border-stone-100 shadow-sm flex items-center justify-between">
+              <div>
+                 <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Collection Value</p>
+                 <h2 className="text-xl font-serif font-bold text-emerald-700">
+                    ${totalLowEst.toLocaleString()} <span className="text-stone-300 text-lg font-light">-</span> ${totalHighEst.toLocaleString()}
+                 </h2>
+              </div>
+              <div className="h-10 w-10 bg-emerald-50 rounded-full flex items-center justify-center">
+                 <span className="text-xl">💎</span>
+              </div>
+           </div>
+        )}
+
         {items.length === 0 && !isUploading && (
-          <div className="text-center py-20">
-            <div className="bg-stone-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-stone-300">
-              <Camera size={48} />
+          <div className="text-center py-20 opacity-60">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-stone-100">
+               <Camera className="w-10 h-10 text-stone-300" />
             </div>
-            <h3 className="text-lg font-bold text-stone-700 mb-2">
-              Start Your Inventory
+            <h3 className="text-lg font-serif font-bold text-stone-700 mb-2">
+              Your archive is empty
             </h3>
-            <p className="text-stone-500 max-w-md mx-auto mb-8">
-              Upload multiple photos of a single jewelry piece or artwork to
-              begin.
+            <p className="text-stone-400 text-sm">
+              Tap the + button to catalog your first treasure.
             </p>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-stone-800 hover:bg-stone-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-stone-200 transition-all inline-flex items-center gap-2"
-            >
-              <Upload className="w-5 h-5" /> Upload Photos
-            </button>
           </div>
         )}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {filteredItems.map((item) => (
             <ItemCard key={item.id} item={item} onClick={setSelectedItem} />
           ))}
         </div>
       </main>
+
+      {/* --- FAB (Floating Action Button) --- */}
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-3">
+         {/* Upload Mode Menu */}
+         {isAddMenuOpen && (
+            <div className="bg-white rounded-2xl shadow-xl border border-stone-100 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200 mb-2 w-48">
+               <div className="p-2 space-y-1">
+                  <button 
+                     onClick={() => { setUploadMode("single"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
+                     className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${uploadMode === 'single' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
+                  >
+                     Single Item 
+                     {uploadMode === 'single' && <Check className="w-3 h-3 text-amber-600"/>}
+                  </button>
+                  <button 
+                     onClick={() => { setUploadMode("bulk"); setIsAddMenuOpen(false); fileInputRef.current?.click(); }}
+                     className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${uploadMode === 'bulk' ? 'bg-amber-50 text-amber-900' : 'hover:bg-stone-50 text-stone-600'}`}
+                  >
+                     Bulk Upload
+                     {uploadMode === 'bulk' && <Check className="w-3 h-3 text-amber-600"/>}
+                  </button>
+               </div>
+               <div className="px-3 py-2 bg-stone-50 border-t border-stone-100">
+                  <p className="text-[10px] text-stone-400 leading-tight">
+                     {uploadMode === 'single' ? 'Create 1 item from multiple photos.' : 'Create multiple items, 1 photo each.'}
+                  </p>
+               </div>
+            </div>
+         )}
+
+         <button
+            onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+            disabled={isUploading}
+            className={`h-14 w-14 rounded-full shadow-lg shadow-amber-900/20 flex items-center justify-center transition-all active:scale-90 ${
+               isUploading ? "bg-stone-100 cursor-wait" : "bg-stone-900 hover:bg-stone-800 text-white"
+            }`}
+         >
+            {isUploading ? (
+               <Loader className="w-6 h-6 animate-spin text-stone-400" />
+            ) : (
+               <Plus className={`w-7 h-7 transition-transform duration-300 ${isAddMenuOpen ? "rotate-45" : ""}`} />
+            )}
+         </button>
+      </div>
+
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+      />
+
       {selectedItem && (
         <EditModal
           item={selectedItem}
