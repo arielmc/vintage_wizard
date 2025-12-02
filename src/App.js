@@ -860,6 +860,7 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadMode, setUploadMode] = useState("single"); // 'single' or 'bulk'
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -888,25 +889,48 @@ export default function App() {
     if (files.length === 0 || !user) return;
     setIsUploading(true);
     try {
-      const compressedImages = [];
-      for (const file of files) {
-        compressedImages.push(await compressImage(file));
-      }
-      await addDoc(
-        collection(db, "artifacts", appId, "users", user.uid, "inventory"),
-        {
-          images: compressedImages,
-          image: compressedImages[0],
-          status: "unprocessed",
-          title: "",
-          category: "",
-          materials: "",
-          userNotes: "",
-          timestamp: serverTimestamp(),
-          valuation_low: 0,
-          valuation_high: 0,
+      if (uploadMode === "single") {
+        // Single Item Mode: All photos -> 1 Item
+        const compressedImages = [];
+        for (const file of files) {
+          compressedImages.push(await compressImage(file));
         }
-      );
+        await addDoc(
+          collection(db, "artifacts", appId, "users", user.uid, "inventory"),
+          {
+            images: compressedImages,
+            image: compressedImages[0],
+            status: "unprocessed",
+            title: "",
+            category: "",
+            materials: "",
+            userNotes: "",
+            timestamp: serverTimestamp(),
+            valuation_low: 0,
+            valuation_high: 0,
+          }
+        );
+      } else {
+        // Bulk Mode: 1 Photo -> 1 Item (repeated for each file)
+        for (const file of files) {
+          const compressedImage = await compressImage(file);
+          await addDoc(
+            collection(db, "artifacts", appId, "users", user.uid, "inventory"),
+            {
+              images: [compressedImage],
+              image: compressedImage,
+              status: "unprocessed",
+              title: "",
+              category: "",
+              materials: "",
+              userNotes: "",
+              timestamp: serverTimestamp(),
+              valuation_low: 0,
+              valuation_high: 0,
+            }
+          );
+        }
+      }
     } catch (error) {
       console.error(error);
     }
@@ -1064,17 +1088,42 @@ export default function App() {
               </button>
             </div>
             {/* END USER PROFILE */}
+            <div className="flex items-center gap-2 ml-2 bg-white rounded-lg p-1 border border-stone-200 shadow-sm">
+              <button
+                onClick={() => setUploadMode("single")}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  uploadMode === "single"
+                    ? "bg-stone-800 text-white shadow-sm"
+                    : "text-stone-400 hover:bg-stone-50"
+                }`}
+              >
+                Single Item
+              </button>
+              <button
+                onClick={() => setUploadMode("bulk")}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  uploadMode === "bulk"
+                    ? "bg-stone-800 text-white shadow-sm"
+                    : "text-stone-400 hover:bg-stone-50"
+                }`}
+              >
+                Bulk Upload
+              </button>
+            </div>
+
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="bg-stone-800 hover:bg-stone-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-md flex items-center gap-2 ml-2"
+              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-md flex items-center gap-2 ml-2 active:scale-95"
             >
               {isUploading ? (
                 <Loader className="animate-spin w-4 h-4" />
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              <span className="hidden sm:inline">Add Item</span>
+              <span className="hidden sm:inline">
+                {uploadMode === "single" ? "Add Item Photos" : "Upload All Items"}
+              </span>
             </button>
             <input
               type="file"
