@@ -305,7 +305,6 @@ const StatusBadge = ({ status }) => {
 
 const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   const [mode, setMode] = useState("single"); // Default to single
-  const [autoAnalyze, setAutoAnalyze] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -351,36 +350,15 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
               <Grid className={`w-5 h-5 ${mode === 'bulk' ? 'text-rose-600' : 'text-stone-400'}`} />
             </label>
           </div>
-
-          {/* AI Option */}
-          <label className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors border border-stone-100">
-            <input 
-              type="checkbox" 
-              checked={autoAnalyze} 
-              onChange={(e) => setAutoAnalyze(e.target.checked)}
-              className="w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-stone-300" 
-            />
-            <div className="flex-1">
-              <span className="block font-bold text-stone-800 text-sm">Run AI Analysis</span>
-              <span className="text-xs text-stone-500">Auto-generate details upon upload.</span>
-            </div>
-            <Sparkles className={`w-5 h-5 ${autoAnalyze ? 'text-rose-500 fill-rose-100' : 'text-stone-400'}`} />
-          </label>
         </div>
 
         <div className="p-4 bg-stone-50 border-t border-stone-100 flex justify-end gap-3">
           <button onClick={onCancel} className="px-4 py-2 text-stone-500 font-bold text-sm hover:text-stone-700">Cancel</button>
           <button 
-            onClick={() => onConfirm(mode, autoAnalyze)}
+            onClick={() => onConfirm(mode)}
             className="bg-stone-900 hover:bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center gap-2"
           >
-            {autoAnalyze ? (
-               <>
-                  <Sparkles className="w-4 h-4" /> Upload & Analyze
-               </>
-            ) : (
-               "Upload Item"
-            )}
+            Upload Item
           </button>
         </div>
       </div>
@@ -388,10 +366,11 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   );
 };
 
-const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }) => {
+const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, onAnalyze }) => {
   const displayImage =
     item.images && item.images.length > 0 ? item.images[0] : item.image;
   const imageCount = item.images ? item.images.length : item.image ? 1 : 0;
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleClick = (e) => {
     if (isSelectionMode) {
@@ -400,6 +379,14 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }
     } else {
       onClick(item);
     }
+  };
+
+  const handleQuickAnalyze = async (e) => {
+     e.stopPropagation();
+     if (isAnalyzing) return;
+     setIsAnalyzing(true);
+     await onAnalyze(item);
+     setIsAnalyzing(false);
   };
 
   return (
@@ -435,6 +422,21 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect }
           <div className="w-full h-full flex items-center justify-center text-stone-400">
             <Camera size={48} />
           </div>
+        )}
+
+        {/* Top Left: Quick AI Analyze Button (Visible on hover or if TBD) */}
+        {!isSelectionMode && (
+           <button
+              onClick={handleQuickAnalyze}
+              className={`absolute top-2 left-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                 isAnalyzing 
+                    ? "bg-white text-rose-500 cursor-wait" 
+                    : "bg-white/90 hover:bg-white text-stone-500 hover:text-rose-600 hover:scale-110"
+              } ${!item.aiLastRun ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+              title="Run AI Analysis"
+           >
+              {isAnalyzing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+           </button>
         )}
 
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
@@ -1016,6 +1018,23 @@ export default function App() {
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const fileInputRef = useRef(null);
 
+  const handleQuickAnalyze = async (item) => {
+      try {
+        const analysis = await analyzeImagesWithGemini(
+          item.images || [item.image],
+          item.userNotes || "",
+          item
+        );
+        await updateDoc(
+          doc(db, "artifacts", appId, "users", user.uid, "inventory", item.id),
+          { ...analysis, aiLastRun: new Date().toISOString() }
+        );
+      } catch (err) {
+        console.error("Quick analysis failed", err);
+        alert("Analysis failed. Please check your Gemini API Key.");
+      }
+  };
+
   const handleToggleSelect = (id) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
@@ -1098,7 +1117,7 @@ export default function App() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleConfirmUpload = async (mode, autoAnalyze) => {
+  const handleConfirmUpload = async (mode) => {
     if (stagingFiles.length === 0 || !user) return;
     setIsUploading(true);
     setStagingFiles([]); // Close modal immediately
@@ -1110,7 +1129,7 @@ export default function App() {
         for (const file of stagingFiles) {
           compressedImages.push(await compressImage(file));
         }
-        const docRef = await addDoc(
+        await addDoc(
           collection(db, "artifacts", appId, "users", user.uid, "inventory"),
           {
             images: compressedImages,
@@ -1125,22 +1144,11 @@ export default function App() {
             valuation_high: 0,
           }
         );
-        if (autoAnalyze) {
-           // For single item, we WAIT for the result so the user sees it immediately
-           try {
-             const analysis = await analyzeImagesWithGemini(compressedImages, "", {});
-             await updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
-           } catch (e) {
-             console.error("Auto-analyze failed", e);
-             // We don't block the upload success, just log the error
-           }
-        }
       } else {
         // Bulk Mode: 1 Photo -> 1 Item (repeated)
-        // For bulk, we still run in background to keep UI responsive
         for (const file of stagingFiles) {
           const compressedImage = await compressImage(file);
-          const docRef = await addDoc(
+          await addDoc(
             collection(db, "artifacts", appId, "users", user.uid, "inventory"),
             {
               images: [compressedImage],
@@ -1155,11 +1163,6 @@ export default function App() {
               valuation_high: 0,
             }
           );
-          if (autoAnalyze) {
-             analyzeImagesWithGemini([compressedImage], "", {}).then(analysis => {
-                updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
-             });
-          }
         }
       }
     } catch (error) {
@@ -1490,6 +1493,7 @@ export default function App() {
                isSelected={selectedIds.has(item.id)}
                isSelectionMode={isSelectionMode}
                onToggleSelect={handleToggleSelect}
+               onAnalyze={handleQuickAnalyze}
             />
           ))}
         </div>
