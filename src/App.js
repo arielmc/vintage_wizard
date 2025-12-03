@@ -1495,20 +1495,20 @@ export default function App() {
 
       {/* --- Batch Action Bar (Fixed Bottom) --- */}
       {isSelectionMode && (
-         <div className="fixed bottom-6 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-2xl z-40 animate-in slide-in-from-bottom-10 fade-in duration-300">
-            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl p-3 flex items-center justify-between gap-4">
+         <div className="fixed bottom-6 md:bottom-12 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl shadow-stone-900/50 p-4 border border-stone-700/50 flex items-center justify-between gap-4 backdrop-blur-md">
                <div className="flex items-center gap-3 pl-2">
-                  <div className="bg-stone-700 px-2.5 py-1 rounded-lg text-xs font-bold">
+                  <div className="bg-stone-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-inner">
                      {selectedIds.size} Selected
                   </div>
-                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-400 hover:text-white text-xs font-medium">
+                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-400 hover:text-white text-sm font-medium transition-colors">
                      Cancel
                   </button>
                </div>
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-3">
                   <button 
                      onClick={handleBatchDelete}
-                     className="p-2 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors"
+                     className="p-2.5 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-stone-700"
                      title="Delete Selected"
                   >
                      <Trash2 className="w-5 h-5" />
@@ -1516,10 +1516,10 @@ export default function App() {
                   <button 
                      onClick={handleBatchAnalyze}
                      disabled={isBatchProcessing}
-                     className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95"
+                     className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95 border-t border-white/20"
                   >
                      {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white" />}
-                     <span className="hidden sm:inline">Analyze</span>
+                     <span className="hidden sm:inline">Analyze Items</span>
                      <span className="sm:hidden">AI</span>
                   </button>
                </div>
