@@ -1012,10 +1012,9 @@ export default function App() {
   const [stagingFiles, setStagingFiles] = useState([]); // Files waiting for user decision
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const fileInputRef = useRef(null);
-
-  const isSelectionMode = selectedIds.size > 0;
 
   const handleToggleSelect = (id) => {
     const newSelected = new Set(selectedIds);
@@ -1052,6 +1051,7 @@ export default function App() {
     
     setIsBatchProcessing(false);
     setSelectedIds(new Set());
+    setIsSelectionMode(false);
     alert("Batch analysis complete!");
   };
 
@@ -1063,6 +1063,7 @@ export default function App() {
       await deleteDoc(doc(db, "artifacts", appId, "users", user.uid, "inventory", id));
     }
     setSelectedIds(new Set());
+    setIsSelectionMode(false);
   };
 
   useEffect(() => {
@@ -1301,6 +1302,19 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
+             {/* Batch Selection Toggle */}
+             <button
+                onClick={() => setIsSelectionMode(!isSelectionMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  isSelectionMode 
+                    ? "bg-rose-100 text-rose-700 border-rose-200" 
+                    : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+                }`}
+             >
+                <Wand2 className={`w-3.5 h-3.5 ${isSelectionMode ? "fill-current" : ""}`} />
+                <span className="hidden sm:inline">Batch AI</span>
+             </button>
+
              {/* Sync Status (Hidden on small mobile) */}
             <div className="hidden sm:flex flex-col items-end">
                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider flex items-center gap-1">
@@ -1462,18 +1476,6 @@ export default function App() {
                    </div>
                  )}
               </div>
-
-              {/* Select Toggle */}
-              {!isSelectionMode && (
-                 <button 
-                    onClick={() => {
-                       if (items.length > 0) handleToggleSelect(items[0].id);
-                    }}
-                    className="text-sm font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
-                 >
-                    Select Items
-                 </button>
-              )}
            </div>
         )}
 
@@ -1499,7 +1501,7 @@ export default function App() {
                   <div className="bg-stone-700 px-2.5 py-1 rounded-lg text-xs font-bold">
                      {selectedIds.size} Selected
                   </div>
-                  <button onClick={() => setSelectedIds(new Set())} className="text-stone-400 hover:text-white text-xs font-medium">
+                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-400 hover:text-white text-xs font-medium">
                      Cancel
                   </button>
                </div>
