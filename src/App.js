@@ -286,7 +286,7 @@ const StatusBadge = ({ status }) => {
   const colors = {
     keep: "bg-green-100 text-green-800 border-green-200",
     sell: "bg-blue-100 text-blue-800 border-blue-200",
-    maybe: "bg-rose-100 text-rose-800 border-rose-200",
+    maybe: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
     TBD: "bg-stone-100 text-stone-800 border-stone-200",
     unprocessed: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
   };
@@ -296,7 +296,7 @@ const StatusBadge = ({ status }) => {
         colors[status] || colors.TBD
       } uppercase tracking-wide`}
     >
-      {status === "unprocessed" ? "TBD" : status}
+      {(status === "unprocessed" || status === "maybe") ? "TBD" : status}
     </span>
   );
 };
@@ -789,7 +789,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               )}
 
               <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
-                {["keep", "sell", "maybe"].map((status) => (
+                {["keep", "sell", "TBD"].map((status) => (
                   <button
                     key={status}
                     onClick={() => setFormData((prev) => ({ ...prev, status }))}
@@ -1230,7 +1230,7 @@ export default function App() {
 
   const filteredItems = useMemo(
     () => (filter === "all" ? items : items.filter((i) => {
-       if (filter === "TBD") return i.status === "TBD" || i.status === "unprocessed";
+       if (filter === "TBD") return i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
        return i.status === filter;
     })),
     [items, filter]
@@ -1333,7 +1333,7 @@ export default function App() {
         
         {/* --- Filter Bar (Sticky Sub-header) --- */}
         <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
-           {["all", "keep", "sell", "maybe", "TBD"].map((f) => (
+           {["all", "keep", "sell", "TBD"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -1347,7 +1347,7 @@ export default function App() {
                 <span className="ml-1.5 opacity-60 text-[10px]">
                    {items.filter((i) => {
                       if (f === "all") return true;
-                      if (f === "TBD") return i.status === "TBD" || i.status === "unprocessed";
+                      if (f === "TBD") return i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
                       return i.status === f;
                    }).length}
                 </span>
