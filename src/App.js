@@ -497,7 +497,7 @@ const LoginScreen = () => {
         </div>
         
         <h1 className="text-4xl font-serif font-bold text-stone-900 mb-3 tracking-tight">
-          Vintage Validator
+          Resale Helper Bot
         </h1>
         <p className="text-stone-500 mb-10 text-lg font-light leading-relaxed">
           Curate, value, and manage your<br/>collection with AI.
@@ -1263,7 +1263,7 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight hidden sm:block">
-              Vintage Validator
+              Resale Helper Bot
             </h1>
           </div>
           
