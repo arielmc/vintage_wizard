@@ -1357,42 +1357,6 @@ export default function App() {
         
         {/* --- Filter Bar (Sticky Sub-header) --- */}
         <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
-           {/* Sort Button */}
-           <div className="relative flex-shrink-0">
-              <button 
-                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-50 transition-colors"
-              >
-                <ArrowUpDown className="w-3 h-3" />
-                Sort
-              </button>
-              
-              {isSortMenuOpen && (
-                <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
-                  <div className="p-1">
-                    {[
-                      { label: "Newest First", value: "date-desc" },
-                      { label: "Oldest First", value: "date-asc" },
-                      { label: "Value: High to Low", value: "value-desc" },
-                      { label: "Value: Low to High", value: "value-asc" },
-                      { label: "Alphabetical", value: "alpha-asc" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
-                      >
-                        {opt.label}
-                        {sortBy === opt.value && <Check className="w-3 h-3" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-           </div>
-
-           <div className="w-px h-6 bg-stone-200 flex-shrink-0 mx-1" />
-
            {["all", "keep", "sell", "TBD"].map((f) => (
               <button
                 key={f}
@@ -1446,17 +1410,70 @@ export default function App() {
           </div>
         )}
 
-        {/* Selection Hint */}
-        {items.length > 0 && !isSelectionMode && (
-           <div className="flex justify-end mb-2">
-              <button 
-                 onClick={() => {
-                    if (items.length > 0) handleToggleSelect(items[0].id);
-                 }}
-                 className="text-xs text-rose-600 font-bold hover:text-rose-700"
-              >
-                 Select Items
-              </button>
+        {/* --- Control Bar: Sort & Select --- */}
+        {items.length > 0 && (
+           <div className="flex items-center justify-between mb-4 px-1 relative z-10">
+              {/* Sort Dropdown */}
+              <div className="relative">
+                 <button 
+                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                   className="flex items-center gap-2 text-sm font-bold text-stone-700 hover:text-stone-900 transition-colors bg-white/50 px-3 py-2 rounded-lg hover:bg-white border border-transparent hover:border-stone-200"
+                 >
+                   <ArrowUpDown className="w-4 h-4 text-stone-400" />
+                   <span>
+                      {{
+                        "date-desc": "Newest",
+                        "date-asc": "Oldest",
+                        "value-desc": "Highest Value",
+                        "value-asc": "Lowest Value",
+                        "alpha-asc": "Name (A-Z)"
+                      }[sortBy]}
+                   </span>
+                 </button>
+                 
+                 {/* Backdrop to close menu */}
+                 {isSortMenuOpen && (
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSortMenuOpen(false)} />
+                 )}
+
+                 {isSortMenuOpen && (
+                   <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                     <div className="p-1">
+                       <div className="px-3 py-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider border-b border-stone-50 mb-1">
+                          Sort By
+                       </div>
+                       {[
+                         { label: "Newest First", value: "date-desc" },
+                         { label: "Oldest First", value: "date-asc" },
+                         { label: "Value: High to Low", value: "value-desc" },
+                         { label: "Value: Low to High", value: "value-asc" },
+                         { label: "Alphabetical (A-Z)", value: "alpha-asc" },
+                       ].map((opt) => (
+                         <button
+                           key={opt.value}
+                           onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                           className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between transition-colors ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                         >
+                           {opt.label}
+                           {sortBy === opt.value && <Check className="w-4 h-4" />}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+              </div>
+
+              {/* Select Toggle */}
+              {!isSelectionMode && (
+                 <button 
+                    onClick={() => {
+                       if (items.length > 0) handleToggleSelect(items[0].id);
+                    }}
+                    className="text-sm font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+                 >
+                    Select Items
+                 </button>
+              )}
            </div>
         )}
 
