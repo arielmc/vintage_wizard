@@ -1302,6 +1302,16 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4">
+             {/* Upload Button */}
+             <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 shadow-sm active:scale-95"
+             >
+                {isUploading ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">Add</span>
+             </button>
+
              {/* Batch Selection Toggle */}
              <button
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
@@ -1357,15 +1367,7 @@ export default function App() {
                </div>
              </div>
 
-             {/* Desktop Upload Button */}
-             <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="hidden md:flex bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shadow-stone-200 items-center gap-2 active:scale-95"
-             >
-                {isUploading ? <Loader className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>Add Item</span>
-             </button>
+             {/* Desktop Upload Button (Removed - Moved next to Wand) */}
           </div>
         </div>
         
