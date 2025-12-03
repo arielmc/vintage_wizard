@@ -292,7 +292,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
-  const [mode, setMode] = useState("single"); // 'single' (group) or 'bulk' (separate)
+  const [mode, setMode] = useState("single"); // Default to single
   const [autoAnalyze, setAutoAnalyze] = useState(false);
 
   return (
@@ -300,7 +300,6 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100">
         <div className="p-6 border-b border-stone-100 bg-stone-50/50">
           <h3 className="text-lg font-serif font-bold text-stone-800">Upload {files.length} Photos</h3>
-          <p className="text-sm text-stone-500 mt-1">How should we handle these?</p>
         </div>
         
         <div className="p-6 space-y-6">
@@ -320,38 +319,40 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
 
           {/* Options */}
           <div className="space-y-3">
-            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'single' ? 'border-rose-500 bg-rose-50' : 'border-stone-100 hover:border-stone-200'}`}>
-              <input type="radio" name="uploadMode" checked={mode === 'single'} onChange={() => setMode('single')} className="w-4 h-4 text-rose-600 focus:ring-rose-500" />
+            {/* Single Item (Default/Primary) */}
+            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'single' ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500' : 'border-stone-100 hover:border-stone-200'}`}>
+              <input type="radio" name="uploadMode" checked={mode === 'single'} onChange={() => setMode('single')} className="w-5 h-5 text-rose-600 focus:ring-rose-500" />
               <div className="flex-1">
                 <span className="block font-bold text-stone-800 text-sm">Create 1 Item</span>
-                <span className="text-xs text-stone-500">Combine all photos into a single entry.</span>
+                <span className="text-xs text-stone-500">Combine all photos into one listing.</span>
               </div>
-              <Layers className="w-5 h-5 text-rose-500" />
+              <Layers className={`w-5 h-5 ${mode === 'single' ? 'text-rose-600' : 'text-stone-400'}`} />
             </label>
 
+            {/* Bulk Option (Secondary) */}
             <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'bulk' ? 'border-rose-500 bg-rose-50' : 'border-stone-100 hover:border-stone-200'}`}>
-              <input type="radio" name="uploadMode" checked={mode === 'bulk'} onChange={() => setMode('bulk')} className="w-4 h-4 text-rose-600 focus:ring-rose-500" />
+              <input type="radio" name="uploadMode" checked={mode === 'bulk'} onChange={() => setMode('bulk')} className="w-5 h-5 text-rose-600 focus:ring-rose-500" />
               <div className="flex-1">
                 <span className="block font-bold text-stone-800 text-sm">Create {files.length} Separate Items</span>
-                <span className="text-xs text-stone-500">Each photo becomes a new entry.</span>
+                <span className="text-xs text-stone-500">Each photo becomes a new listing.</span>
               </div>
-              <Grid className="w-5 h-5 text-rose-500" />
+              <Grid className={`w-5 h-5 ${mode === 'bulk' ? 'text-rose-600' : 'text-stone-400'}`} />
             </label>
           </div>
 
           {/* AI Option */}
-          <label className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors">
+          <label className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors border border-stone-100">
             <input 
               type="checkbox" 
               checked={autoAnalyze} 
               onChange={(e) => setAutoAnalyze(e.target.checked)}
-              className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-stone-300" 
+              className="w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-stone-300" 
             />
             <div className="flex-1">
               <span className="block font-bold text-stone-800 text-sm">Run AI Analysis</span>
-              <span className="text-xs text-stone-500">Auto-generate details immediately.</span>
+              <span className="text-xs text-stone-500">Auto-generate details upon upload.</span>
             </div>
-            <Sparkles className="w-4 h-4 text-rose-500" />
+            <Sparkles className={`w-5 h-5 ${autoAnalyze ? 'text-rose-500 fill-rose-100' : 'text-stone-400'}`} />
           </label>
         </div>
 
@@ -359,9 +360,15 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
           <button onClick={onCancel} className="px-4 py-2 text-stone-500 font-bold text-sm hover:text-stone-700">Cancel</button>
           <button 
             onClick={() => onConfirm(mode, autoAnalyze)}
-            className="bg-stone-900 hover:bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95"
+            className="bg-stone-900 hover:bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center gap-2"
           >
-            Upload & Process
+            {autoAnalyze ? (
+               <>
+                  <Sparkles className="w-4 h-4" /> Upload & Analyze
+               </>
+            ) : (
+               "Upload Item"
+            )}
           </button>
         </div>
       </div>
@@ -1104,13 +1111,18 @@ export default function App() {
           }
         );
         if (autoAnalyze) {
-           // Trigger background analysis (or sequential)
-           analyzeImagesWithGemini(compressedImages, "", {}).then(analysis => {
-              updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
-           });
+           // For single item, we WAIT for the result so the user sees it immediately
+           try {
+             const analysis = await analyzeImagesWithGemini(compressedImages, "", {});
+             await updateDoc(docRef, { ...analysis, aiLastRun: new Date().toISOString() });
+           } catch (e) {
+             console.error("Auto-analyze failed", e);
+             // We don't block the upload success, just log the error
+           }
         }
       } else {
         // Bulk Mode: 1 Photo -> 1 Item (repeated)
+        // For bulk, we still run in background to keep UI responsive
         for (const file of stagingFiles) {
           const compressedImage = await compressImage(file);
           const docRef = await addDoc(
