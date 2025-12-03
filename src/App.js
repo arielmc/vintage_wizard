@@ -278,15 +278,16 @@ const StatusBadge = ({ status }) => {
     keep: "bg-green-100 text-green-800 border-green-200",
     sell: "bg-blue-100 text-blue-800 border-blue-200",
     maybe: "bg-rose-100 text-rose-800 border-rose-200",
-    unprocessed: "bg-stone-100 text-stone-800 border-stone-200",
+    TBD: "bg-stone-100 text-stone-800 border-stone-200",
+    unprocessed: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
   };
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-        colors[status] || colors.unprocessed
+        colors[status] || colors.TBD
       } uppercase tracking-wide`}
     >
-      {status}
+      {status === "unprocessed" ? "TBD" : status}
     </span>
   );
 };
@@ -1100,7 +1101,7 @@ export default function App() {
           {
             images: compressedImages,
             image: compressedImages[0],
-            status: "unprocessed",
+            status: "TBD",
             title: "",
             category: "",
             materials: "",
@@ -1130,7 +1131,7 @@ export default function App() {
             {
               images: [compressedImage],
               image: compressedImage,
-              status: "unprocessed",
+              status: "TBD",
               title: "",
               category: "",
               materials: "",
@@ -1219,7 +1220,10 @@ export default function App() {
   };
 
   const filteredItems = useMemo(
-    () => (filter === "all" ? items : items.filter((i) => i.status === filter)),
+    () => (filter === "all" ? items : items.filter((i) => {
+       if (filter === "TBD") return i.status === "TBD" || i.status === "unprocessed";
+       return i.status === filter;
+    })),
     [items, filter]
   );
   const totalLowEst = useMemo(
@@ -1320,7 +1324,7 @@ export default function App() {
         
         {/* --- Filter Bar (Sticky Sub-header) --- */}
         <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
-           {["all", "keep", "sell", "maybe", "unprocessed"].map((f) => (
+           {["all", "keep", "sell", "maybe", "TBD"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -1332,7 +1336,11 @@ export default function App() {
               >
                 {f}
                 <span className="ml-1.5 opacity-60 text-[10px]">
-                   {items.filter((i) => f === "all" || i.status === f).length}
+                   {items.filter((i) => {
+                      if (f === "all") return true;
+                      if (f === "TBD") return i.status === "TBD" || i.status === "unprocessed";
+                      return i.status === f;
+                   }).length}
                 </span>
               </button>
             ))}
