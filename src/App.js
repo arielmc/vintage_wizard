@@ -72,6 +72,9 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemi
 
 // --- AI Logic ---
 async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
+  // Limit to 4 images max to avoid payload limits
+  const imagesToAnalyze = images.slice(0, 4);
+
   const knownDetails = [];
   if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
   if (currentData.materials)
@@ -117,7 +120,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - questions: Array of strings (max 3). Ask specific, critical questions to clarify value (e.g., "Is the clasp marked?", "Is it heavy?"). If confident, return empty array.
   `;
 
-  const imageParts = images.map((img) => ({
+  const imageParts = imagesToAnalyze.map((img) => ({
     inlineData: {
       mimeType: "image/jpeg",
       data: img.split(",")[1],
@@ -127,6 +130,12 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
   const payload = {
     contents: [{ parts: [{ text: prompt }, ...imageParts] }],
     generationConfig: { responseMimeType: "application/json" },
+    safetySettings: [
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }
+    ]
   };
 
   try {
@@ -145,7 +154,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     }
     const data = await response.json();
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!resultText) throw new Error("No analysis generated");
+    if (!resultText) throw new Error("No analysis generated - possibly blocked by safety filters or empty response.");
     return JSON.parse(resultText);
   } catch (error) {
     console.error("Analysis failed:", error);
