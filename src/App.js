@@ -48,6 +48,8 @@ import {
   Filter,
   Layers,
   Grid,
+  ArrowUpDown,
+  ListFilter,
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -1003,6 +1005,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date-desc");
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [stagingFiles, setStagingFiles] = useState([]); // Files waiting for user decision
@@ -1229,12 +1233,32 @@ export default function App() {
   };
 
   const filteredItems = useMemo(
-    () => (filter === "all" ? items : items.filter((i) => {
-       if (filter === "TBD") return i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
-       return i.status === filter;
-    })),
-    [items, filter]
+    () => {
+      let result = (filter === "all" ? items : items.filter((i) => {
+         if (filter === "TBD") return i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
+         return i.status === filter;
+      }));
+
+      return result.sort((a, b) => {
+        switch (sortBy) {
+          case "date-desc":
+            return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+          case "date-asc":
+            return (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0);
+          case "value-desc":
+            return (Number(b.valuation_high) || 0) - (Number(a.valuation_high) || 0);
+          case "value-asc":
+            return (Number(a.valuation_high) || 0) - (Number(b.valuation_high) || 0);
+          case "alpha-asc":
+            return (a.title || "").localeCompare(b.title || "");
+          default:
+            return 0;
+        }
+      });
+    },
+    [items, filter, sortBy]
   );
+
   const totalLowEst = useMemo(
     () =>
       filteredItems.reduce(
@@ -1333,6 +1357,42 @@ export default function App() {
         
         {/* --- Filter Bar (Sticky Sub-header) --- */}
         <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
+           {/* Sort Button */}
+           <div className="relative flex-shrink-0">
+              <button 
+                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-stone-200 text-stone-600 text-xs font-bold hover:bg-stone-50 transition-colors"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                Sort
+              </button>
+              
+              {isSortMenuOpen && (
+                <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                  <div className="p-1">
+                    {[
+                      { label: "Newest First", value: "date-desc" },
+                      { label: "Oldest First", value: "date-asc" },
+                      { label: "Value: High to Low", value: "value-desc" },
+                      { label: "Value: Low to High", value: "value-asc" },
+                      { label: "Alphabetical", value: "alpha-asc" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                      >
+                        {opt.label}
+                        {sortBy === opt.value && <Check className="w-3 h-3" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+           </div>
+
+           <div className="w-px h-6 bg-stone-200 flex-shrink-0 mx-1" />
+
            {["all", "keep", "sell", "TBD"].map((f) => (
               <button
                 key={f}
