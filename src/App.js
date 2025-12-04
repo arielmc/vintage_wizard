@@ -54,7 +54,161 @@ import {
   ChevronLeft,
   ChevronRight,
   Save, // Added Save Icon
+  Aperture,
+  ArrowRight,
+  XCircle,
 } from "lucide-react";
+
+// --- SCANNER COMPONENT (Native Camera) ---
+const ScannerInterface = ({ onFinishSession, onCancel }) => {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  const [activePhotos, setActivePhotos] = useState([]); // Files for CURRENT item
+  const [completedItems, setCompletedItems] = useState([]); // Array of arrays of Files
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, []);
+
+  const startCamera = async () => {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" }, 
+        audio: false 
+      });
+      setStream(s);
+      if (videoRef.current) videoRef.current.srcObject = s;
+    } catch (err) {
+      console.error("Camera error:", err);
+      alert("Could not access camera. Please ensure permissions are granted.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const takePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    // Flash animation
+    setFlash(true);
+    setTimeout(() => setFlash(false), 100);
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw video frame
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert to blob/file
+    canvas.toBlob((blob) => {
+      const file = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" });
+      setActivePhotos(prev => [...prev, file]);
+    }, 'image/jpeg', 0.8);
+  };
+
+  const handleNextItem = () => {
+    if (activePhotos.length === 0) return;
+    setCompletedItems(prev => [...prev, activePhotos]);
+    setActivePhotos([]); // Clear for next item
+  };
+
+  const handleFinish = () => {
+    // If there are pending photos, add them as the last item
+    let finalItems = [...completedItems];
+    if (activePhotos.length > 0) {
+      finalItems.push(activePhotos);
+    }
+    onFinishSession(finalItems);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+      {/* Flash Overlay */}
+      <div className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-100 z-20 ${flash ? 'opacity-100' : 'opacity-0'}`} />
+
+      {/* Top Bar */}
+      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/50 to-transparent text-white">
+        <div className="flex items-center gap-2">
+           <span className="font-bold text-lg">Item #{completedItems.length + 1}</span>
+           <span className="text-xs opacity-70">({activePhotos.length} photos)</span>
+        </div>
+        <button 
+          onClick={handleFinish}
+          className="bg-white text-black px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg"
+        >
+          Finish ({completedItems.length + (activePhotos.length > 0 ? 1 : 0)})
+        </button>
+      </div>
+
+      {/* Camera View */}
+      <div className="flex-1 relative overflow-hidden">
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <canvas ref={canvasRef} className="hidden" />
+        
+        {/* Close Button */}
+        <button onClick={onCancel} className="absolute top-20 right-4 text-white/50 hover:text-white z-10">
+           <XCircle size={32} />
+        </button>
+      </div>
+
+      {/* Bottom Controls */}
+      <div className="bg-black pb-8 pt-4 px-4 flex flex-col gap-4">
+        {/* Thumbnail Strip */}
+        <div className="h-16 flex gap-2 overflow-x-auto no-scrollbar">
+           {activePhotos.map((f, i) => (
+              <div key={i} className="h-full aspect-square rounded-lg overflow-hidden border border-white/20">
+                 <img src={URL.createObjectURL(f)} className="w-full h-full object-cover" alt="recent" />
+              </div>
+           ))}
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center justify-between px-4">
+           {/* Spacer */}
+           <div className="w-12" />
+           
+           {/* Shutter */}
+           <button 
+             onClick={takePhoto}
+             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center active:scale-95 transition-transform"
+           >
+              <div className="w-16 h-16 bg-white rounded-full" />
+           </button>
+
+           {/* Next Item */}
+           <button 
+             onClick={handleNextItem}
+             disabled={activePhotos.length === 0}
+             className={`flex flex-col items-center gap-1 text-white transition-opacity ${activePhotos.length === 0 ? 'opacity-30' : 'opacity-100'}`}
+           >
+              <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center border border-stone-600">
+                 <ArrowRight size={24} />
+              </div>
+              <span className="text-[10px] font-bold uppercase">Next Item</span>
+           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
@@ -311,11 +465,11 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
       color: "text-amber-700 bg-amber-50 border-amber-200",
     });
-    links.push({
-      name: "LiveAuctioneers",
-      url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
-      color: "text-stone-800 bg-stone-100 border-stone-300",
-    });
+      links.push({
+        name: "LiveAuctioneers",
+        url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
+        color: "text-stone-800 bg-stone-100 border-stone-300",
+      });
     links.push({
       name: "Artsy",
       url: `https://www.artsy.net/search?term=${broadQuery}`,
@@ -402,7 +556,7 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
 };
 
 // --- Thumbnail Item Component (Draggable) ---
-const ThumbnailItem = ({ id, src, index, active, onRemove, onClick, onDragStart, onDrop, onDragOver }) => {
+const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, onDragOver, onDragEnd }) => {
   return (
     <div
       onClick={onClick}
@@ -410,7 +564,10 @@ const ThumbnailItem = ({ id, src, index, active, onRemove, onClick, onDragStart,
       onDragStart={(e) => onDragStart(e, index)}
       onDragOver={(e) => onDragOver(e, index)}
       onDrop={(e) => onDrop(e, index)}
-      className={`relative group flex-shrink-0 pt-2 pr-2 cursor-grab active:cursor-grabbing ${active ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+      onDragEnd={onDragEnd}
+      className={`relative group flex-shrink-0 pt-2 pr-2 cursor-grab active:cursor-grabbing transition-all duration-200 ${
+        active ? "opacity-100 scale-105" : "opacity-70 hover:opacity-100"
+      }`}
     >
       <div
         className={`h-16 w-16 rounded-lg overflow-hidden border-2 transition-all bg-stone-100 relative ${
@@ -421,16 +578,18 @@ const ThumbnailItem = ({ id, src, index, active, onRemove, onClick, onDragStart,
       >
         <img
           src={src}
-          className="w-full h-full object-cover pointer-events-none"
+          className="w-full h-full object-cover pointer-events-none select-none"
           alt="thumbnail"
         />
       </div>
       
+      {/* Remove Button - Prevent Drag Propagation */}
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onRemove();
+          // We need to pass the ID or handle remove logic in parent via index
         }}
+        onMouseDown={(e) => e.stopPropagation()}
         className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10 hover:bg-red-600"
         title="Remove image"
       >
@@ -514,28 +673,12 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
             )}
           </div>
 
-          {/* Options */}
+          {/* Options Removed - Mode is pre-determined by entry button */}
+          {/* 
           <div className="space-y-3">
-            {/* Single Item (Default/Primary) */}
-            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'single' ? 'border-rose-500 bg-rose-50 ring-1 ring-rose-500' : 'border-stone-100 hover:border-stone-200'}`}>
-              <input type="radio" name="uploadMode" checked={mode === 'single'} onChange={() => setMode('single')} className="w-5 h-5 text-rose-600 focus:ring-rose-500" />
-              <div className="flex-1">
-                <span className="block font-bold text-stone-800 text-sm">Create 1 Item</span>
-                <span className="text-xs text-stone-500">Combine all photos into one listing.</span>
-              </div>
-              <Layers className={`w-5 h-5 ${mode === 'single' ? 'text-rose-600' : 'text-stone-400'}`} />
-            </label>
-
-            {/* Bulk Option (Secondary) */}
-            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${mode === 'bulk' ? 'border-rose-500 bg-rose-50' : 'border-stone-100 hover:border-stone-200'}`}>
-              <input type="radio" name="uploadMode" checked={mode === 'bulk'} onChange={() => setMode('bulk')} className="w-5 h-5 text-rose-600 focus:ring-rose-500" />
-              <div className="flex-1">
-                <span className="block font-bold text-stone-800 text-sm">Create {files.length} Separate Items</span>
-                <span className="text-xs text-stone-500">Each photo becomes a new listing.</span>
-              </div>
-              <Grid className={`w-5 h-5 ${mode === 'bulk' ? 'text-rose-600' : 'text-stone-400'}`} />
-            </label>
+             ... radio buttons ...
           </div>
+          */}
         </div>
 
         <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-col gap-3">
@@ -806,30 +949,43 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 
   const handleDragStart = (e, index) => {
     setDraggedIdx(index);
+    // Store index in dataTransfer for broader compatibility
     e.dataTransfer.effectAllowed = "move";
-    // Optional: set drag image or data
+    e.dataTransfer.setData("text/plain", index);
+    
+    // Make the drag image slightly transparent (optional, browser default is usually okay)
+    e.target.style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = "1";
+    setDraggedIdx(null);
   };
 
   const handleDragOver = (e, index) => {
     e.preventDefault(); // Necessary to allow dropping
     e.dataTransfer.dropEffect = "move";
+    
+    // Optional: You could implement "swapping" logic here for real-time preview,
+    // but simple Drop is safer for native DnD.
   };
 
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
-    if (draggedIdx === null || draggedIdx === dropIndex) return;
+    const dragIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    
+    if (isNaN(dragIdx) || dragIdx === dropIndex) return;
 
     const newImages = [...formData.images];
-    const [movedItem] = newImages.splice(draggedIdx, 1);
+    const [movedItem] = newImages.splice(dragIdx, 1);
     newImages.splice(dropIndex, 0, movedItem);
     
     setFormData(prev => ({ ...prev, images: newImages }));
     
-    // Update active index if necessary
-    if (activeImageIdx === draggedIdx) setActiveImageIdx(dropIndex);
-    else if (activeImageIdx === dropIndex) setActiveImageIdx(draggedIdx); // approximate, or just keep 0
-    else if (dropIndex <= activeImageIdx && draggedIdx > activeImageIdx) setActiveImageIdx(activeImageIdx + 1);
-    else if (dropIndex >= activeImageIdx && draggedIdx < activeImageIdx) setActiveImageIdx(activeImageIdx - 1);
+    // Update active index correctly
+    if (activeImageIdx === dragIdx) setActiveImageIdx(dropIndex);
+    else if (dropIndex <= activeImageIdx && dragIdx > activeImageIdx) setActiveImageIdx(activeImageIdx + 1);
+    else if (dropIndex >= activeImageIdx && dragIdx < activeImageIdx) setActiveImageIdx(activeImageIdx - 1);
     
     setDraggedIdx(null);
   };
@@ -915,6 +1071,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
                     onRemove={() => {
                         const newImages = formData.images.filter((_, i) => i !== idx);
                         setFormData((prev) => ({ ...prev, images: newImages }));
@@ -946,9 +1103,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           <div className="p-4 md:p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-xl font-bold text-stone-800">Item Details</h2>
-              <p className="text-xs text-stone-500">
-                {formData.images.length} photos
-              </p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -975,7 +1129,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               {/* Status Toggles */}
               <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
                 {["keep", "sell", "TBD"].map((status) => (
-                  <button
+              <button
                     key={status}
                     onClick={() => setFormData((prev) => ({ ...prev, status }))}
                     className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${
@@ -985,7 +1139,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     }`}
                   >
                     {status}
-                  </button>
+              </button>
                 ))}
               </div>
               
@@ -1048,22 +1202,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   )}
                 </div>
               )}
-
-              <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
-                {["keep", "sell", "TBD"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFormData((prev) => ({ ...prev, status }))}
-                    className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${
-                      formData.status === status
-                        ? "bg-stone-800 text-white shadow-sm"
-                        : "text-stone-500 hover:bg-stone-50"
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
             </div>
             {marketLinks.length > 0 && (
               <div className="space-y-3">
@@ -1186,11 +1324,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                 />
               </div>
               <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 relative">
-                {formData.aiLastRun && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur text-[10px] text-rose-700 px-2 py-0.5 rounded-full border border-rose-100 shadow-sm">
-                    <AlertCircle className="w-3 h-3" /> TBD
-                  </div>
-                )}
                 <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3 text-center">
                   Estimated Value ($)
                 </label>
@@ -1291,6 +1424,7 @@ export default function App() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
   const singleInputRef = useRef(null);
   const bulkInputRef = useRef(null);
 
@@ -1424,10 +1558,10 @@ export default function App() {
 
     try {
       if (uploadMode === "single") {
-        const compressedImages = [];
+      const compressedImages = [];
         for (const file of stagingFiles) {
-          compressedImages.push(await compressImage(file));
-        }
+        compressedImages.push(await compressImage(file));
+      }
         
         let analysisResult = {};
         if (shouldAutoAnalyze) {
@@ -1441,18 +1575,18 @@ export default function App() {
         }
 
         const docRef = await addDoc(
-          collection(db, "artifacts", appId, "users", user.uid, "inventory"),
-          {
-            images: compressedImages,
-            image: compressedImages[0],
+        collection(db, "artifacts", appId, "users", user.uid, "inventory"),
+        {
+          images: compressedImages,
+          image: compressedImages[0],
             status: "TBD",
-            title: "",
-            category: "",
-            materials: "",
-            userNotes: "",
-            timestamp: serverTimestamp(),
-            valuation_low: 0,
-            valuation_high: 0,
+          title: "",
+          category: "",
+          materials: "",
+          userNotes: "",
+          timestamp: serverTimestamp(),
+          valuation_low: 0,
+          valuation_high: 0,
             ...analysisResult, // Merge AI results
             aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
           }
@@ -1639,17 +1773,17 @@ export default function App() {
           
           <div className="flex items-center gap-2 sm:gap-2">
              {/* Add Item (Single) */}
-             <button
+            <button
                 onClick={() => singleInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 shadow-sm active:scale-95"
              >
                 <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Add Item</span>
-             </button>
+            </button>
 
              {/* Bulk Upload */}
-             <button
+              <button
                 onClick={() => bulkInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
@@ -1680,38 +1814,38 @@ export default function App() {
 
              {/* Profile Dropdown Trigger (Simplified) */}
              <div className="relative group cursor-pointer">
-               {user.photoURL ? (
-                 <img
-                   src={user.photoURL}
-                   alt="Profile"
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
                    className="w-8 h-8 rounded-full border border-stone-200 shadow-sm"
-                 />
-               ) : (
+                  />
+                ) : (
                  <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center">
-                   <UserCircle className="w-5 h-5 text-stone-400" />
-                 </div>
-               )}
+                    <UserCircle className="w-5 h-5 text-stone-400" />
+                  </div>
+                )}
                {/* Minimal Dropdown */}
                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden hidden group-hover:block p-1">
                  <div className="px-4 py-2 border-b border-stone-50 mb-1">
                     <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
                     <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
-                 </div>
+                </div>
                  <button
                    onClick={handleExportCSV}
                    disabled={items.length === 0}
                    className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
                  >
                    <Download className="w-3 h-3" /> Export CSV
-                 </button>
-                 <button
+              </button>
+            <button
                     onClick={() => signOut(auth)}
                     className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
                  >
                     <LogOut className="w-3 h-3" /> Sign Out
-                 </button>
-               </div>
-             </div>
+            </button>
+          </div>
+        </div>
           </div>
         </div>
         
@@ -1737,7 +1871,7 @@ export default function App() {
                 </span>
               </button>
             ))}
-        </div>
+          </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
@@ -1749,11 +1883,11 @@ export default function App() {
                  <h2 className="text-xl font-serif font-bold text-emerald-700">
                     ${totalLowEst.toLocaleString()} <span className="text-stone-300 text-lg font-light">-</span> ${totalHighEst.toLocaleString()}
                  </h2>
-              </div>
+          </div>
               <div className="h-10 w-10 bg-emerald-50 rounded-full flex items-center justify-center">
                  <span className="text-xl">💎</span>
-              </div>
-           </div>
+        </div>
+            </div>
         )}
 
         {items.length === 0 && !isUploading && !dataLoading && (
@@ -1768,7 +1902,7 @@ export default function App() {
               Upload photos of your vintage items to reveal their history, value, and where to sell them.
             </p>
             <button
-               onClick={() => fileInputRef.current?.click()}
+              onClick={() => fileInputRef.current?.click()}
                className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-stone-200 transition-all active:scale-95 flex items-center gap-3 mx-auto"
             >
                <Camera className="w-5 h-5" />
