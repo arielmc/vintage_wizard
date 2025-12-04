@@ -297,11 +297,11 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
       color: "text-amber-700 bg-amber-50 border-amber-200",
     });
-    links.push({
-      name: "LiveAuctioneers",
-      url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
-      color: "text-stone-800 bg-stone-100 border-stone-300",
-    });
+      links.push({
+        name: "LiveAuctioneers",
+        url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
+        color: "text-stone-800 bg-stone-100 border-stone-300",
+      });
     links.push({
       name: "Artsy",
       url: `https://www.artsy.net/search?term=${broadQuery}`,
@@ -394,6 +394,20 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+
+const SkeletonCard = () => (
+  <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full animate-pulse">
+    <div className="aspect-square bg-stone-200/50" />
+    <div className="p-3 flex-1 flex flex-col gap-2">
+      <div className="h-4 bg-stone-200 rounded w-3/4" />
+      <div className="h-3 bg-stone-100 rounded w-1/2" />
+      <div className="mt-auto pt-2 flex justify-between items-center border-t border-stone-50">
+        <div className="h-3 bg-stone-100 rounded w-1/3" />
+        <div className="h-3 bg-stone-100 rounded w-1/4" />
+      </div>
+    </div>
+  </div>
+);
 
 const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   const [mode, setMode] = useState("single"); // Default to single
@@ -720,10 +734,10 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           <div className="h-16 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center">
             {formData.images.map((img, idx) => (
               <div key={idx} className="relative group flex-shrink-0 pt-2 pr-2">
-                <button
-                  onClick={() => setActiveImageIdx(idx)}
+              <button
+                onClick={() => setActiveImageIdx(idx)}
                   className={`h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    activeImageIdx === idx
+                  activeImageIdx === idx
                       ? "border-rose-500 opacity-100"
                       : "border-transparent opacity-50 group-hover:opacity-100"
                   }`}
@@ -733,7 +747,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     className="w-full h-full object-cover"
                     alt="thumbnail"
                   />
-                </button>
+              </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1098,6 +1112,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 export default function App() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -1195,8 +1210,12 @@ export default function App() {
       q,
       (snapshot) => {
         setItems(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setDataLoading(false);
       },
-      (error) => console.error(error)
+      (error) => {
+         console.error(error);
+         setDataLoading(false);
+      }
     );
     return () => unsubscribe();
   }, [user]);
@@ -1217,25 +1236,25 @@ export default function App() {
     try {
       if (mode === "single") {
         // Single Item Mode: All photos -> 1 Item
-        const compressedImages = [];
+      const compressedImages = [];
         for (const file of stagingFiles) {
-          compressedImages.push(await compressImage(file));
-        }
-        await addDoc(
-          collection(db, "artifacts", appId, "users", user.uid, "inventory"),
-          {
-            images: compressedImages,
-            image: compressedImages[0],
+        compressedImages.push(await compressImage(file));
+      }
+      await addDoc(
+        collection(db, "artifacts", appId, "users", user.uid, "inventory"),
+        {
+          images: compressedImages,
+          image: compressedImages[0],
             status: "TBD",
-            title: "",
-            category: "",
-            materials: "",
-            userNotes: "",
-            timestamp: serverTimestamp(),
-            valuation_low: 0,
-            valuation_high: 0,
-          }
-        );
+          title: "",
+          category: "",
+          materials: "",
+          userNotes: "",
+          timestamp: serverTimestamp(),
+          valuation_low: 0,
+          valuation_high: 0,
+        }
+      );
       } else {
         // Bulk Mode: 1 Photo -> 1 Item (repeated)
         for (const file of stagingFiles) {
@@ -1398,17 +1417,17 @@ export default function App() {
           
           <div className="flex items-center gap-2 sm:gap-4">
              {/* Upload Button */}
-             <button
+            <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 shadow-sm active:scale-95"
              >
                 {isUploading ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                 <span className="hidden sm:inline">Add</span>
-             </button>
+            </button>
 
              {/* Batch Selection Toggle */}
-             <button
+              <button
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                   isSelectionMode 
@@ -1429,38 +1448,38 @@ export default function App() {
 
              {/* Profile Dropdown Trigger (Simplified) */}
              <div className="relative group cursor-pointer">
-               {user.photoURL ? (
-                 <img
-                   src={user.photoURL}
-                   alt="Profile"
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
                    className="w-8 h-8 rounded-full border border-stone-200 shadow-sm"
-                 />
-               ) : (
+                  />
+                ) : (
                  <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center">
-                   <UserCircle className="w-5 h-5 text-stone-400" />
-                 </div>
-               )}
+                    <UserCircle className="w-5 h-5 text-stone-400" />
+                  </div>
+                )}
                {/* Minimal Dropdown */}
                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden hidden group-hover:block p-1">
                  <div className="px-4 py-2 border-b border-stone-50 mb-1">
                     <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
                     <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
-                 </div>
+                </div>
                  <button
                    onClick={handleExportCSV}
                    disabled={items.length === 0}
                    className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
                  >
                    <Download className="w-3 h-3" /> Export CSV
-                 </button>
-                 <button
+              </button>
+            <button
                     onClick={() => signOut(auth)}
                     className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
                  >
                     <LogOut className="w-3 h-3" /> Sign Out
-                 </button>
-               </div>
-             </div>
+            </button>
+          </div>
+        </div>
 
              {/* Desktop Upload Button (Removed - Moved next to Wand) */}
           </div>
@@ -1488,7 +1507,7 @@ export default function App() {
                 </span>
               </button>
             ))}
-        </div>
+          </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
@@ -1500,15 +1519,15 @@ export default function App() {
                  <h2 className="text-xl font-serif font-bold text-emerald-700">
                     ${totalLowEst.toLocaleString()} <span className="text-stone-300 text-lg font-light">-</span> ${totalHighEst.toLocaleString()}
                  </h2>
-              </div>
+          </div>
               <div className="h-10 w-10 bg-emerald-50 rounded-full flex items-center justify-center">
                  <span className="text-xl">💎</span>
-              </div>
-           </div>
+        </div>
+            </div>
         )}
 
-        {items.length === 0 && !isUploading && (
-          <div className="text-center py-20 opacity-60">
+        {items.length === 0 && !isUploading && !dataLoading && (
+          <div className="text-center py-20 opacity-60 animate-in fade-in zoom-in duration-500">
             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-stone-100">
                <Camera className="w-10 h-10 text-stone-300" />
             </div>
@@ -1522,13 +1541,14 @@ export default function App() {
         )}
 
         {/* --- Control Bar: Sort & Select --- */}
-        {items.length > 0 && (
+        {(items.length > 0 || dataLoading) && (
            <div className="flex items-center justify-between mb-4 px-1 relative z-10">
               {/* Sort Dropdown */}
               <div className="relative">
-                 <button 
+            <button
                    onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                   className="flex items-center gap-2 text-sm font-bold text-stone-700 hover:text-stone-900 transition-colors bg-white/50 px-3 py-2 rounded-lg hover:bg-white border border-transparent hover:border-stone-200"
+                   disabled={dataLoading}
+                   className={`flex items-center gap-2 text-sm font-bold transition-colors bg-white/50 px-3 py-2 rounded-lg border border-transparent ${dataLoading ? "opacity-50 cursor-wait" : "text-stone-700 hover:text-stone-900 hover:bg-white hover:border-stone-200"}`}
                  >
                    <ArrowUpDown className="w-4 h-4 text-stone-400" />
                    <span>
@@ -1540,7 +1560,7 @@ export default function App() {
                         "alpha-asc": "Name (A-Z)"
                       }[sortBy]}
                    </span>
-                 </button>
+            </button>
                  
                  {/* Backdrop to close menu */}
                  {isSortMenuOpen && (
@@ -1577,17 +1597,24 @@ export default function App() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-          {filteredItems.map((item) => (
-            <ItemCard 
-               key={item.id} 
-               item={item} 
-               onClick={setSelectedItem}
-               isSelected={selectedIds.has(item.id)}
-               isSelectionMode={isSelectionMode}
-               onToggleSelect={handleToggleSelect}
-               onAnalyze={handleQuickAnalyze}
-            />
-          ))}
+          {dataLoading ? (
+             // Skeleton Loading Grid
+             Array.from({ length: 10 }).map((_, i) => (
+                <SkeletonCard key={i} />
+             ))
+          ) : (
+             filteredItems.map((item) => (
+               <ItemCard 
+                  key={item.id} 
+                  item={item} 
+                  onClick={setSelectedItem}
+                  isSelected={selectedIds.has(item.id)}
+                  isSelectionMode={isSelectionMode}
+                  onToggleSelect={handleToggleSelect}
+                  onAnalyze={handleQuickAnalyze}
+               />
+             ))
+          )}
         </div>
       </main>
 
