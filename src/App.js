@@ -53,6 +53,7 @@ import {
   ListFilter,
   ChevronLeft,
   ChevronRight,
+  Save, // Added Save Icon
 } from "lucide-react";
 
 // --- FIREBASE CONFIGURATION ---
@@ -400,15 +401,19 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
   return links;
 };
 
-// --- Thumbnail Item Component ---
-const ThumbnailItem = ({ id, src, index, total, active, onRemove, onMoveLeft, onMoveRight, onClick }) => {
+// --- Thumbnail Item Component (Draggable) ---
+const ThumbnailItem = ({ id, src, index, active, onRemove, onClick, onDragStart, onDrop, onDragOver }) => {
   return (
     <div
       onClick={onClick}
-      className={`relative group flex-shrink-0 pt-2 pr-2 ${active ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+      draggable
+      onDragStart={(e) => onDragStart(e, index)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDrop={(e) => onDrop(e, index)}
+      className={`relative group flex-shrink-0 pt-2 pr-2 cursor-grab active:cursor-grabbing ${active ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
     >
       <div
-        className={`h-12 w-12 md:h-16 md:w-16 rounded-lg overflow-hidden border-2 transition-all bg-stone-100 relative ${
+        className={`h-16 w-16 rounded-lg overflow-hidden border-2 transition-all bg-stone-100 relative ${
           active
             ? "border-rose-500 shadow-md ring-2 ring-rose-500/20"
             : "border-transparent"
@@ -416,29 +421,9 @@ const ThumbnailItem = ({ id, src, index, total, active, onRemove, onMoveLeft, on
       >
         <img
           src={src}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover pointer-events-none"
           alt="thumbnail"
         />
-        
-        {/* Reorder Controls */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-            {index > 0 && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onMoveLeft(); }}
-                    className="p-1 bg-white/20 hover:bg-white text-white hover:text-stone-900 rounded-full"
-                >
-                    <ChevronLeft size={10} strokeWidth={3} />
-                </button>
-            )}
-            {index < total - 1 && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onMoveRight(); }}
-                    className="p-1 bg-white/20 hover:bg-white text-white hover:text-stone-900 rounded-full"
-                >
-                    <ChevronRight size={10} strokeWidth={3} />
-                </button>
-            )}
-        </div>
       </div>
       
       <button
@@ -458,11 +443,11 @@ const ThumbnailItem = ({ id, src, index, total, active, onRemove, onMoveLeft, on
 // --- Components ---
 const StatusBadge = ({ status }) => {
   const colors = {
-    keep: "bg-green-100 text-green-800 border-green-200",
-    sell: "bg-blue-100 text-blue-800 border-blue-200",
-    TBD: "bg-stone-100 text-stone-800 border-stone-200",
-    draft: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
-    unprocessed: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
+    keep: "bg-blue-100 text-blue-800 border-blue-200", // Now Blue
+    sell: "bg-green-100 text-green-800 border-green-200", // Now Green
+    TBD: "bg-amber-100 text-amber-800 border-amber-200", // Now Yellow/Amber
+    draft: "bg-amber-100 text-amber-800 border-amber-200", // Legacy support
+    unprocessed: "bg-amber-100 text-amber-800 border-amber-200", // Legacy support
   };
   // Normalize status for display
   const displayStatus = (status === "unprocessed" || status === "draft" || status === "maybe") ? "TBD" : status;
@@ -807,15 +792,36 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     [formData.category, formData.search_terms, formData.search_terms_broad]
   );
 
-  const moveImage = (fromIndex, toIndex) => {
-      if (toIndex < 0 || toIndex >= formData.images.length) return;
-      const newImages = [...formData.images];
-      const [movedItem] = newImages.splice(fromIndex, 1);
-      newImages.splice(toIndex, 0, movedItem);
-      setFormData(prev => ({ ...prev, images: newImages }));
-      
-      if (activeImageIdx === fromIndex) setActiveImageIdx(toIndex);
-      else if (activeImageIdx === toIndex) setActiveImageIdx(fromIndex);
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+    // Optional: set drag image or data
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault(); // Necessary to allow dropping
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === dropIndex) return;
+
+    const newImages = [...formData.images];
+    const [movedItem] = newImages.splice(draggedIdx, 1);
+    newImages.splice(dropIndex, 0, movedItem);
+    
+    setFormData(prev => ({ ...prev, images: newImages }));
+    
+    // Update active index if necessary
+    if (activeImageIdx === draggedIdx) setActiveImageIdx(dropIndex);
+    else if (activeImageIdx === dropIndex) setActiveImageIdx(draggedIdx); // approximate, or just keep 0
+    else if (dropIndex <= activeImageIdx && draggedIdx > activeImageIdx) setActiveImageIdx(activeImageIdx + 1);
+    else if (dropIndex >= activeImageIdx && draggedIdx < activeImageIdx) setActiveImageIdx(activeImageIdx - 1);
+    
+    setDraggedIdx(null);
   };
 
   const handleAnalyze = async () => {
@@ -886,31 +892,19 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             )}
           </div>
           
-          {/* Thumbnail Strip Header */}
-          {formData.images.length > 1 && (
-            <div className="w-full px-3 py-1 flex justify-between items-center bg-stone-900 border-t border-white/10">
-               <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
-                  Gallery
-               </span>
-               <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider animate-pulse">
-                  Reorder Photos
-               </span>
-            </div>
-          )}
-          
           {/* Draggable Thumbnail Strip */}
-          <div className="h-20 md:h-24 bg-stone-900 p-2 md:p-3 pt-0 md:pt-0 flex gap-2 overflow-x-auto items-center no-scrollbar">
+          <div className="h-20 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center no-scrollbar">
             {formData.images.map((img, idx) => (
                 <ThumbnailItem 
                     key={img} 
                     id={img} 
                     src={img} 
                     index={idx}
-                    total={formData.images.length}
                     active={activeImageIdx === idx}
                     onClick={() => setActiveImageIdx(idx)}
-                    onMoveLeft={() => moveImage(idx, idx - 1)}
-                    onMoveRight={() => moveImage(idx, idx + 1)}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
                     onRemove={() => {
                         const newImages = formData.images.filter((_, i) => i !== idx);
                         setFormData((prev) => ({ ...prev, images: newImages }));
@@ -968,20 +962,21 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           </div>
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
             <div className="flex flex-col gap-4">
-              {/* Secondary Actions Menu */}
-              <div className="flex items-center justify-between gap-3 p-3 bg-white border border-stone-200 rounded-xl shadow-sm">
-                 <button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing || formData.images.length === 0}
-                    className="flex-1 text-xs font-bold text-stone-600 hover:text-stone-900 flex items-center justify-center gap-2 py-2 hover:bg-stone-50 rounded-lg transition-colors"
-                 >
-                    {isAnalyzing ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    {formData.aiLastRun ? "Re-Run AI Analysis" : "Run AI Analysis"}
-                 </button>
-                 <div className="w-px h-6 bg-stone-200" />
-                 <span className="text-[10px] text-stone-400 font-medium px-2">
-                    {formData.aiLastRun ? "AI Updated" : "No AI Data"}
-                 </span>
+              {/* Status Toggles */}
+              <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
+                {["keep", "sell", "TBD"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFormData((prev) => ({ ...prev, status }))}
+                    className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${
+                      formData.status === status
+                        ? "bg-stone-800 text-white shadow-sm"
+                        : "text-stone-500 hover:bg-stone-50"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
               </div>
               
               {/* AI Clarification Questions */}
@@ -1238,7 +1233,20 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               </div>
             </div>
           </div>
-          <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0">
+          <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0 flex gap-3">
+            <button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || formData.images.length === 0}
+              className={`flex-1 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                isAnalyzing 
+                  ? "bg-stone-100 text-stone-400 cursor-wait" 
+                  : "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:shadow-md border border-rose-100"
+              }`}
+            >
+              {isAnalyzing ? <Loader className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+              {formData.aiLastRun ? "Re-Run AI" : "Run AI Analysis"}
+            </button>
+
             <button
               onClick={() => {
                 onSave({
@@ -1247,9 +1255,9 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                 });
                 onClose();
               }}
-              className="w-full py-3 bg-stone-800 hover:bg-stone-700 text-white font-bold rounded-xl shadow-lg shadow-stone-200 transition-all flex items-center justify-center gap-2"
+              className="flex-[2] py-3 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl shadow-lg shadow-stone-200 transition-all flex items-center justify-center gap-2"
             >
-              <Check className="w-5 h-5" /> Save Changes
+              <Save className="w-5 h-5" /> Save Changes
             </button>
           </div>
         </div>
@@ -1272,7 +1280,9 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const fileInputRef = useRef(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const singleInputRef = useRef(null);
+  const bulkInputRef = useRef(null);
 
   const handleQuickAnalyze = async (item) => {
       try {
@@ -1369,32 +1379,63 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e, mode) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+    
+    if (mode === 'single' && files.length > 4) {
+      alert("Please select a maximum of 4 images for a single item.");
+      e.target.value = ""; // Reset
+      return;
+    }
+
     setStagingFiles(files);
-    // Reset input so same files can be selected again if cancelled
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    // We'll use the mode to determine immediate action in the staging modal or bypass it
+    // Actually, if we have specific buttons, we might want to bypass staging for 'single' if we want instant gratification,
+    // but staging is good for verifying photos.
+    // For now, I'll pass the 'intent' to the staging modal or handle it here.
+    
+    // If we want strict distinct flows:
+    // Single -> Opens Staging (pre-set to Create 1 Item) -> Confirm -> Upload & Analyze
+    // Bulk -> Opens Staging (pre-set to Create X Items) -> Confirm -> Upload (No Auto Analyze to save credits/time?)
+    // The user said "automatically run AI... rather than making user do it".
+    // I will implement Auto-Analyze for SINGLE item uploads.
   };
 
-  const handleConfirmUpload = async (mode) => {
+  const handleConfirmUpload = async (uploadMode) => {
     if (stagingFiles.length === 0 || !user) return;
+    
+    // If Single Item mode, we want to Auto-Analyze
+    const shouldAutoAnalyze = uploadMode === "single";
+    
     setIsUploading(true);
-    setStagingFiles([]); // Close modal immediately
+    if (shouldAutoAnalyze) setIsProcessing(true); // Show analysis spinner
+    setStagingFiles([]); 
 
     try {
-      if (mode === "single") {
-        // Single Item Mode: All photos -> 1 Item
+      if (uploadMode === "single") {
         const compressedImages = [];
         for (const file of stagingFiles) {
           compressedImages.push(await compressImage(file));
         }
+        
+        let analysisResult = {};
+        if (shouldAutoAnalyze) {
+           try {
+             // Run AI immediately
+             analysisResult = await analyzeImagesWithGemini(compressedImages, "");
+           } catch (aiError) {
+             console.error("Auto-analysis failed:", aiError);
+             alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
+           }
+        }
+
         await addDoc(
           collection(db, "artifacts", appId, "users", user.uid, "inventory"),
           {
             images: compressedImages,
             image: compressedImages[0],
-            status: "TBD", // Changed from Draft
+            status: "TBD",
             title: "",
             category: "",
             materials: "",
@@ -1402,10 +1443,12 @@ export default function App() {
             timestamp: serverTimestamp(),
             valuation_low: 0,
             valuation_high: 0,
+            ...analysisResult, // Merge AI results
+            aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
           }
         );
       } else {
-        // Bulk Mode: 1 Photo -> 1 Item (repeated)
+        // Bulk Mode: Create X items
         for (const file of stagingFiles) {
           const compressedImage = await compressImage(file);
           await addDoc(
@@ -1413,7 +1456,7 @@ export default function App() {
             {
               images: [compressedImage],
               image: compressedImage,
-              status: "TBD", // Changed from Draft
+              status: "TBD",
               title: "",
               category: "",
               materials: "",
@@ -1427,9 +1470,10 @@ export default function App() {
       }
     } catch (error) {
       console.error(error);
-      alert("Upload failed");
+      alert(`Upload failed: ${error.message}`);
     }
     setIsUploading(false);
+    setIsProcessing(false);
   };
 
   const handleUpdateItem = async (updatedItem) => {
@@ -1515,6 +1559,8 @@ export default function App() {
             return (Number(a.valuation_high) || 0) - (Number(b.valuation_high) || 0);
           case "alpha-asc":
             return (a.title || "").localeCompare(b.title || "");
+          case "category-asc":
+            return (a.category || "").localeCompare(b.category || "");
           default:
             return 0;
         }
@@ -1564,15 +1610,25 @@ export default function App() {
             </h1>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4">
-             {/* Upload Button */}
+          <div className="flex items-center gap-2 sm:gap-2">
+             {/* Add Item (Single) */}
              <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => singleInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 shadow-sm active:scale-95"
              >
-                {isUploading ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                <span className="hidden sm:inline">Add</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Add Item</span>
+             </button>
+
+             {/* Bulk Upload */}
+             <button
+                onClick={() => bulkInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
+             >
+                <Layers className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bulk Upload</span>
              </button>
 
              {/* Batch Selection Toggle */}
@@ -1711,7 +1767,8 @@ export default function App() {
                         "date-asc": "Oldest",
                         "value-desc": "Highest Value",
                         "value-asc": "Lowest Value",
-                        "alpha-asc": "Name (A-Z)"
+                        "alpha-asc": "Name (A-Z)",
+                        "category-asc": "Category (A-Z)"
                       }[sortBy]}
                    </span>
                  </button>
@@ -1733,6 +1790,7 @@ export default function App() {
                          { label: "Value: High to Low", value: "value-desc" },
                          { label: "Value: Low to High", value: "value-asc" },
                          { label: "Alphabetical (A-Z)", value: "alpha-asc" },
+                         { label: "Category (A-Z)", value: "category-asc" },
                        ].map((opt) => (
                          <button
                            key={opt.value}
@@ -1808,9 +1866,16 @@ export default function App() {
 
       {/* --- Mobile FAB (Floating Action Button) - Hidden during selection --- */}
       {!isSelectionMode && (
-      <div className="fixed bottom-6 right-6 z-30 md:hidden">
+      <div className="fixed bottom-6 right-6 z-30 md:hidden flex flex-col gap-3">
          <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => bulkInputRef.current?.click()}
+            disabled={isUploading}
+            className="h-12 w-12 rounded-full shadow-lg shadow-stone-900/10 flex items-center justify-center transition-all active:scale-90 bg-white text-stone-700 border border-stone-200"
+         >
+            <Layers className="w-5 h-5" />
+         </button>
+         <button
+            onClick={() => singleInputRef.current?.click()}
             disabled={isUploading}
             className={`h-16 w-16 rounded-full shadow-xl shadow-rose-900/20 flex items-center justify-center transition-all active:scale-90 border-2 border-white ${
                isUploading ? "bg-stone-100 cursor-wait" : "bg-stone-900 text-white"
@@ -1825,13 +1890,38 @@ export default function App() {
       </div>
       )}
 
+      {/* Processing Spinner Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center max-w-sm mx-auto text-center shadow-2xl animate-in zoom-in-95">
+            <div className="w-16 h-16 mb-4 relative">
+               <div className="absolute inset-0 border-4 border-stone-100 rounded-full"></div>
+               <div className="absolute inset-0 border-4 border-rose-500 rounded-full border-t-transparent animate-spin"></div>
+               <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-rose-500 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-bold text-stone-800 mb-2">Analyzing Item...</h3>
+            <p className="text-stone-500 text-sm">
+               Our AI is identifying your item, estimating its value, and finding resale comps.
+            </p>
+          </div>
+        </div>
+      )}
+
       <input
         type="file"
         multiple
         accept="image/*"
         className="hidden"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
+        ref={singleInputRef}
+        onChange={(e) => handleFileSelect(e, 'single')}
+      />
+      <input
+        type="file"
+        multiple
+        accept="image/*"
+        className="hidden"
+        ref={bulkInputRef}
+        onChange={(e) => handleFileSelect(e, 'bulk')}
       />
       
       {stagingFiles.length > 0 && (
