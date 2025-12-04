@@ -1527,16 +1527,23 @@ export default function App() {
         )}
 
         {items.length === 0 && !isUploading && !dataLoading && (
-          <div className="text-center py-20 opacity-60 animate-in fade-in zoom-in duration-500">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-stone-100">
-               <Camera className="w-10 h-10 text-stone-300" />
+          <div className="text-center py-20 opacity-80 animate-in fade-in zoom-in duration-500 max-w-sm mx-auto">
+            <div className="w-32 h-32 bg-gradient-to-tr from-rose-100 to-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-white">
+               <Sparkles className="w-12 h-12 text-rose-400" />
             </div>
-            <h3 className="text-lg font-serif font-bold text-stone-700 mb-2">
-              Your archive is empty
+            <h3 className="text-2xl font-serif font-bold text-stone-800 mb-3">
+              Start Your Discovery
             </h3>
-            <p className="text-stone-400 text-sm">
-              Tap the + button to catalog your first treasure.
+            <p className="text-stone-500 mb-8 leading-relaxed">
+              Upload photos of your vintage items to reveal their history, value, and where to sell them.
             </p>
+            <button
+               onClick={() => fileInputRef.current?.click()}
+               className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-stone-200 transition-all active:scale-95 flex items-center gap-3 mx-auto"
+            >
+               <Camera className="w-5 h-5" />
+               Identify Your First Item
+            </button>
           </div>
         )}
 
