@@ -538,13 +538,23 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
           </div>
         </div>
 
-        <div className="p-4 bg-stone-50 border-t border-stone-100 flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-stone-500 font-bold text-sm hover:text-stone-700">Cancel</button>
+        <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-col gap-3">
           <button 
-            onClick={() => onConfirm(mode)}
-            className="bg-stone-900 hover:bg-stone-800 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center gap-2"
+            onClick={() => onConfirm(mode, "analyze_now")}
+            className="w-full bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            Upload Item
+            <Sparkles className="w-4 h-4 text-rose-300" /> Analyze & Save
+          </button>
+          
+          <button 
+            onClick={() => onConfirm(mode, "edit_first")}
+            className="w-full bg-white hover:bg-stone-50 text-stone-600 border border-stone-200 px-6 py-3 rounded-xl text-sm font-bold transition-all active:scale-95"
+          >
+            Add Details First
+          </button>
+          
+          <button onClick={onCancel} className="w-full text-stone-400 font-bold text-xs hover:text-stone-600 py-2">
+            Cancel
           </button>
         </div>
       </div>
@@ -1402,11 +1412,11 @@ export default function App() {
     // I will implement Auto-Analyze for SINGLE item uploads.
   };
 
-  const handleConfirmUpload = async (uploadMode) => {
+  const handleConfirmUpload = async (uploadMode, actionType = "analyze_now") => {
     if (stagingFiles.length === 0 || !user) return;
     
-    // If Single Item mode, we want to Auto-Analyze
-    const shouldAutoAnalyze = uploadMode === "single";
+    // Only Auto-Analyze if Single Mode AND user clicked "Analyze & Save"
+    const shouldAutoAnalyze = uploadMode === "single" && actionType === "analyze_now";
     
     setIsUploading(true);
     if (shouldAutoAnalyze) setIsProcessing(true); // Show analysis spinner
@@ -1430,7 +1440,7 @@ export default function App() {
            }
         }
 
-        await addDoc(
+        const docRef = await addDoc(
           collection(db, "artifacts", appId, "users", user.uid, "inventory"),
           {
             images: compressedImages,
@@ -1447,6 +1457,23 @@ export default function App() {
             aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
           }
         );
+
+        // If user chose "Add Details First", open the modal immediately
+        if (actionType === "edit_first") {
+           setSelectedItem({
+              id: docRef.id,
+              images: compressedImages,
+              image: compressedImages[0],
+              status: "TBD",
+              title: "",
+              category: "",
+              materials: "",
+              userNotes: "",
+              valuation_low: 0,
+              valuation_high: 0,
+           });
+        }
+
       } else {
         // Bulk Mode: Create X items
         for (const file of stagingFiles) {
