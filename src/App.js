@@ -227,18 +227,37 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
     cat.includes("jewelry") ||
     cat.includes("brooch") ||
     cat.includes("ring") ||
-    cat.includes("necklace");
+    cat.includes("necklace") ||
+    cat.includes("bracelet") ||
+    cat.includes("watch");
   const isDecor =
     cat.includes("furniture") ||
     cat.includes("lighting") ||
     cat.includes("decor") ||
     cat.includes("glass") ||
-    cat.includes("pottery");
+    cat.includes("pottery") ||
+    cat.includes("rug");
   const isArt =
     cat.includes("art") ||
     cat.includes("painting") ||
     cat.includes("print") ||
     cat.includes("sculpture");
+  const isFashion = 
+    cat.includes("clothing") ||
+    cat.includes("fashion") ||
+    cat.includes("bag") ||
+    cat.includes("shoe") ||
+    cat.includes("accessory");
+  const isMusic = 
+    cat.includes("record") ||
+    cat.includes("vinyl") ||
+    cat.includes("lp") ||
+    cat.includes("music");
+  const isAuto = 
+    cat.includes("car") ||
+    cat.includes("auto") ||
+    cat.includes("vehicle") ||
+    cat.includes("motor");
 
   if (isJewelry) {
     links.push({
@@ -247,16 +266,16 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       color: "text-rose-700 bg-rose-50 border-rose-200",
     });
     links.push({
+      name: "The RealReal",
+      url: `https://www.therealreal.com/products?keywords=${broadQuery}`,
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    });
+    links.push({
       name: "1stDibs",
       url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
       color: "text-amber-700 bg-amber-50 border-amber-200",
     });
-    links.push({
-      name: "Etsy",
-      url: `https://www.etsy.com/search?q=${query}`,
-      color: "text-orange-700 bg-orange-50 border-orange-200",
-    });
-  } else if (isDecor || isArt) {
+  } else if (isDecor) {
     links.push({
       name: "Chairish",
       url: `https://www.chairish.com/search?q=${broadQuery}`,
@@ -267,17 +286,90 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
       color: "text-amber-700 bg-amber-50 border-amber-200",
     });
-    if (isArt)
-      links.push({
-        name: "LiveAuctioneers",
-        url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
-        color: "text-stone-800 bg-stone-100 border-stone-300",
-      });
+    links.push({
+      name: "Pamono",
+      url: `https://www.pamono.com/catalogsearch/result/?q=${broadQuery}`,
+      color: "text-stone-800 bg-stone-100 border-stone-300",
+    });
+  } else if (isArt) {
+    links.push({
+      name: "1stDibs",
+      url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    });
+    links.push({
+      name: "LiveAuctioneers",
+      url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
+      color: "text-stone-800 bg-stone-100 border-stone-300",
+    });
+    links.push({
+      name: "Artsy",
+      url: `https://www.artsy.net/search?term=${broadQuery}`,
+      color: "text-purple-700 bg-purple-50 border-purple-200",
+    });
+  } else if (isFashion) {
+    links.push({
+      name: "Poshmark",
+      url: `https://poshmark.com/search?query=${query}`,
+      color: "text-red-700 bg-red-50 border-red-200",
+    });
+    links.push({
+      name: "Depop",
+      url: `https://www.depop.com/search/?q=${broadQuery}`,
+      color: "text-red-600 bg-white border-red-600",
+    });
+    links.push({
+      name: "The RealReal",
+      url: `https://www.therealreal.com/products?keywords=${broadQuery}`,
+      color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    });
+    links.push({
+      name: "Grailed",
+      url: `https://www.grailed.com/shop?keyword=${broadQuery}`,
+      color: "text-stone-800 bg-stone-100 border-stone-300",
+    });
+    links.push({
+      name: "Vestiaire",
+      url: `https://us.vestiairecollective.com/search/?q=${broadQuery}`,
+      color: "text-orange-700 bg-orange-50 border-orange-200",
+    });
+  } else if (isMusic) {
+    links.push({
+      name: "Discogs",
+      url: `https://www.discogs.com/search/?q=${query}&type=all`,
+      color: "text-stone-800 bg-yellow-50 border-yellow-200",
+    });
+     links.push({
+      name: "Reverb",
+      url: `https://reverb.com/marketplace?query=${broadQuery}`,
+      color: "text-orange-600 bg-orange-50 border-orange-200",
+    });
+  } else if (isAuto) {
+    links.push({
+      name: "Bring a Trailer",
+      url: `https://bringatrailer.com/search/?s=${broadQuery}`,
+      color: "text-stone-800 bg-stone-200 border-stone-400",
+    });
+    links.push({
+      name: "Hemmings",
+      url: `https://www.hemmings.com/classifieds?q=${broadQuery}`,
+      color: "text-blue-800 bg-blue-100 border-blue-300",
+    });
+    links.push({
+      name: "ClassicCars",
+      url: `https://classiccars.com/listings/find?q=${broadQuery}`,
+      color: "text-red-800 bg-red-100 border-red-300",
+    });
   } else {
     links.push({
       name: "Etsy",
       url: `https://www.etsy.com/search?q=${query}`,
       color: "text-orange-700 bg-orange-50 border-orange-200",
+    });
+    links.push({
+      name: "Mercari",
+      url: `https://www.mercari.com/search/?keyword=${broadQuery}`,
+      color: "text-purple-700 bg-purple-50 border-purple-200",
     });
   }
   return links;
