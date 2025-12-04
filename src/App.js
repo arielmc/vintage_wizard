@@ -120,7 +120,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - reasoning: Brief explanation (max 2 sentences).
     - search_terms: Specific keywords to find EXACT comparables on robust search engines.
     - search_terms_broad: A simplified query (2-4 words MAX) for strict search engines like Ruby Lane/1stDibs.
-    - category: The most specific accurate category.
+    - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
     - sales_blurb: An engaging, professional sales description (2-3 sentences) suitable for the body of an eBay/Etsy listing. Highlight unique features, style, and condition. Do not repeat the title verbatim.
     - questions: Array of strings (max 3). Ask specific, critical questions to clarify value (e.g., "Is the clasp marked?", "Is it heavy?"). If confident, return empty array.
   `;
@@ -237,9 +237,10 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
     cat.includes("furniture") ||
     cat.includes("lighting") ||
     cat.includes("decor") ||
+    cat.includes("rug") ||
+    cat.includes("ceramic") ||
     cat.includes("glass") ||
-    cat.includes("pottery") ||
-    cat.includes("rug");
+    cat.includes("pottery");
   const isArt =
     cat.includes("art") ||
     cat.includes("painting") ||
@@ -255,12 +256,21 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
     cat.includes("record") ||
     cat.includes("vinyl") ||
     cat.includes("lp") ||
-    cat.includes("music");
+    cat.includes("music") ||
+    cat.includes("instrument");
   const isAuto = 
     cat.includes("car") ||
     cat.includes("auto") ||
     cat.includes("vehicle") ||
     cat.includes("motor");
+  const isBooks = 
+    cat.includes("book") ||
+    cat.includes("ephemera");
+  const isCollectibles = 
+    cat.includes("collectible") ||
+    cat.includes("toy") ||
+    cat.includes("card") ||
+    cat.includes("comic");
 
   if (isJewelry) {
     links.push({
@@ -363,6 +373,18 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://classiccars.com/listings/find?q=${broadQuery}`,
       color: "text-red-800 bg-red-100 border-red-300",
     });
+  } else if (isBooks) {
+    links.push({
+      name: "AbeBooks",
+      url: `https://www.abebooks.com/servlet/SearchResults?sts=t&kn=${broadQuery}`,
+      color: "text-red-700 bg-red-50 border-red-200",
+    });
+  } else if (isCollectibles) {
+    links.push({
+      name: "Mercari",
+      url: `https://www.mercari.com/search/?keyword=${broadQuery}`,
+      color: "text-purple-700 bg-purple-50 border-purple-200",
+    });
   } else {
     links.push({
       name: "Etsy",
@@ -438,17 +460,17 @@ const StatusBadge = ({ status }) => {
   const colors = {
     keep: "bg-green-100 text-green-800 border-green-200",
     sell: "bg-blue-100 text-blue-800 border-blue-200",
-    draft: "bg-stone-100 text-stone-800 border-stone-200",
-    TBD: "bg-stone-100 text-stone-800 border-stone-200", // Fallback
+    TBD: "bg-stone-100 text-stone-800 border-stone-200",
+    draft: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
     unprocessed: "bg-stone-100 text-stone-800 border-stone-200", // Legacy support
   };
   // Normalize status for display
-  const displayStatus = (status === "unprocessed" || status === "TBD" || status === "maybe") ? "draft" : status;
+  const displayStatus = (status === "unprocessed" || status === "draft" || status === "maybe") ? "TBD" : status;
   
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-        colors[displayStatus] || colors.draft
+        colors[displayStatus] || colors.TBD
       } uppercase tracking-wide`}
     >
       {displayStatus}
@@ -472,6 +494,18 @@ const SkeletonCard = () => (
 
 const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   const [mode, setMode] = useState("single"); // Default to single
+  const [previews, setPreviews] = useState([]);
+
+  useEffect(() => {
+    // Generate previews for display (limit to first 4 to match UI)
+    const urls = files.slice(0, 4).map((file) => URL.createObjectURL(file));
+    setPreviews(urls);
+
+    // Cleanup: revoke URLs to prevent memory leaks
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -483,9 +517,9 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
         <div className="p-6 space-y-6">
           {/* Preview Grid (First 4) */}
           <div className="grid grid-cols-4 gap-2">
-            {files.slice(0, 4).map((f, i) => (
+            {previews.map((url, i) => (
               <div key={i} className="aspect-square rounded-lg overflow-hidden bg-stone-100 border border-stone-200 shadow-sm">
-                <img src={URL.createObjectURL(f)} className="w-full h-full object-cover" alt="preview" />
+                <img src={url} className="w-full h-full object-cover" alt="preview" />
               </div>
             ))}
             {files.length > 4 && (
@@ -534,10 +568,33 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
 };
 
 const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, onAnalyze }) => {
-  const displayImage =
-    item.images && item.images.length > 0 ? item.images[0] : item.image;
-  const imageCount = item.images ? item.images.length : item.image ? 1 : 0;
+  // Ensure images array exists, fallback to single image or empty
+  const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Reset index if images change (rare but good practice)
+  useEffect(() => { setActiveImgIdx(0); }, [item.id]);
+
+  const displayImage = images.length > 0 ? images[activeImgIdx] : null;
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    if (activeImgIdx < images.length - 1) {
+      setActiveImgIdx(prev => prev + 1);
+    } else {
+      setActiveImgIdx(0); // Loop back to start
+    }
+  };
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    if (activeImgIdx > 0) {
+      setActiveImgIdx(prev => prev - 1);
+    } else {
+      setActiveImgIdx(images.length - 1); // Loop to end
+    }
+  };
 
   const handleClick = (e) => {
     if (isSelectionMode) {
@@ -579,12 +636,42 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           <img
             src={displayImage}
             alt={item.title || "Item"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-stone-400">
             <Camera size={48} />
           </div>
+        )}
+
+        {/* Image Carousel Controls (Visible on Hover) */}
+        {!isSelectionMode && images.length > 1 && (
+          <>
+            <button 
+              onClick={handlePrevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronLeft size={16} strokeWidth={3} />
+            </button>
+            <button 
+              onClick={handleNextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronRight size={16} strokeWidth={3} />
+            </button>
+            
+            {/* Dots Indicator */}
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
+              {images.slice(0, 5).map((_, idx) => (
+                <div 
+                  key={idx}
+                  className={`w-1.5 h-1.5 rounded-full shadow-sm ${
+                    idx === activeImgIdx ? "bg-white" : "bg-white/40"
+                  } ${idx === 4 && images.length > 5 ? "opacity-50" : ""}`} 
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Top Left: Quick AI Analyze Button (Visible on hover or if Draft) */}
@@ -604,15 +691,10 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
 
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
           <StatusBadge status={item.status} />
-          {imageCount > 1 && (
-            <span className="bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-              <ImageIcon className="w-3 h-3" /> +{imageCount - 1}
-            </span>
-          )}
         </div>
 
         {item.valuation_high > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8 pointer-events-none">
             <p className="text-white font-extrabold text-lg drop-shadow-md">
               ${item.valuation_low} - ${item.valuation_high}
             </p>
@@ -660,9 +742,7 @@ const LoginScreen = () => {
          }
       } else {
          console.error("Login error:", error);
-         // Only fallback for specific popup issues, otherwise alert
-         const provider = new GoogleAuthProvider();
-         await signInWithRedirect(auth, provider);
+         alert(`Login failed: ${error.message || "Unknown error"}`);
       }
     }
   };
@@ -806,8 +886,20 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             )}
           </div>
           
+          {/* Thumbnail Strip Header */}
+          {formData.images.length > 1 && (
+            <div className="w-full px-3 py-1 flex justify-between items-center bg-stone-900 border-t border-white/10">
+               <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
+                  Gallery
+               </span>
+               <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider animate-pulse">
+                  Reorder Photos
+               </span>
+            </div>
+          )}
+          
           {/* Draggable Thumbnail Strip */}
-          <div className="h-20 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center no-scrollbar">
+          <div className="h-20 md:h-24 bg-stone-900 p-2 md:p-3 pt-0 md:pt-0 flex gap-2 overflow-x-auto items-center no-scrollbar">
             {formData.images.map((img, idx) => (
                 <ThumbnailItem 
                     key={img} 
@@ -851,7 +943,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             <div>
               <h2 className="text-xl font-bold text-stone-800">Item Details</h2>
               <p className="text-xs text-stone-500">
-                {formData.images.length} photos &bull; <span className="text-rose-600 font-bold">Drag to Reorder</span>
+                {formData.images.length} photos
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -953,7 +1045,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               )}
 
               <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
-                {["keep", "sell", "draft"].map((status) => (
+                {["keep", "sell", "TBD"].map((status) => (
                   <button
                     key={status}
                     onClick={() => setFormData((prev) => ({ ...prev, status }))}
@@ -1033,14 +1125,17 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
                   />
                   <datalist id="category-options">
-                    <option value="Jewelry" />
-                    <option value="Art" />
+                    <option value="Vinyl & Music" />
                     <option value="Furniture" />
-                    <option value="Lighting" />
-                    <option value="Home Decor" />
-                    <option value="Glassware" />
-                    <option value="Pottery" />
-                    <option value="Clothing" />
+                    <option value="Decor & Lighting" />
+                    <option value="Art" />
+                    <option value="Jewelry & Watches" />
+                    <option value="Fashion" />
+                    <option value="Ceramics & Glass" />
+                    <option value="Collectibles" />
+                    <option value="Books" />
+                    <option value="Automotive" />
+                    <option value="Electronics" />
                     <option value="Other" />
                   </datalist>
                 </div>
@@ -1088,7 +1183,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 relative">
                 {formData.aiLastRun && (
                   <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur text-[10px] text-rose-700 px-2 py-0.5 rounded-full border border-rose-100 shadow-sm">
-                    <AlertCircle className="w-3 h-3" /> Draft
+                    <AlertCircle className="w-3 h-3" /> TBD
                   </div>
                 )}
                 <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3 text-center">
@@ -1299,7 +1394,7 @@ export default function App() {
           {
             images: compressedImages,
             image: compressedImages[0],
-            status: "draft", // Changed from TBD
+            status: "TBD", // Changed from Draft
             title: "",
             category: "",
             materials: "",
@@ -1318,7 +1413,7 @@ export default function App() {
             {
               images: [compressedImage],
               image: compressedImage,
-              status: "draft", // Changed from TBD
+              status: "TBD", // Changed from Draft
               title: "",
               category: "",
               materials: "",
@@ -1404,7 +1499,7 @@ export default function App() {
   const filteredItems = useMemo(
     () => {
       let result = (filter === "all" ? items : items.filter((i) => {
-         if (filter === "draft") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
+         if (filter === "TBD") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
          return i.status === filter;
       }));
 
@@ -1539,7 +1634,7 @@ export default function App() {
         
         {/* --- Filter Bar (Sticky Sub-header) --- */}
         <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
-           {["all", "keep", "sell", "draft"].map((f) => (
+           {["all", "keep", "sell", "TBD"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -1553,7 +1648,7 @@ export default function App() {
                 <span className="ml-1.5 opacity-60 text-[10px]">
                    {items.filter((i) => {
                       if (f === "all") return true;
-                      if (f === "draft") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
+                      if (f === "TBD") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
                       return i.status === f;
                    }).length}
                 </span>
