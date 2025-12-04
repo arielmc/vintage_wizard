@@ -539,7 +539,7 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       name: "Mercari",
       url: `https://www.mercari.com/search/?keyword=${broadQuery}`,
       color: "text-purple-700 bg-purple-50 border-purple-200",
-    });
+      });
   } else {
     links.push({
       name: "Etsy",
@@ -595,6 +595,154 @@ const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, o
       >
         <X size={10} strokeWidth={3} />
       </button>
+    </div>
+  );
+};
+
+// --- STAGING AREA COMPONENT (Smart Stacker) ---
+const StagingArea = ({ files, onConfirm, onCancel }) => {
+  // Each stack is { id: string, files: File[] }
+  const [stacks, setStacks] = useState([]);
+  const [draggedStackIdx, setDraggedStackIdx] = useState(null);
+
+  useEffect(() => {
+    // Initialize: Every file is a stack of 1
+    const initStacks = files.map((f) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      files: [f],
+    }));
+    setStacks(initStacks);
+  }, [files]);
+
+  const handleAutoGroup = () => {
+    // Simple heuristic: Sort by lastModified, group if < 60s apart
+    const sorted = [...files].sort((a, b) => a.lastModified - b.lastModified);
+    const newStacks = [];
+    let currentStack = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+      const file = sorted[i];
+      if (currentStack.length === 0) {
+        currentStack.push(file);
+      } else {
+        const prevFile = currentStack[currentStack.length - 1];
+        const timeDiff = (file.lastModified - prevFile.lastModified) / 1000; // seconds
+        if (timeDiff < 60) {
+          currentStack.push(file);
+        } else {
+          newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
+          currentStack = [file];
+        }
+      }
+    }
+    if (currentStack.length > 0) {
+      newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
+    }
+    setStacks(newStacks);
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedStackIdx(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Allow drop
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedStackIdx === null || draggedStackIdx === dropIndex) return;
+
+    const newStacks = [...stacks];
+    const sourceStack = newStacks[draggedStackIdx];
+    const targetStack = newStacks[dropIndex];
+
+    // Merge source into target
+    targetStack.files = [...targetStack.files, ...sourceStack.files];
+    
+    // Remove source
+    newStacks.splice(draggedStackIdx, 1);
+    
+    setStacks(newStacks);
+    setDraggedStackIdx(null);
+  };
+
+  // Stack Card Component
+  const StackCard = ({ stack, index }) => {
+    const isMulti = stack.files.length > 1;
+    const coverUrl = URL.createObjectURL(stack.files[0]);
+
+    return (
+      <div
+        draggable
+        onDragStart={(e) => handleDragStart(e, index)}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, index)}
+        className="relative aspect-square cursor-grab active:cursor-grabbing group"
+      >
+        {/* Stack Effect (Underneath layers) */}
+        {isMulti && (
+           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm" />
+        )}
+        {stack.files.length > 2 && (
+           <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm" />
+        )}
+
+        {/* Main Card */}
+        <div className="absolute inset-0 bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden hover:scale-105 transition-transform">
+           <img src={coverUrl} className="w-full h-full object-cover pointer-events-none" alt="stack cover" />
+           
+           {/* Badge */}
+           <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full">
+              {stack.files.length} {stack.files.length === 1 ? 'Item' : 'Items'}
+           </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#FDFBF7] flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
+         <div>
+            <h2 className="text-lg font-serif font-bold text-stone-900">Bulk Staging</h2>
+            <p className="text-xs text-stone-500">Drag photos together to create items.</p>
+         </div>
+         <div className="flex items-center gap-3">
+            <button 
+               onClick={handleAutoGroup}
+               className="text-xs font-bold text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+               <Wand2 className="w-3 h-3" /> Auto-Group
+            </button>
+            <button 
+               onClick={() => onConfirm(stacks)}
+               className="bg-stone-900 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-transform flex items-center gap-2"
+            >
+               Process {stacks.length} Items <ArrowRight className="w-4 h-4" />
+            </button>
+         </div>
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
+            {stacks.map((stack, i) => (
+               <StackCard key={stack.id} stack={stack} index={i} />
+            ))}
+         </div>
+      </div>
+
+      {/* Footer / Cancel */}
+      <div className="p-4 bg-white border-t border-stone-200 flex justify-center">
+         <button onClick={onCancel} className="text-stone-400 hover:text-red-500 text-xs font-bold">
+            Cancel Staging
+         </button>
+      </div>
     </div>
   );
 };
@@ -686,7 +834,7 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
             onClick={() => onConfirm(mode, "analyze_now")}
             className="w-full bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
-            <Sparkles className="w-4 h-4 text-rose-300" /> Analyze & Save
+            <Sparkles className="w-4 h-4 text-rose-300" /> Upload & Analyze
           </button>
           
           <button 
@@ -1067,7 +1215,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     src={img} 
                     index={idx}
                     active={activeImageIdx === idx}
-                    onClick={() => setActiveImageIdx(idx)}
+                onClick={() => setActiveImageIdx(idx)}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
@@ -1534,52 +1682,69 @@ export default function App() {
     }
 
     setStagingFiles(files);
-    // We'll use the mode to determine immediate action in the staging modal or bypass it
-    // Actually, if we have specific buttons, we might want to bypass staging for 'single' if we want instant gratification,
-    // but staging is good for verifying photos.
-    // For now, I'll pass the 'intent' to the staging modal or handle it here.
     
-    // If we want strict distinct flows:
-    // Single -> Opens Staging (pre-set to Create 1 Item) -> Confirm -> Upload & Analyze
-    // Bulk -> Opens Staging (pre-set to Create X Items) -> Confirm -> Upload (No Auto Analyze to save credits/time?)
-    // The user said "automatically run AI... rather than making user do it".
-    // I will implement Auto-Analyze for SINGLE item uploads.
+    if (mode === 'bulk') {
+       setView('staging'); // Go to smart stacker
+    }
   };
 
-  const handleConfirmUpload = async (uploadMode, actionType = "analyze_now") => {
-    if (stagingFiles.length === 0 || !user) return;
+  // Handle single item upload (from Modal)
+  const handleConfirmSingleUpload = async (actionType) => {
+     // Re-use existing logic but specialized for single
+     await handleConfirmUpload('single', actionType, [stagingFiles]);
+  };
+
+  // Handle bulk stack upload (from Staging Area)
+  const handleConfirmBulkUpload = async (stacks) => {
+     // stacks is Array<{ id, files: File[] }>
+     // Transform to format handleConfirmUpload expects: Array<File[]>
+     const fileGroups = stacks.map(s => s.files);
+     await handleConfirmUpload('bulk', 'process_batch', fileGroups);
+     setView('dashboard');
+  };
+
+  const handleConfirmUpload = async (uploadMode, actionType = "analyze_now", fileGroups = []) => {
+    if (!user) return;
+    // For single mode, fileGroups might be passed or use stagingFiles. 
+    // To unify: always pass fileGroups.
     
-    // Only Auto-Analyze if Single Mode AND user clicked "Analyze & Save"
+    // Single Mode: fileGroups = [ [file1, file2] ] (One group)
+    // Bulk Mode: fileGroups = [ [f1, f2], [f3], [f4, f5] ] (Multiple groups)
+
+    const groupsToProcess = fileGroups.length > 0 ? fileGroups : [stagingFiles];
+    if (groupsToProcess.length === 0 || groupsToProcess[0].length === 0) return;
+
     const shouldAutoAnalyze = uploadMode === "single" && actionType === "analyze_now";
     
     setIsUploading(true);
-    if (shouldAutoAnalyze) setIsProcessing(true); // Show analysis spinner
+    if (shouldAutoAnalyze) setIsProcessing(true); 
     setStagingFiles([]); 
 
     try {
-      if (uploadMode === "single") {
+      // Process each group as an Item
+      for (const groupFiles of groupsToProcess) {
       const compressedImages = [];
-        for (const file of stagingFiles) {
+          for (const file of groupFiles) {
         compressedImages.push(await compressImage(file));
       }
-        
-        let analysisResult = {};
-        if (shouldAutoAnalyze) {
-           try {
-             // Run AI immediately
-             analysisResult = await analyzeImagesWithGemini(compressedImages, "");
-           } catch (aiError) {
-             console.error("Auto-analysis failed:", aiError);
-             alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
-           }
-        }
+          
+          let analysisResult = {};
+          // Only run AI for single item immediate mode
+          if (shouldAutoAnalyze) {
+             try {
+               analysisResult = await analyzeImagesWithGemini(compressedImages, "");
+             } catch (aiError) {
+               console.error("Auto-analysis failed:", aiError);
+               alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
+             }
+          }
 
-        const docRef = await addDoc(
+          const docRef = await addDoc(
         collection(db, "artifacts", appId, "users", user.uid, "inventory"),
         {
           images: compressedImages,
           image: compressedImages[0],
-            status: "TBD",
+              status: "TBD",
           title: "",
           category: "",
           materials: "",
@@ -1587,47 +1752,25 @@ export default function App() {
           timestamp: serverTimestamp(),
           valuation_low: 0,
           valuation_high: 0,
-            ...analysisResult, // Merge AI results
-            aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
-          }
-        );
-
-        // If user chose "Add Details First", open the modal immediately
-        if (actionType === "edit_first") {
-           setSelectedItem({
-              id: docRef.id,
-              images: compressedImages,
-              image: compressedImages[0],
-              status: "TBD",
-              title: "",
-              category: "",
-              materials: "",
-              userNotes: "",
-              valuation_low: 0,
-              valuation_high: 0,
-           });
-        }
-
-      } else {
-        // Bulk Mode: Create X items
-        for (const file of stagingFiles) {
-          const compressedImage = await compressImage(file);
-          await addDoc(
-            collection(db, "artifacts", appId, "users", user.uid, "inventory"),
-            {
-              images: [compressedImage],
-              image: compressedImage,
-              status: "TBD",
-              title: "",
-              category: "",
-              materials: "",
-              userNotes: "",
-              timestamp: serverTimestamp(),
-              valuation_low: 0,
-              valuation_high: 0,
+              ...analysisResult,
+              aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
             }
           );
-        }
+
+          if (uploadMode === "single" && actionType === "edit_first") {
+             setSelectedItem({
+                id: docRef.id,
+                images: compressedImages,
+                image: compressedImages[0],
+                status: "TBD",
+                title: "",
+                category: "",
+                materials: "",
+                userNotes: "",
+                valuation_low: 0,
+                valuation_high: 0,
+             });
+          }
       }
     } catch (error) {
       console.error(error);
@@ -2085,11 +2228,19 @@ export default function App() {
         onChange={(e) => handleFileSelect(e, 'bulk')}
       />
       
-      {stagingFiles.length > 0 && (
+      {stagingFiles.length > 0 && view !== 'staging' && (
          <UploadStagingModal 
             files={stagingFiles} 
-            onConfirm={handleConfirmUpload} 
-            onCancel={() => { setStagingFiles([]); if(fileInputRef.current) fileInputRef.current.value = ""; }}
+            onConfirm={(mode, action) => handleConfirmSingleUpload(action)}
+            onCancel={() => { setStagingFiles([]); if(singleInputRef.current) singleInputRef.current.value = ""; }}
+         />
+      )}
+
+      {view === 'staging' && (
+         <StagingArea 
+            files={stagingFiles}
+            onConfirm={handleConfirmBulkUpload}
+            onCancel={() => { setStagingFiles([]); setView('dashboard'); if(bulkInputRef.current) bulkInputRef.current.value = ""; }}
          />
       )}
 
