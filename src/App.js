@@ -268,6 +268,9 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Antique Jewelry & Watches
     - Vintage Fashion & Textiles
     - Mid-Century Modern & Antique Furniture/Decor
+    - Vintage Electronics & Cameras
+    - Retro Toys & Trading Cards
+    - Kitchenware & Glass
 
     ${contextPrompt}
     ${userAnswersContext}
@@ -314,6 +317,27 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Identify: Object, Designer, Manufacturer, Style (MCM, Danish Modern).
     - Details: Joinery, Veneer vs Solid, Upholstery type.
     - Map "Maker" to Designer/Manufacturer.
+
+    [IF ELECTRONICS/CAMERAS]
+    - Identify: Brand, Model Name, Model Number (CRITICAL).
+    - Details: Tested status (visual cues), Accessories (remote, lens cap), Physical condition (corrosion?).
+    - Markings: Serial numbers, Manufacture Date, Voltage/Specs.
+    - Map "Maker" to Brand (Sony, Nikon, Nintendo).
+    - Map "Style" to Format (e.g. "VHS", "35mm SLR", "8-bit Console").
+
+    [IF KITCHENWARE/GLASS/POTTERY]
+    - Identify: Brand/Maker (Pyrex, Le Creuset), Pattern Name (CRITICAL), Object Type.
+    - Details: Material (Cast Iron, Uranium Glass), Color, Capacity/Size.
+    - Markings: Bottom stamps, mold numbers, lid numbers.
+    - Map "Maker" to Manufacturer.
+    - Map "Style" to Pattern or Era (e.g. "Starburst", "Depression Glass").
+
+    [IF TOYS/TRADING CARDS]
+    - Identify: Character/Figure Name, Franchise (Star Wars, Pokemon), Year.
+    - Details: Action feature, Holographic/Foil?, Set Number (e.g. 102/150).
+    - Markings: Copyright dates, "Made in" stamps, Card IDs.
+    - Map "Maker" to Company (Hasbro, Wizards of the Coast).
+    - Map "Style" to Series/Set.
 
     [IF FASHION]
     - Identify: Brand, Garment type, Era.
