@@ -241,11 +241,12 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
   // Limit to 4 images max to avoid payload limits
   const imagesToAnalyze = images.slice(0, 4);
 
-  const knownDetails = [];
-  if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
-  if (currentData.materials)
-    knownDetails.push(`Materials: ${currentData.materials}`);
-  if (currentData.era) knownDetails.push(`Era: ${currentData.era}`);
+    const knownDetails = [];
+    if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
+    if (currentData.maker) knownDetails.push(`Maker/Brand: ${currentData.maker}`);
+    if (currentData.style) knownDetails.push(`Style: ${currentData.style}`);
+    if (currentData.materials) knownDetails.push(`Materials: ${currentData.materials}`);
+    if (currentData.era) knownDetails.push(`Era: ${currentData.era}`);
 
   const contextPrompt =
     knownDetails.length > 0
@@ -271,18 +272,21 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     (Use this information to inform your identification and valuation if relevant).
     
     Task:
-    1. Identify the item precise counts, specific type, and physical details.
-    2. Look for hallmarks/signatures/dates.
-    3. Identify historical context or provenance indicators.
-    4. Estimate value based on market trends.
+    1. Identify the object type, style, and design era.
+    2. Analyze materials in detail (e.g. "18k Gold" instead of just "Gold", "Old Mine Cut Diamond" instead of "Diamond").
+    3. Look for and TRANSCRIPT any hallmarks, signatures, or text.
+    4. Assess condition and craftsmanship.
+    5. Estimate value.
 
     Provide a JSON response with:
-    - title: specific, descriptive title including maker and era if known.
-    - materials: Visible materials and techniques.
-    - era: Specific year or era (e.g., "Mid-Century Modern", "Victorian", "1970s").
+    - title: Rich, SEO-friendly title (e.g. "Vintage 1920s Art Deco 18k Gold & Diamond Solitaire Ring").
+    - style: Specific design style (e.g. "Art Deco", "Mid-Century Modern", "Navajo").
+    - maker: Maker/Brand/Artist if identified, otherwise "Unsigned".
+    - materials: Detailed materials and gemstones (including cuts).
+    - era: Specific year or era.
     - valuation_low: Conservative estimate (USD number).
     - valuation_high: Optimistic estimate (USD number).
-    - reasoning: Explanation of value (condition, rarity, demand).
+    - reasoning: Explanation of value.
     - search_terms: Specific keywords to find EXACT comparables.
     - search_terms_broad: A simplified query (2-4 words MAX).
     - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
@@ -1098,7 +1102,7 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           {item.title || "Untitled Item"}
         </h3>
         <p className="text-xs text-stone-500 line-clamp-2 mb-2 flex-1">
-          {item.materials || item.userNotes || "No details yet"}
+          {[item.maker, item.style, item.materials].filter(Boolean).join(" • ") || item.userNotes || "No details yet"}
         </p>
         <div className="flex items-center justify-between text-xs text-stone-400 mt-auto pt-2 border-t border-stone-50">
           <span>{item.category || "Unsorted"}</span>
@@ -1517,6 +1521,34 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                    Maker / Brand
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.maker || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, maker: e.target.value }))
+                    }
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                    Style / Period
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.style || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, style: e.target.value }))
+                    }
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
                     Category
                   </label>
                   <input
@@ -1870,6 +1902,8 @@ export default function App() {
           title: "",
           category: "",
           materials: "",
+          maker: "",
+          style: "",
           userNotes: "",
           timestamp: serverTimestamp(),
           valuation_low: 0,
@@ -1888,6 +1922,8 @@ export default function App() {
                 title: "",
                 category: "",
                 materials: "",
+                maker: "",
+                style: "",
                 userNotes: "",
                 valuation_low: 0,
                 valuation_high: 0,
@@ -1930,6 +1966,8 @@ export default function App() {
       "Title",
       "Category",
       "Era",
+      "Maker",
+      "Style",
       "Materials",
       "Low Estimate",
       "High Estimate",
@@ -1940,6 +1978,8 @@ export default function App() {
       `"${(item.title || "").replace(/"/g, '""')}"`,
       `"${(item.category || "").replace(/"/g, '""')}"`,
       `"${(item.era || "").replace(/"/g, '""')}"`,
+      `"${(item.maker || "").replace(/"/g, '""')}"`,
+      `"${(item.style || "").replace(/"/g, '""')}"`,
       `"${(item.materials || "").replace(/"/g, '""')}"`,
       item.valuation_low || 0,
       item.valuation_high || 0,
