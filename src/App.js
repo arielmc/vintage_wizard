@@ -319,6 +319,18 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Identify: Brand, Garment type, Era.
     - Details: Fabric content, Made in, Size, Hardware.
 
+    [IF AUTOMOTIVE/PARTS]
+    - Identify: Part Name, Compatible Make/Model/Year (e.g. "1967 Ford Mustang Bumper").
+    - Details: OEM vs Aftermarket, Part Number (CRITICAL), Material (Chrome, Steel).
+    - Markings: Manufacturer stamps, Part numbers, Date codes.
+    - Map "Maker" to Manufacturer (e.g. Ford, Bosch, Hella).
+    - Map "Style" to Vehicle Generation (e.g. "C2 Corvette", "E30 BMW").
+
+    [IF OTHER/MISC]
+    - Identify: Specific Object Name and Primary Function.
+    - Details: Material, Dimensions (visual estimate), Country of Origin.
+    - Markings: Any text, patents, or logos.
+
     STEP 3: EVALUATE
     Assess condition (mint, very good, fair) and estimate value based on the identified specifics.
 
