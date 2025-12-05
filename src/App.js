@@ -604,6 +604,7 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
+  const [expandedStackIdx, setExpandedStackIdx] = useState(null); // For refining stacks
 
   useEffect(() => {
     // Initialize: Every file is a stack of 1
@@ -670,6 +671,107 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
     setDraggedStackIdx(null);
   };
 
+  // Handle moving a photo OUT of a stack (Un-group)
+  const handleUnstackPhoto = (stackIndex, photoIndex) => {
+    const newStacks = [...stacks];
+    const stack = newStacks[stackIndex];
+    
+    // Remove from stack
+    const [removedPhoto] = stack.files.splice(photoIndex, 1);
+    
+    // If stack becomes empty, remove it. 
+    // If stack has 1 item left, it stays as a stack of 1 (which is fine, essentially a loose item).
+    if (stack.files.length === 0) {
+       newStacks.splice(stackIndex, 1);
+       setExpandedStackIdx(null); // Close modal if stack is gone
+    }
+    
+    // Add removed photo as a NEW loose stack
+    newStacks.push({
+       id: Math.random().toString(36).substr(2, 9),
+       files: [removedPhoto]
+    });
+    
+    setStacks(newStacks);
+  };
+
+  // Handle reordering photos INSIDE a stack (Hero selection)
+  const handleReorderStack = (stackIndex, fromIdx, toIdx) => {
+     if (fromIdx === toIdx) return;
+     const newStacks = [...stacks];
+     const stack = newStacks[stackIndex];
+     const [moved] = stack.files.splice(fromIdx, 1);
+     stack.files.splice(toIdx, 0, moved);
+     setStacks(newStacks);
+  };
+
+  // Expanded Stack Modal (Refine & Reorder)
+  const ExpandedStackModal = ({ stackIndex }) => {
+     const stack = stacks[stackIndex];
+     if (!stack) return null;
+     
+     // Reuse ThumbnailItem for reordering logic
+     // We need local drag state for this modal
+     const [localDragIdx, setLocalDragIdx] = useState(null);
+
+     return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50">
+                 <div>
+                    <h3 className="font-bold text-stone-800">Refine Stack</h3>
+                    <p className="text-xs text-stone-500">Drag to reorder (First is Hero). Click 'X' to un-group.</p>
+                 </div>
+                 <button onClick={() => setExpandedStackIdx(null)} className="p-2 hover:bg-stone-200 rounded-full text-stone-500">
+                    <X size={20} />
+                 </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto bg-stone-100 min-h-[200px]">
+                 <div className="flex flex-wrap gap-4 justify-center">
+                    {stack.files.map((file, i) => (
+                       <ThumbnailItem 
+                          key={i}
+                          id={i} // Using index as ID for local sort
+                          src={URL.createObjectURL(file)}
+                          index={i}
+                          active={i === 0} // Highlight Hero
+                          // Reuse the Drag & Drop logic we built for EditModal, but scoped here
+                          onDragStart={(e) => {
+                             setLocalDragIdx(i);
+                             e.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragOver={(e) => {
+                             e.preventDefault();
+                             e.dataTransfer.dropEffect = "move";
+                          }}
+                          onDrop={(e) => {
+                             e.preventDefault();
+                             if (localDragIdx !== null) {
+                                handleReorderStack(stackIndex, localDragIdx, i);
+                                setLocalDragIdx(null);
+                             }
+                          }}
+                          onClick={() => {}} // No click action
+                          onRemove={() => handleUnstackPhoto(stackIndex, i)}
+                       />
+                    ))}
+                 </div>
+              </div>
+              
+              <div className="p-4 border-t border-stone-100 flex justify-end">
+                 <button 
+                    onClick={() => setExpandedStackIdx(null)}
+                    className="bg-stone-900 text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-800"
+                 >
+                    Done
+                 </button>
+              </div>
+           </div>
+        </div>
+     );
+  };
+
   // Stack Card Component
   const StackCard = ({ stack, index }) => {
     const isMulti = stack.files.length > 1;
@@ -732,10 +834,14 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       <div className="flex-1 overflow-y-auto p-4">
          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
             {stacks.map((stack, i) => (
-               <StackCard key={stack.id} stack={stack} index={i} />
+               <div key={stack.id} onClick={() => setExpandedStackIdx(i)}>
+                  <StackCard stack={stack} index={i} />
+               </div>
             ))}
          </div>
       </div>
+
+      {expandedStackIdx !== null && <ExpandedStackModal stackIndex={expandedStackIdx} />}
 
       {/* Footer / Cancel */}
       <div className="p-4 bg-white border-t border-stone-200 flex justify-center">
