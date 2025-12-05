@@ -261,8 +261,14 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
       : "";
 
   const prompt = `
-    You are an expert antique and vintage appraiser.
-    
+    You are an expert archivist and appraiser with distinct specializations in:
+    - Rare Books & Ephemera
+    - Vintage Vinyl & Music
+    - Fine Art & Prints
+    - Antique Jewelry & Watches
+    - Vintage Fashion & Textiles
+    - Mid-Century Modern & Antique Furniture/Decor
+
     ${contextPrompt}
     ${userAnswersContext}
     
@@ -271,29 +277,66 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     CONTEXT FROM USER NOTES/CONTEXT: "${userNotes}"
     (Use this information to inform your identification and valuation if relevant).
     
-    Task:
-    1. Identify the object type (e.g. "Cocktail Ring") AND the specific design style/movement (e.g. "Brutalist", "Art Deco").
-    2. Describe visual textures and techniques (e.g. "nugget texture", "bark finish", "filigree", "impasto").
-    3. Analyze materials in detail (e.g. "18k Gold" instead of just "Gold", "Old Mine Cut Diamond" instead of "Diamond").
-    4. Look for and TRANSCRIPT any hallmarks, signatures, or text.
-    5. Assess condition and craftsmanship.
-    6. Estimate value.
+    STEP 1: CLASSIFY
+    Determine the specific category of the item.
+
+    STEP 2: ANALYZE (Based on Category)
+    Apply the specific lens for that category to extract details:
+
+    [IF JEWELRY/WATCHES]
+    - Identify: Object type (e.g. "Cocktail Ring") AND specific style (e.g. "Brutalist", "Art Deco").
+    - Details: Material purity (karat), Gemstones (cut/carat), Setting style.
+    - Markings: Hallmarks, Maker's marks, Assay marks, Serial numbers.
+    - Map "Maker" to Brand/Silversmith/Artist.
+
+    [IF BOOKS]
+    - Identify: Title, Author, Publisher, Copyright Year.
+    - Details: Edition (1st?), Printing (1st?), Binding (Cloth/Leather/Boards), Dust Jacket presence.
+    - Markings: ISBN, Library codes, Signatures.
+    - Map "Maker" to Author (and Publisher).
+    - Map "Style" to Genre/Subject.
+
+    [IF VINYL RECORDS]
+    - Identify: Artist, Album Title, Label, Year.
+    - Details: Country of Pressing, Vinyl weight/color, Sleeve type (Gatefold?).
+    - Markings: Catalog Number (CRITICAL), Matrix/Runout codes (if visible).
+    - Map "Maker" to Artist.
+    - Map "Style" to Genre.
+
+    [IF ART/PRINTS]
+    - Identify: Artist, Title (if known), Medium (Lithograph, Oil, Etching, Giclee).
+    - Details: Frame style, Surface texture.
+    - Markings: Signatures (Hand signed vs Plate), Edition Number (e.g. 15/100), Dates.
+    - Map "Maker" to Artist.
+    - Map "Style" to Movement (Expressionism, Pop Art, etc.).
+
+    [IF FURNITURE/DECOR]
+    - Identify: Object, Designer, Manufacturer, Style (MCM, Danish Modern).
+    - Details: Joinery, Veneer vs Solid, Upholstery type.
+    - Map "Maker" to Designer/Manufacturer.
+
+    [IF FASHION]
+    - Identify: Brand, Garment type, Era.
+    - Details: Fabric content, Made in, Size, Hardware.
+
+    STEP 3: EVALUATE
+    Assess condition (mint, very good, fair) and estimate value based on the identified specifics.
 
     Provide a JSON response with:
-    - title: Rich, SEO-friendly title including style and technique (e.g. "Vintage 1970s Brutalist 14k Gold Nugget Texture Ring").
-    - style: Specific art/design movement or aesthetic (e.g. "Brutalist", "Art Deco", "Modernist", "Victorian Revival"). Avoid generic types.
-    - maker: Maker, Brand, Artist, Author, or Publisher.
-    - markings: Transcription of any text, signatures, dates, hallmarks, serial numbers, or ISBNs found on the object.
-    - condition: Estimated condition (e.g. "Good", "Fair", "Near Mint") with specific notes on visible wear or damage.
-    - materials: Detailed materials and gemstones (including cuts).
-    - era: Specific year or era.
+    - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
+    - title: Rich, SEO-friendly title including key identifiers (Author/Artist/Style + Object).
+    - maker: The primary creator (Artist, Author, Brand, Jeweler).
+    - style: The artistic movement, genre, or design era (specific!).
+    - materials: Detailed materials, binding, or medium.
+    - markings: Transcription of text, ISBNs, catalog numbers, signatures, or hallmarks.
+    - era: Specific year or estimated decade.
+    - condition: Professional condition assessment.
     - valuation_low: Conservative estimate (USD number).
     - valuation_high: Optimistic estimate (USD number).
-    - reasoning: Explanation of value.
+    - reasoning: Explanation of value (rarity, demand, comparables).
     - search_terms: Specific keywords to find EXACT comparables.
     - search_terms_broad: A simplified query (2-4 words MAX).
-    - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
-    - sales_blurb: A comprehensive sales description (3-4 sentences) including physical description, historical context/background, and condition notes. Write in a professional, inviting tone for a resale listing.
+    - sales_blurb: A comprehensive sales description (3-4 sentences) tailored to the item type (e.g. mentioning binding for books, cut for gems).
     - questions: Array of strings (max 3) for critical missing info.
   `;
 
