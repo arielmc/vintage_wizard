@@ -241,12 +241,12 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
   // Limit to 4 images max to avoid payload limits
   const imagesToAnalyze = images.slice(0, 4);
 
-    const knownDetails = [];
-    if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
+  const knownDetails = [];
+  if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
     if (currentData.maker) knownDetails.push(`Maker/Brand: ${currentData.maker}`);
     if (currentData.style) knownDetails.push(`Style: ${currentData.style}`);
     if (currentData.materials) knownDetails.push(`Materials: ${currentData.materials}`);
-    if (currentData.era) knownDetails.push(`Era: ${currentData.era}`);
+  if (currentData.era) knownDetails.push(`Era: ${currentData.era}`);
 
   const contextPrompt =
     knownDetails.length > 0
@@ -281,7 +281,9 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     Provide a JSON response with:
     - title: Rich, SEO-friendly title (e.g. "Vintage 1920s Art Deco 18k Gold & Diamond Solitaire Ring").
     - style: Specific design style (e.g. "Art Deco", "Mid-Century Modern", "Navajo").
-    - maker: Maker/Brand/Artist if identified, otherwise "Unsigned".
+    - maker: Maker, Brand, Artist, Author, or Publisher.
+    - markings: Transcription of any text, signatures, dates, hallmarks, serial numbers, or ISBNs found on the object.
+    - condition: Estimated condition (e.g. "Good", "Fair", "Near Mint") with specific notes on visible wear or damage.
     - materials: Detailed materials and gemstones (including cuts).
     - era: Specific year or era.
     - valuation_low: Conservative estimate (USD number).
@@ -1210,6 +1212,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     [formData.category, formData.search_terms, formData.search_terms_broad]
   );
 
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState(null);
 
   const handleDragStart = (e, index) => {
@@ -1291,6 +1294,24 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      {isLightboxOpen && (
+        <div 
+          className="fixed inset-0 z-[70] bg-black flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <button 
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-50"
+          >
+            <X size={32} />
+          </button>
+          <img 
+            src={formData.images[activeImageIdx]} 
+            className="max-w-full max-h-full object-contain pointer-events-none select-none"
+            alt="Full view"
+          />
+        </div>
+      )}
       <div className="bg-white sm:rounded-2xl w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row">
         {/* Left: Image Gallery (Fixed height on mobile, full on desktop) */}
         <div className="w-full md:w-1/2 h-64 md:h-auto bg-stone-900 flex flex-col relative group shrink-0">
@@ -1299,7 +1320,8 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               <img
                 src={formData.images[activeImageIdx]}
                 alt="Preview"
-                className="max-w-full max-h-full object-contain shadow-2xl"
+                onClick={() => setIsLightboxOpen(true)}
+                className="max-w-full max-h-full object-contain shadow-2xl cursor-zoom-in"
               />
             ) : (
               <div className="text-white/50 flex flex-col items-center">
@@ -1586,6 +1608,34 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                       setFormData((p) => ({ ...p, era: e.target.value }))
                     }
                     className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                    Markings / Signatures
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.markings || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, markings: e.target.value }))
+                    }
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                    Condition
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.condition || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, condition: e.target.value }))
+                    }
+                    className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
                   />
                 </div>
               </div>
@@ -1904,6 +1954,8 @@ export default function App() {
           materials: "",
           maker: "",
           style: "",
+          markings: "",
+          condition: "",
           userNotes: "",
           timestamp: serverTimestamp(),
           valuation_low: 0,
@@ -1924,6 +1976,8 @@ export default function App() {
                 materials: "",
                 maker: "",
                 style: "",
+                markings: "",
+                condition: "",
                 userNotes: "",
                 valuation_low: 0,
                 valuation_high: 0,
@@ -1969,6 +2023,8 @@ export default function App() {
       "Maker",
       "Style",
       "Materials",
+      "Condition",
+      "Markings",
       "Low Estimate",
       "High Estimate",
       "Notes",
@@ -1981,6 +2037,8 @@ export default function App() {
       `"${(item.maker || "").replace(/"/g, '""')}"`,
       `"${(item.style || "").replace(/"/g, '""')}"`,
       `"${(item.materials || "").replace(/"/g, '""')}"`,
+      `"${(item.condition || "").replace(/"/g, '""')}"`,
+      `"${(item.markings || "").replace(/"/g, '""')}"`,
       item.valuation_low || 0,
       item.valuation_high || 0,
       `"${(item.userNotes || "").replace(/"/g, '""')}"`,
