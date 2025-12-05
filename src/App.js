@@ -267,8 +267,8 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     
     Analyze the attached images.
     
-    CONTEXT FROM USER HISTORY/NOTES: "${userNotes}"
-    (Use this backstory to inform your identification and valuation if relevant).
+    CONTEXT FROM USER NOTES/CONTEXT: "${userNotes}"
+    (Use this information to inform your identification and valuation if relevant).
     
     Task:
     1. Identify the item precise counts and details.
@@ -1632,28 +1632,28 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                 </div>
               )}
 
-              {/* --- History 📖 ❤️ (Simplified) --- */}
-              <div className="bg-white rounded-xl border border-rose-200 shadow-sm ring-1 ring-rose-50 overflow-hidden">
-                 <div className="p-3 bg-rose-50/50 border-b border-rose-100 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-rose-500" />
-                    <span className="text-sm font-serif font-bold text-rose-900">History 📖 ❤️</span>
+              {/* --- Notes / Context (Simplified) --- */}
+              <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                 <div className="p-3 bg-stone-50 border-b border-stone-100 flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-stone-500" />
+                    <span className="text-sm font-bold text-stone-700 uppercase tracking-wider">Notes / Context</span>
                  </div>
                  
                  <div className="p-4">
-                    <textarea
+                <textarea
                        value={formData.provenance?.user_story || formData.userNotes || ""}
                        onChange={(e) => setFormData(prev => ({
                           ...prev,
                           userNotes: e.target.value, // Keep legacy sync
                           provenance: { ...prev.provenance, user_story: e.target.value }
                        }))}
-                       rows={6}
-                       placeholder="What is the story behind this item? Who loved it before you? (e.g., 'My grandmother wore this to the opera in 1950...')"
-                       className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm font-serif leading-relaxed placeholder:text-stone-400/70 resize-none"
-                    />
-                 </div>
+                  rows={4}
+                       placeholder="Add any details you know about this item (e.g. bought in 1980, signed by artist, minor damage)..."
+                       className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-500 text-sm leading-relaxed placeholder:text-stone-400 resize-y"
+                />
               </div>
             </div>
+          </div>
           </div>
           <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0 flex gap-3">
             <button
