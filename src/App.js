@@ -1080,20 +1080,6 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           </>
         )}
 
-        {/* Top Left: Quick AI Analyze Button (Visible on hover or if Draft) */}
-        {!isSelectionMode && (
-           <button
-              onClick={handleQuickAnalyze}
-              className={`absolute top-2 left-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
-                 isAnalyzing 
-                    ? "bg-white text-rose-500 cursor-wait" 
-                    : "bg-white/90 hover:bg-white text-stone-500 hover:text-rose-600 hover:scale-110"
-              } ${!item.aiLastRun ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-              title="Run AI Analysis"
-           >
-              {isAnalyzing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-           </button>
-        )}
 
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
           <StatusBadge status={item.status} />
