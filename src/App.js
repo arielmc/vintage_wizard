@@ -265,7 +265,10 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     ${contextPrompt}
     ${userAnswersContext}
     
-    Analyze the attached images and the user's notes: "${userNotes}".
+    Analyze the attached images.
+    
+    CONTEXT FROM USER HISTORY/NOTES: "${userNotes}"
+    (Use this backstory to inform your identification and valuation if relevant).
     
     Task:
     1. Identify the item precise counts and details.
@@ -284,19 +287,6 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
     - sales_blurb: An engaging, professional sales description (2-3 sentences) suitable for the body of an eBay/Etsy listing. Highlight unique features, style, and condition. Do not repeat the title verbatim.
     - questions: Array of strings (max 3). Ask specific, critical questions to clarify value (e.g., "Is the clasp marked?", "Is it heavy?"). If confident, return empty array.
-    
-    - valuation_context: {
-        verification_status: "VERIFIED" | "PLAUSIBLE" | "CONTRADICTORY" | "SENTIMENTAL",
-        verification_reason: "Explain visual evidence matching or contradicting the story.",
-        value_impact: "HIGH" | "MODERATE" | "NEUTRAL",
-        estimated_premium_percent: Number (0-100),
-        sanitized_blurb: "Public-safe version of the story (no names) for the listing."
-    }
-
-    INSTRUCTIONS FOR HISTORY/PROVENANCE:
-    1. Visual Forensics: Look for anachronisms (screws, stitching) vs the user's story.
-    2. Value: Does the story add market value (Provenance) or just sentimental value?
-    3. Privacy: The 'sanitized_blurb' MUST REMOVE all personal names/identities but keep dates/locations.
   `;
 
   const imageParts = imagesToAnalyze.map((img) => ({
@@ -1642,137 +1632,26 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                 </div>
               )}
 
-              {/* --- History 📖 ❤️ (Provenance Engine) --- */}
-              <div className={`rounded-xl border transition-all overflow-hidden ${
-                 formData.provenance.is_locked 
-                    ? "bg-stone-50 border-stone-200" 
-                    : "bg-white border-rose-200 shadow-md ring-1 ring-rose-100"
-              }`}>
-                 <div className="p-3 flex items-center justify-between border-b border-stone-100 bg-stone-50/50">
-                    <div className="flex items-center gap-2">
-                       <div className="flex -space-x-1">
-                          <BookOpen className="w-4 h-4 text-rose-600" />
-                          <Heart className="w-3 h-3 text-rose-400 fill-rose-100" />
-                       </div>
-                       <span className="text-sm font-serif font-bold text-stone-800">History & Lore</span>
-                    </div>
-                    <button 
-                       onClick={() => setFormData(prev => ({
-                          ...prev,
-                          provenance: { ...prev.provenance, is_locked: !prev.provenance.is_locked }
-                       }))}
-                       className="p-1.5 hover:bg-stone-200 rounded-full text-stone-400 transition-colors"
-                       title={formData.provenance.is_locked ? "Unlock to edit" : "Lock to keep private"}
-                    >
-                       {formData.provenance.is_locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4 text-rose-500" />}
-                    </button>
+              {/* --- History 📖 ❤️ (Simplified) --- */}
+              <div className="bg-white rounded-xl border border-rose-200 shadow-sm ring-1 ring-rose-50 overflow-hidden">
+                 <div className="p-3 bg-rose-50/50 border-b border-rose-100 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-rose-500" />
+                    <span className="text-sm font-serif font-bold text-rose-900">History 📖 ❤️</span>
                  </div>
-
-                 {!formData.provenance.is_locked && (
-                    <div className="p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                       <div>
-                          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">
-                             The Story (Private)
-                          </label>
-                          <textarea
-                             value={formData.provenance.user_story}
-                             onChange={(e) => setFormData(prev => ({
-                                ...prev,
-                                provenance: { ...prev.provenance, user_story: e.target.value }
-                             }))}
-                             rows={4}
-                             placeholder="What is the story behind this item? Who loved it before you? (e.g., 'My grandmother wore this to the opera in 1950...')"
-                             className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm font-serif leading-relaxed placeholder:text-stone-400/70"
-                          />
-                       </div>
-                       
-                       <div className="flex gap-4">
-                          <div className="flex-1">
-                             <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">
-                                Approximate Date/Era
-                             </label>
-                             <input
-                                type="text"
-                                value={formData.provenance.date_claim}
-                                onChange={(e) => setFormData(prev => ({
-                                   ...prev,
-                                   provenance: { ...prev.provenance, date_claim: e.target.value }
-                                }))}
-                                placeholder="e.g. Circa 1920"
-                                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
-                             />
-                          </div>
-                          <div className="flex-1">
-                             <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">
-                                Artifacts
-                             </label>
-                             <button className="w-full p-3 bg-stone-50 border border-stone-200 border-dashed rounded-xl text-stone-400 text-xs font-bold hover:bg-stone-100 hover:text-stone-600 transition-colors flex items-center justify-center gap-2">
-                                <Upload className="w-3 h-3" /> Upload Keepsakes
-                             </button>
-                          </div>
-                       </div>
-
-                       <button
-                          onClick={handleAnalyze}
-                          disabled={isAnalyzing || !formData.provenance.user_story}
-                          className="w-full bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
-                       >
-                          {isAnalyzing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-rose-200" />}
-                          Analyze History & Value
-                       </button>
-                    </div>
-                 )}
-
-                 {formData.provenance.is_locked && formData.provenance.user_story && (
-                    <div className="p-4 text-stone-600 text-sm font-serif italic leading-relaxed opacity-80 bg-stone-50/50">
-                       "{formData.provenance.user_story}"
-                    </div>
-                 )}
                  
-                 {/* AI Historian Verdict Display */}
-                 {formData.valuation_context && (
-                    <div className={`p-4 m-3 rounded-xl border-l-4 shadow-sm ${
-                       formData.valuation_context.verification_status === 'VERIFIED' ? "bg-emerald-50 border-l-emerald-500 border-emerald-100" :
-                       formData.valuation_context.verification_status === 'CONTRADICTORY' ? "bg-yellow-50 border-l-yellow-500 border-yellow-100" :
-                       "bg-rose-50 border-l-rose-400 border-rose-100" // Sentimental/Plausible
-                    }`}>
-                       <div className="flex items-start gap-3">
-                          <div className="mt-0.5">
-                             {formData.valuation_context.verification_status === 'VERIFIED' && <ShieldCheck className="w-5 h-5 text-emerald-600" />}
-                             {formData.valuation_context.verification_status === 'CONTRADICTORY' && <AlertTriangle className="w-5 h-5 text-yellow-600" />}
-                             {formData.valuation_context.verification_status === 'SENTIMENTAL' && <Heart className="w-5 h-5 text-rose-500 fill-rose-200" />}
-                             {formData.valuation_context.verification_status === 'PLAUSIBLE' && <BookOpen className="w-5 h-5 text-rose-500" />}
-                          </div>
-                          <div>
-                             <h4 className={`text-sm font-bold mb-1 ${
-                                formData.valuation_context.verification_status === 'VERIFIED' ? "text-emerald-900" :
-                                formData.valuation_context.verification_status === 'CONTRADICTORY' ? "text-yellow-900" :
-                                "text-rose-900"
-                             }`}>
-                                {formData.valuation_context.verification_status === 'VERIFIED' ? "✅ History Verified & Value Added" :
-                                 formData.valuation_context.verification_status === 'CONTRADICTORY' ? "⚠️ Date Mismatch Detected" :
-                                 formData.valuation_context.verification_status === 'SENTIMENTAL' ? "❤️ Sentimental Value" :
-                                 "📖 Plausible History"}
-                             </h4>
-                             
-                             <p className={`text-xs leading-relaxed mb-2 ${
-                                formData.valuation_context.verification_status === 'VERIFIED' ? "text-emerald-800/80" :
-                                formData.valuation_context.verification_status === 'CONTRADICTORY' ? "text-yellow-800/80" :
-                                "text-rose-800/80"
-                             }`}>
-                                {formData.valuation_context.verification_reason || "The AI has analyzed your story."}
-                             </p>
-
-                             {formData.valuation_context.estimated_premium_percent > 0 && (
-                                <div className="inline-flex items-center gap-1.5 bg-white/60 px-2 py-1 rounded text-[10px] font-bold border border-black/5 shadow-sm text-stone-700">
-                                   <Sparkles className="w-3 h-3 text-emerald-500" />
-                                   This story adds ~{formData.valuation_context.estimated_premium_percent}% to the value.
-                                </div>
-                             )}
-                          </div>
-                       </div>
-                    </div>
-                 )}
+                 <div className="p-4">
+                    <textarea
+                       value={formData.provenance?.user_story || formData.userNotes || ""}
+                       onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          userNotes: e.target.value, // Keep legacy sync
+                          provenance: { ...prev.provenance, user_story: e.target.value }
+                       }))}
+                       rows={6}
+                       placeholder="What is the story behind this item? Who loved it before you? (e.g., 'My grandmother wore this to the opera in 1950...')"
+                       className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm font-serif leading-relaxed placeholder:text-stone-400/70 resize-none"
+                    />
+                 </div>
               </div>
             </div>
           </div>
