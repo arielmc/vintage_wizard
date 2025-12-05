@@ -332,9 +332,19 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!resultText) throw new Error("No analysis generated - possibly blocked by safety filters or empty response.");
     
-    // Cleanup markdown if present (Gemini sometimes adds code blocks)
-    const cleanedText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Cleanup markdown if present
+    let cleanedText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
     
+    // Extract JSON object if there's extra text
+    const firstBrace = cleanedText.indexOf('{');
+    const lastBrace = cleanedText.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1) {
+       cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+    }
+
+    console.log("AI Raw Response:", cleanedText); // Debug log
+
     return JSON.parse(cleanedText);
   } catch (error) {
     console.error("Analysis failed:", error);
