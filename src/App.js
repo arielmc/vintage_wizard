@@ -272,15 +272,16 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     (Use this information to inform your identification and valuation if relevant).
     
     Task:
-    1. Identify the object type, style, and design era.
-    2. Analyze materials in detail (e.g. "18k Gold" instead of just "Gold", "Old Mine Cut Diamond" instead of "Diamond").
-    3. Look for and TRANSCRIPT any hallmarks, signatures, or text.
-    4. Assess condition and craftsmanship.
-    5. Estimate value.
+    1. Identify the object type (e.g. "Cocktail Ring") AND the specific design style/movement (e.g. "Brutalist", "Art Deco").
+    2. Describe visual textures and techniques (e.g. "nugget texture", "bark finish", "filigree", "impasto").
+    3. Analyze materials in detail (e.g. "18k Gold" instead of just "Gold", "Old Mine Cut Diamond" instead of "Diamond").
+    4. Look for and TRANSCRIPT any hallmarks, signatures, or text.
+    5. Assess condition and craftsmanship.
+    6. Estimate value.
 
     Provide a JSON response with:
-    - title: Rich, SEO-friendly title (e.g. "Vintage 1920s Art Deco 18k Gold & Diamond Solitaire Ring").
-    - style: Specific design style (e.g. "Art Deco", "Mid-Century Modern", "Navajo").
+    - title: Rich, SEO-friendly title including style and technique (e.g. "Vintage 1970s Brutalist 14k Gold Nugget Texture Ring").
+    - style: Specific art/design movement or aesthetic (e.g. "Brutalist", "Art Deco", "Modernist", "Victorian Revival"). Avoid generic types.
     - maker: Maker, Brand, Artist, Author, or Publisher.
     - markings: Transcription of any text, signatures, dates, hallmarks, serial numbers, or ISBNs found on the object.
     - condition: Estimated condition (e.g. "Good", "Fair", "Near Mint") with specific notes on visible wear or damage.
