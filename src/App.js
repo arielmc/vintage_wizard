@@ -271,22 +271,23 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     (Use this information to inform your identification and valuation if relevant).
     
     Task:
-    1. Identify the item precise counts and details.
-    2. Look for hallmarks/signatures.
-    3. Estimate value based on your internal knowledge of market trends and sold listings.
+    1. Identify the item precise counts, specific type, and physical details.
+    2. Look for hallmarks/signatures/dates.
+    3. Identify historical context or provenance indicators.
+    4. Estimate value based on market trends.
 
     Provide a JSON response with:
-    - title: Short, descriptive title.
-    - materials: Visible materials.
-    - era: Estimated era.
+    - title: specific, descriptive title including maker and era if known.
+    - materials: Visible materials and techniques.
+    - era: Specific year or era (e.g., "Mid-Century Modern", "Victorian", "1970s").
     - valuation_low: Conservative estimate (USD number).
     - valuation_high: Optimistic estimate (USD number).
-    - reasoning: Brief explanation (max 2 sentences).
-    - search_terms: Specific keywords to find EXACT comparables on robust search engines.
-    - search_terms_broad: A simplified query (2-4 words MAX) for strict search engines like Ruby Lane/1stDibs.
+    - reasoning: Explanation of value (condition, rarity, demand).
+    - search_terms: Specific keywords to find EXACT comparables.
+    - search_terms_broad: A simplified query (2-4 words MAX).
     - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
-    - sales_blurb: An engaging, professional sales description (2-3 sentences) suitable for the body of an eBay/Etsy listing. Highlight unique features, style, and condition. Do not repeat the title verbatim.
-    - questions: Array of strings (max 3). Ask specific, critical questions to clarify value (e.g., "Is the clasp marked?", "Is it heavy?"). If confident, return empty array.
+    - sales_blurb: A comprehensive sales description (3-4 sentences) including physical description, historical context/background, and condition notes. Write in a professional, inviting tone for a resale listing.
+    - questions: Array of strings (max 3) for critical missing info.
   `;
 
   const imageParts = imagesToAnalyze.map((img) => ({
@@ -324,7 +325,11 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     const data = await response.json();
     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!resultText) throw new Error("No analysis generated - possibly blocked by safety filters or empty response.");
-    return JSON.parse(resultText);
+    
+    // Cleanup markdown if present (Gemini sometimes adds code blocks)
+    const cleanedText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+    
+    return JSON.parse(cleanedText);
   } catch (error) {
     console.error("Analysis failed:", error);
     throw error;
