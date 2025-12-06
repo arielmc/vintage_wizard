@@ -1475,7 +1475,7 @@ ${formData.markings ? `• Markings: ${formData.markings}` : ""}
 📏 NOTES:
 ${formData.userNotes || "Message for measurements or more details!"}
 
-sku: ${Math.random().toString(36).substr(2, 6).toUpperCase()}
+sku: ${formData.id ? formData.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substr(2, 8).toUpperCase()}
     `.trim();
   };
 
@@ -2445,6 +2445,15 @@ ${item.userNotes || "Message for measurements or more details!"}`;
       return baseTags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
     };
     
+    // Helper: Generate SKU (consistent per item using ID)
+    const generateSKU = (item) => {
+      // Use item ID to generate a consistent SKU, or create a random one
+      if (item.id) {
+        return item.id.substring(0, 8).toUpperCase();
+      }
+      return Math.random().toString(36).substr(2, 8).toUpperCase();
+    };
+    
     const headers = [
       "Title",
       "Category",
@@ -2458,6 +2467,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
       "High Estimate",
       "Notes",
       "Status",
+      "SKU",
       "Optimized Title",
       "Listing Description",
       "SEO Tags",
@@ -2475,6 +2485,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
       item.valuation_high || 0,
       `"${(item.userNotes || "").replace(/"/g, '""')}"`,
       item.status,
+      generateSKU(item),
       `"${generateOptimizedTitle(item).replace(/"/g, '""')}"`,
       `"${generateDescription(item).replace(/"/g, '""')}"`,
       `"${generateTags(item).replace(/"/g, '""')}"`,
