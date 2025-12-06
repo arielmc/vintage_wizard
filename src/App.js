@@ -2582,26 +2582,28 @@ export default function App() {
                   </div>
                 )}
                {/* Minimal Dropdown */}
-               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden hidden group-hover:block p-1">
-                 <div className="px-4 py-2 border-b border-stone-50 mb-1">
+               <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
+                 <div className="w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden p-1">
+                   <div className="px-4 py-2 border-b border-stone-50 mb-1">
                     <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
                     <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
                 </div>
-                 <button
-                   onClick={handleExportCSV}
-                   disabled={items.length === 0}
-                   className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
-                 >
-                   <Download className="w-3 h-3" /> Export CSV
-              </button>
-            <button
-                    onClick={() => signOut(auth)}
-                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
-                 >
-                    <LogOut className="w-3 h-3" /> Sign Out
-            </button>
-          </div>
-        </div>
+                   <button
+                     onClick={handleExportCSV}
+                     disabled={items.length === 0}
+                     className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                   >
+                     <Download className="w-3 h-3" /> Export CSV
+                   </button>
+                   <button
+                     onClick={() => signOut(auth)}
+                     className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
+                   >
+                     <LogOut className="w-3 h-3" /> Sign Out
+                   </button>
+                 </div>
+               </div>
+             </div>
           </div>
         </div>
         
