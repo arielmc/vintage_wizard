@@ -2409,6 +2409,42 @@ export default function App() {
 
   const handleExportCSV = () => {
     if (items.length === 0) return;
+    
+    // Helper: Generate optimized title (80 char limit for eBay)
+    const generateOptimizedTitle = (item) => {
+      const parts = [item.maker, item.style, item.title, item.era, item.materials].filter(Boolean);
+      const uniqueParts = [...new Set(parts.join(" ").split(" "))];
+      return uniqueParts.join(" ").substring(0, 80);
+    };
+    
+    // Helper: Generate listing description
+    const generateDescription = (item) => {
+      return `RARE FIND: ${item.title || "Vintage Item"}
+
+DESCRIPTION:
+${item.sales_blurb || "No description available."}
+
+DETAILS:
+- Maker/Brand: ${item.maker || "Unsigned"}
+- Style/Period: ${item.style || "Vintage"}
+- Era: ${item.era || "Unknown"}
+- Material: ${item.materials || "See photos"}
+
+CONDITION:
+${item.condition || "Good vintage condition. Please see photos for details."}
+${item.markings ? `- Markings: ${item.markings}` : ""}
+
+NOTES:
+${item.userNotes || "Message for measurements or more details!"}`;
+    };
+    
+    // Helper: Generate SEO tags
+    const generateTags = (item) => {
+      const baseTags = [item.category, item.style, item.era, "vintage", "retro", item.maker].filter(Boolean);
+      if (item.search_terms_broad) baseTags.push(...item.search_terms_broad.split(" "));
+      return baseTags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
+    };
+    
     const headers = [
       "Title",
       "Category",
@@ -2422,6 +2458,9 @@ export default function App() {
       "High Estimate",
       "Notes",
       "Status",
+      "Optimized Title",
+      "Listing Description",
+      "SEO Tags",
     ];
     const rows = items.map((item) => [
       `"${(item.title || "").replace(/"/g, '""')}"`,
@@ -2436,6 +2475,9 @@ export default function App() {
       item.valuation_high || 0,
       `"${(item.userNotes || "").replace(/"/g, '""')}"`,
       item.status,
+      `"${generateOptimizedTitle(item).replace(/"/g, '""')}"`,
+      `"${generateDescription(item).replace(/"/g, '""')}"`,
+      `"${generateTags(item).replace(/"/g, '""')}"`,
     ]);
     const csvContent = [
       headers.join(","),
