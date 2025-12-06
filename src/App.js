@@ -339,9 +339,13 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Map "Maker" to Company (Hasbro, Wizards of the Coast).
     - Map "Style" to Series/Set.
 
-    [IF FASHION]
-    - Identify: Brand, Garment type, Era.
-    - Details: Fabric content, Made in, Size, Hardware.
+    [IF FASHION/SHOES]
+    - Identify: Brand (e.g. Nike, Gucci), Item Name (e.g. "Air Jordan 1 High", "Marmont Bag").
+    - Details: Size (US/EU), Gender (Men/Women/Unisex), Material (Leather, Canvas, Silk).
+    - Specifics: Look for "Made in" tags, RN numbers, Date codes (Louis Vuitton).
+    - Condition Checks: Sole wear, heel drag, pilling, stains, odor.
+    - Map "Maker" to Brand.
+    - Map "Style" to Specific Model/Cut (e.g. "Retro High", "Fit & Flare", "Trench").
 
     [IF AUTOMOTIVE/PARTS]
     - Identify: Part Name, Compatible Make/Model/Year (e.g. "1967 Ford Mustang Bumper").
