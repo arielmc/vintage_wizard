@@ -1805,8 +1805,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               >
                 <X className="w-6 h-6" />
               </button>
-            </div>
-            {/* Tab Switcher */}
             <div className="flex p-1 bg-stone-100 rounded-xl mt-4">
                 <button 
                     onClick={() => setActiveTab("details")}
