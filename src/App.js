@@ -2556,6 +2556,25 @@ ${item.userNotes || "Message for measurements or more details!"}`;
     [filteredItems]
   );
 
+  // Calculate stats for each filter category
+  const filterStats = useMemo(() => {
+    const getItemsForFilter = (f) => {
+      if (f === "all") return items;
+      if (f === "TBD") return items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe");
+      return items.filter(i => i.status === f);
+    };
+    
+    return ["all", "keep", "sell", "TBD"].reduce((acc, f) => {
+      const filtered = getItemsForFilter(f);
+      acc[f] = {
+        count: filtered.length,
+        low: filtered.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0),
+        high: filtered.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0),
+      };
+      return acc;
+    }, {});
+  }, [items]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
@@ -2570,59 +2589,53 @@ ${item.userNotes || "Message for measurements or more details!"}`;
     <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32">
       {/* --- Header --- */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Row 1: Logo + Actions */}
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
-            <h1 className="text-lg font-serif font-bold text-stone-900 tracking-tight hidden sm:block">
+            <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden md:block">
               Resale Helper Bot
             </h1>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
              {/* Add Item (Single) */}
             <button
                 onClick={() => singleInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 shadow-sm active:scale-95"
              >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Add Item</span>
+                <span className="hidden sm:inline">Add</span>
             </button>
 
              {/* Bulk Upload */}
               <button
                 onClick={() => bulkInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
              >
                 <Layers className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Bulk Upload</span>
+                <span className="hidden sm:inline">Bulk</span>
              </button>
 
-             {/* Batch Selection Toggle */}
+             {/* Batch AI Toggle */}
              <button
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
                   isSelectionMode 
                     ? "bg-rose-100 text-rose-700 border-rose-200" 
                     : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
                 }`}
              >
                 <Wand2 className={`w-3.5 h-3.5 ${isSelectionMode ? "fill-current" : ""}`} />
-                <span className="hidden sm:inline">Batch AI</span>
+                <span className="hidden sm:inline">AI</span>
              </button>
 
-             {/* Sync Status (Hidden on small mobile) */}
-            <div className="hidden sm:flex flex-col items-end">
-               <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                 <Cloud className="w-3 h-3" /> Synced
-               </span>
-            </div>
-
-             {/* Profile Dropdown Trigger (Simplified) */}
-             <div className="relative group cursor-pointer">
+             {/* Profile Dropdown */}
+             <div className="relative group cursor-pointer ml-1">
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
@@ -2634,13 +2647,15 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                     <UserCircle className="w-5 h-5 text-stone-400" />
                   </div>
                 )}
-               {/* Minimal Dropdown */}
+               {/* Dropdown Menu */}
                <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
                  <div className="w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden p-1">
                    <div className="px-4 py-2 border-b border-stone-50 mb-1">
                     <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
-                    <p className="text-[10px] text-stone-500 truncate">{user.email}</p>
-                </div>
+                    <p className="text-[10px] text-stone-500 truncate flex items-center gap-1">
+                      <Cloud className="w-2.5 h-2.5 text-emerald-500" /> Synced • {user.email}
+                    </p>
+                   </div>
                    <button
                      onClick={handleExportCSV}
                      disabled={items.length === 0}
@@ -2660,46 +2675,96 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           </div>
         </div>
         
-        {/* --- Filter Bar (Sticky Sub-header) --- */}
-        <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50">
-           {["all", "keep", "sell", "TBD"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize whitespace-nowrap transition-all border ${
-                  filter === f
-                    ? "bg-stone-900 text-white border-stone-900 shadow-md"
-                    : "bg-white text-stone-500 border-stone-200 hover:border-stone-300"
-                }`}
-              >
-                {f}
-                <span className="ml-1.5 opacity-60 text-[10px]">
-                   {items.filter((i) => {
-                      if (f === "all") return true;
-                      if (f === "TBD") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
-                      return i.status === f;
-                   }).length}
-                </span>
-              </button>
-            ))}
+        {/* Row 2: Filters with Value + Sort */}
+        <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50 bg-stone-50/50">
+           {["all", "keep", "sell", "TBD"].map((f) => {
+              const stats = filterStats[f];
+              const isActive = filter === f;
+              const displayName = f === "all" ? "All" : f === "TBD" ? "TBD" : f.charAt(0).toUpperCase() + f.slice(1);
+              
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`flex-shrink-0 transition-all ${
+                    isActive
+                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
+                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-300 hover:bg-white"
+                  }`}
+                >
+                  {isActive ? (
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-stone-800">{displayName}</span>
+                        <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
+                      </div>
+                      {stats.high > 0 && (
+                        <span className="text-sm font-bold text-emerald-600 mt-0.5">
+                          ${stats.low.toLocaleString()} <span className="text-stone-300 font-normal">-</span> ${stats.high.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold whitespace-nowrap">
+                      {displayName} <span className="opacity-60">{stats.count}</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            
+            {/* Sort Dropdown - inline with filters */}
+            <div className="ml-auto flex-shrink-0 relative">
+               <button 
+                 onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                 disabled={dataLoading}
+                 className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-700 bg-white/80 hover:bg-white px-2.5 py-1.5 rounded-lg border border-stone-200 transition-colors"
+               >
+                 <ArrowUpDown className="w-3.5 h-3.5" />
+                 <span className="hidden sm:inline">
+                    {{
+                      "date-desc": "Newest",
+                      "date-asc": "Oldest",
+                      "value-desc": "High $",
+                      "value-asc": "Low $",
+                      "alpha-asc": "A-Z",
+                      "category-asc": "Category"
+                    }[sortBy]}
+                 </span>
+               </button>
+               
+               {/* Sort Menu Dropdown */}
+               {isSortMenuOpen && (
+                  <div className="fixed inset-0 z-40" onClick={() => setIsSortMenuOpen(false)} />
+               )}
+               {isSortMenuOpen && (
+                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                   <div className="p-1">
+                     {[
+                       { label: "Newest", value: "date-desc" },
+                       { label: "Oldest", value: "date-asc" },
+                       { label: "High → Low $", value: "value-desc" },
+                       { label: "Low → High $", value: "value-asc" },
+                       { label: "A → Z", value: "alpha-asc" },
+                       { label: "Category", value: "category-asc" },
+                     ].map((opt) => (
+                       <button
+                         key={opt.value}
+                         onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                         className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                       >
+                         {opt.label}
+                         {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               )}
+            </div>
           </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Total Value Banner (Mobile Friendly) */}
-        {(totalLowEst > 0) && (
-           <div className="mb-6 p-4 bg-white rounded-2xl border border-stone-100 shadow-sm flex items-center justify-between">
-              <div>
-                 <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Collection Value</p>
-                 <h2 className="text-xl font-serif font-bold text-emerald-700">
-                    ${totalLowEst.toLocaleString()} <span className="text-stone-300 text-lg font-light">-</span> ${totalHighEst.toLocaleString()}
-                 </h2>
-          </div>
-              <div className="h-10 w-10 bg-emerald-50 rounded-full flex items-center justify-center">
-                 <span className="text-xl">💎</span>
-        </div>
-            </div>
-        )}
+      <main className="max-w-7xl mx-auto px-4 py-4">
 
         {items.length === 0 && !isUploading && !dataLoading && (
           <div className="text-center py-20 opacity-80 animate-in fade-in zoom-in duration-500 max-w-sm mx-auto">
@@ -2720,64 +2785,6 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                Identify Your First Item
             </button>
           </div>
-        )}
-
-        {/* --- Control Bar: Sort & Select --- */}
-        {(items.length > 0 || dataLoading) && (
-           <div className="flex items-center justify-between mb-4 px-1 relative z-10">
-              {/* Sort Dropdown */}
-              <div className="relative">
-                 <button 
-                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                   disabled={dataLoading}
-                   className={`flex items-center gap-2 text-sm font-bold transition-colors bg-white/50 px-3 py-2 rounded-lg border border-transparent ${dataLoading ? "opacity-50 cursor-wait" : "text-stone-700 hover:text-stone-900 hover:bg-white hover:border-stone-200"}`}
-                 >
-                   <ArrowUpDown className="w-4 h-4 text-stone-400" />
-                   <span>
-                      {{
-                        "date-desc": "Newest",
-                        "date-asc": "Oldest",
-                        "value-desc": "Highest Value",
-                        "value-asc": "Lowest Value",
-                        "alpha-asc": "Name (A-Z)",
-                        "category-asc": "Category (A-Z)"
-                      }[sortBy]}
-                   </span>
-                 </button>
-                 
-                 {/* Backdrop to close menu */}
-                 {isSortMenuOpen && (
-                    <div className="fixed inset-0 z-40" onClick={() => setIsSortMenuOpen(false)} />
-                 )}
-
-                 {isSortMenuOpen && (
-                   <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                     <div className="p-1">
-                       <div className="px-3 py-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider border-b border-stone-50 mb-1">
-                          Sort By
-                       </div>
-                       {[
-                         { label: "Newest First", value: "date-desc" },
-                         { label: "Oldest First", value: "date-asc" },
-                         { label: "Value: High to Low", value: "value-desc" },
-                         { label: "Value: Low to High", value: "value-asc" },
-                         { label: "Alphabetical (A-Z)", value: "alpha-asc" },
-                         { label: "Category (A-Z)", value: "category-asc" },
-                       ].map((opt) => (
-                         <button
-                           key={opt.value}
-                           onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                           className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between transition-colors ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
-                         >
-                           {opt.label}
-                           {sortBy === opt.value && <Check className="w-4 h-4" />}
-                         </button>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-              </div>
-           </div>
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
