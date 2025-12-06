@@ -53,7 +53,7 @@ import {
   ListFilter,
   ChevronLeft,
   ChevronRight,
-  Save, // Added Save Icon
+  Save,
   Aperture,
   ArrowRight,
   XCircle,
@@ -63,6 +63,10 @@ import {
   Heart,
   ShieldCheck,
   AlertTriangle,
+  ImagePlus,
+  Images,
+  Copy,
+  Undo2,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -716,7 +720,7 @@ const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, o
 };
 
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
-const StagingArea = ({ files, onConfirm, onCancel }) => {
+const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) => {
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
@@ -725,46 +729,75 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   // NEW: Selection Mode State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedStackIds, setSelectedStackIds] = useState(new Set());
+  
+  // Loading & Feedback States
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAutoGrouping, setIsAutoGrouping] = useState(false);
+  const [groupingFeedback, setGroupingFeedback] = useState(null); // e.g. "Grouped into 5 items!"
 
   useEffect(() => {
     // Initialize: Every file is a stack of 1
+    setIsLoading(true);
     const initStacks = files.map((f) => ({
       id: Math.random().toString(36).substr(2, 9),
       files: [f],
     }));
-    setStacks(initStacks);
+    // Simulate a small delay for image processing visual feedback
+    setTimeout(() => {
+      setStacks(initStacks);
+      setIsLoading(false);
+    }, 300);
   }, [files]);
 
   const handleAutoGroup = () => {
-    // IMPROVED Heuristic: 3 Minute Threshold (180s) to catch "bursts"
-    const sorted = [...files].sort((a, b) => a.lastModified - b.lastModified);
-    const newStacks = [];
-    let currentStack = [];
+    setIsAutoGrouping(true);
+    setGroupingFeedback(null);
+    
+    // Small delay to show the animation
+    setTimeout(() => {
+      // IMPROVED Heuristic: 3 Minute Threshold (180s) to catch "bursts"
+      const sorted = [...files].sort((a, b) => a.lastModified - b.lastModified);
+      const newStacks = [];
+      let currentStack = [];
 
-    for (let i = 0; i < sorted.length; i++) {
-      const file = sorted[i];
-      if (currentStack.length === 0) {
-        currentStack.push(file);
-      } else {
-        const prevFile = currentStack[currentStack.length - 1];
-        const timeDiff = (file.lastModified - prevFile.lastModified) / 1000; // seconds
-        // Increased from 60s to 180s (3 mins)
-        if (timeDiff < 180) {
+      for (let i = 0; i < sorted.length; i++) {
+        const file = sorted[i];
+        if (currentStack.length === 0) {
           currentStack.push(file);
         } else {
-          newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
-          currentStack = [file];
+          const prevFile = currentStack[currentStack.length - 1];
+          const timeDiff = (file.lastModified - prevFile.lastModified) / 1000; // seconds
+          // Increased from 60s to 180s (3 mins)
+          if (timeDiff < 180) {
+            currentStack.push(file);
+          } else {
+            newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
+            currentStack = [file];
+          }
         }
       }
-    }
-    if (currentStack.length > 0) {
-      newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
-    }
-    setStacks(newStacks);
-    
-    // Clear selections after auto-group
-    setIsSelectionMode(false);
-    setSelectedStackIds(new Set());
+      if (currentStack.length > 0) {
+        newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
+      }
+      
+      const groupsCreated = newStacks.filter(s => s.files.length > 1).length;
+      setStacks(newStacks);
+      setIsAutoGrouping(false);
+      
+      // Show feedback
+      if (groupsCreated > 0) {
+        setGroupingFeedback(`✨ Grouped into ${newStacks.length} items! (${groupsCreated} stacks)`);
+      } else {
+        setGroupingFeedback(`📷 No time-based groups found. Drag to group manually.`);
+      }
+      
+      // Clear feedback after 3s
+      setTimeout(() => setGroupingFeedback(null), 3000);
+      
+      // Clear selections after auto-group
+      setIsSelectionMode(false);
+      setSelectedStackIds(new Set());
+    }, 500);
   };
 
   // Selection Mode Controls
@@ -896,8 +929,10 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[80vh]">
               <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50">
                  <div>
-                    <h3 className="font-bold text-stone-800">Refine Stack</h3>
-                    <p className="text-xs text-stone-500">Drag to reorder (First is Hero). Click 'X' to un-group.</p>
+                    <h3 className="font-bold text-stone-800">Refine Stack ({stack.files.length} photos)</h3>
+                    <p className="text-xs text-stone-500">
+                      <span className="text-amber-600">⭐ First = Hero Image.</span> Drag to reorder.
+                    </p>
                  </div>
                  <button onClick={() => setExpandedStackIdx(null)} className="p-2 hover:bg-stone-200 rounded-full text-stone-500">
                     <X size={20} />
@@ -907,33 +942,55 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
               <div className="p-6 overflow-y-auto bg-stone-100 min-h-[200px]">
                  <div className="flex flex-wrap gap-4 justify-center">
                     {stack.files.map((file, i) => (
-                       <ThumbnailItem 
-                          key={i}
-                          id={i} // Using index as ID for local sort
-                          src={URL.createObjectURL(file)}
-                          index={i}
-                          active={i === 0} // Highlight Hero
-                          // Reuse the Drag & Drop logic we built for EditModal, but scoped here
-                          onDragStart={(e) => {
-                             setLocalDragIdx(i);
-                             e.dataTransfer.effectAllowed = "move";
-                          }}
-                          onDragOver={(e) => {
-                             e.preventDefault();
-                             e.dataTransfer.dropEffect = "move";
-                          }}
-                          onDrop={(e) => {
-                             e.preventDefault();
-                             if (localDragIdx !== null) {
-                                handleReorderStack(stackIndex, localDragIdx, i);
-                                setLocalDragIdx(null);
-                             }
-                          }}
-                          onClick={() => {}} // No click action
-                          onRemove={() => handleUnstackPhoto(stackIndex, i)}
-                       />
+                       <div key={i} className="relative group">
+                          <div
+                            draggable
+                            onDragStart={(e) => {
+                               setLocalDragIdx(i);
+                               e.dataTransfer.effectAllowed = "move";
+                            }}
+                            onDragOver={(e) => {
+                               e.preventDefault();
+                               e.dataTransfer.dropEffect = "move";
+                            }}
+                            onDrop={(e) => {
+                               e.preventDefault();
+                               if (localDragIdx !== null) {
+                                  handleReorderStack(stackIndex, localDragIdx, i);
+                                  setLocalDragIdx(null);
+                               }
+                            }}
+                            className={`w-24 h-24 rounded-xl overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-all ${
+                              i === 0 ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200 hover:border-stone-400"
+                            }`}
+                          >
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              className="w-full h-full object-cover pointer-events-none" 
+                              alt={`Photo ${i + 1}`} 
+                            />
+                          </div>
+                          {/* Ungroup Button - moves back to main grid */}
+                          {stack.files.length > 1 && (
+                            <button
+                              onClick={() => handleUnstackPhoto(stackIndex, i)}
+                              className="absolute -top-2 -right-2 bg-stone-700 hover:bg-stone-900 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all z-10"
+                              title="Remove from stack (keeps photo)"
+                            >
+                              <Undo2 size={12} />
+                            </button>
+                          )}
+                          {i === 0 && (
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              HERO
+                            </div>
+                          )}
+                       </div>
                     ))}
                  </div>
+                 <p className="text-center text-xs text-stone-400 mt-4">
+                   Click <Undo2 size={10} className="inline mx-1" /> to remove a photo from this stack (returns to grid)
+                 </p>
               </div>
               
               <div className="p-4 border-t border-stone-100 flex justify-end">
@@ -949,13 +1006,16 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
      );
   };
 
-  // Stack Card Component
+  // Stack Card Component with Improved Drag/Drop
+  const [isDragOverTarget, setIsDragOverTarget] = useState(null);
+  
   const StackCard = ({ stack, index, isSelected, onSelect, onRemove, draggedIdx }) => {
     const isMulti = stack.files.length > 1;
     const coverUrl = URL.createObjectURL(stack.files[0]);
     const isBeingDragged = draggedIdx === index;
-    // Determine if this is a potential drop target (simplistic check: if something else is being dragged)
+    // Determine if this is a potential drop target
     const isDropTarget = draggedIdx !== null && draggedIdx !== index;
+    const isActiveDropTarget = isDragOverTarget === index;
 
     const handleClick = () => {
         if (isSelectionMode) {
@@ -969,40 +1029,49 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       <div
         draggable={!isSelectionMode}
         onDragStart={(e) => {
-            // Standardize drag start
-            // We need to call the parent's handler manually since we're inside the component
-            // But wait, the previous code was passing the handler via the `onDragStart` prop *on the component call*,
-            // not *inside* the component definition if we defined it separately.
-            // Actually, in the previous code: 
-            // <div onDragStart={(e) => handleDragStart(e, index)} ... >
-            // `handleDragStart` was available because `StackCard` was defined *inside* `StagingArea` scope.
-            // So we can still call it.
-            
             // Custom Ghost Image
             const img = new Image();
             img.src = coverUrl;
-            // Center the ghost
             e.dataTransfer.setDragImage(img, 50, 50); 
-            
             handleDragStart(e, index);
         }}
         onDragOver={(e) => {
             e.preventDefault();
-            // Add drop effect
             e.dataTransfer.dropEffect = "move";
+            // Set this as active drop target
+            if (draggedIdx !== null && draggedIdx !== index) {
+              setIsDragOverTarget(index);
+            }
         }}
-        onDrop={(e) => handleDrop(e, index)}
+        onDragLeave={() => {
+            if (isDragOverTarget === index) {
+              setIsDragOverTarget(null);
+            }
+        }}
+        onDrop={(e) => {
+            handleDrop(e, index);
+            setIsDragOverTarget(null);
+        }}
+        onDragEnd={() => {
+            setDraggedStackIdx(null);
+            setIsDragOverTarget(null);
+        }}
         onClick={handleClick}
         className={`relative aspect-square group transition-all duration-200 touch-manipulation ${
             isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
-        } ${isSelected ? "scale-90" : "hover:scale-105"} ${
-            isBeingDragged ? "opacity-40 scale-95 grayscale" : "opacity-100"
+        } ${isSelected ? "scale-90" : ""} ${
+            isBeingDragged ? "opacity-30 scale-90 grayscale" : "opacity-100 hover:scale-105"
         }`}
       >
-        {/* Expanded Hit Area / Visual Magnetism */}
-        <div className={`absolute -inset-4 rounded-3xl z-0 transition-all duration-200 ${
-            isDropTarget ? "border-4 border-rose-400/50 bg-rose-50/20 scale-105" : "border-transparent"
-        }`} />
+        {/* Active Drop Target Highlight */}
+        {isActiveDropTarget && (
+          <div className="absolute -inset-3 rounded-2xl border-4 border-emerald-500 bg-emerald-100/50 z-0 animate-pulse" />
+        )}
+        
+        {/* Potential Drop Target Indicator */}
+        {isDropTarget && !isActiveDropTarget && (
+          <div className="absolute -inset-2 rounded-2xl border-2 border-dashed border-stone-300 z-0" />
+        )}
 
         {/* Stack Effect (Underneath layers) */}
         {isMulti && (
@@ -1013,10 +1082,21 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
         )}
 
         {/* Main Card */}
-        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 ${
-            isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : "border-stone-200"
+        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 transition-all ${
+            isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : 
+            isActiveDropTarget ? "border-emerald-500 ring-4 ring-emerald-500/30 scale-105" : 
+            "border-stone-200"
         }`}>
            <img src={coverUrl} className="w-full h-full object-cover pointer-events-none" alt="stack cover" />
+           
+           {/* Drop Indicator Overlay */}
+           {isActiveDropTarget && (
+             <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+               <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                 + Merge
+               </div>
+             </div>
+           )}
            
            {/* Selection Checkmark Overlay */}
            {isSelectionMode && (
@@ -1028,18 +1108,16 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
            )}
 
            {/* Delete Button (Only visible in normal mode, not dragging) */}
-           {!isSelectionMode && (
+           {!isSelectionMode && !isBeingDragged && (
              <button
                onClick={(e) => {
                  e.stopPropagation();
-                 if (confirm("Delete this photo/stack?")) {
-                   // Logic to remove stack passed from parent
-                   // We need to add onRemove prop to StackCard
+                 if (confirm("Delete this photo/stack permanently?")) {
                    onRemove(index);
                  }
                }}
                className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-sm hover:bg-red-600 z-20"
-               title="Delete"
+               title="Delete permanently"
              >
                <Trash2 size={12} strokeWidth={3} />
              </button>
@@ -1047,8 +1125,15 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
 
            {/* Badge */}
            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
-              {stack.files.length} {stack.files.length === 1 ? 'Item' : 'Items'}
+              {stack.files.length} {stack.files.length === 1 ? 'photo' : 'photos'}
            </div>
+           
+           {/* Stack indicator for multi-photo stacks */}
+           {isMulti && (
+             <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+               <Layers size={10} /> {stack.files.length}
+             </div>
+           )}
         </div>
       </div>
     );
@@ -1070,48 +1155,106 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       {/* Header */}
       <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
          <div>
-            <h2 className="text-lg font-serif font-bold text-stone-900">Bulk Staging</h2>
-            <p className="text-xs text-stone-500">Drag photos together to create items.</p>
+            <h2 className="text-lg font-serif font-bold text-stone-900">Organize Photos</h2>
+            <p className="text-xs text-stone-500">
+              {isLoading ? "Loading photos..." : "Drag photos together to create item groups."}
+            </p>
          </div>
-         <div className="flex items-center gap-3">
+         <div className="flex items-center gap-2 sm:gap-3">
             <button 
                onClick={handleAutoGroup}
-               className="text-xs font-bold text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+               disabled={isAutoGrouping || isLoading}
+               className={`text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                 isAutoGrouping 
+                   ? "bg-amber-100 text-amber-700 animate-pulse" 
+                   : "text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200"
+               }`}
             >
-               <Wand2 className="w-3 h-3" /> Auto-Group
+               {isAutoGrouping ? (
+                 <>
+                   <Loader className="w-3 h-3 animate-spin" /> Grouping...
+                 </>
+               ) : (
+                 <>
+                   <Wand2 className="w-3 h-3" /> Auto-Group
+                 </>
+               )}
             </button>
             <button 
                onClick={() => onConfirm(stacks)}
-               className="bg-stone-900 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-transform flex items-center gap-2"
+               disabled={isLoading || stacks.length === 0 || isProcessingBatch}
+               className="bg-stone-900 text-white px-4 sm:px-5 py-2 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50"
             >
-               Process {stacks.length} Items <ArrowRight className="w-4 h-4" />
+               {isProcessingBatch ? (
+                 <>
+                   <Loader className="w-4 h-4 animate-spin" /> Adding...
+                 </>
+               ) : (
+                 <>
+                   <Plus className="w-4 h-4" /> Add {stacks.length} {stacks.length === 1 ? "Item" : "Items"}
+                 </>
+               )}
             </button>
          </div>
       </div>
+      
+      {/* Auto-Group Feedback Toast */}
+      {groupingFeedback && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 animate-in slide-in-from-top duration-300">
+          <div className="bg-stone-900 text-white px-4 py-2 rounded-xl shadow-xl text-sm font-medium">
+            {groupingFeedback}
+          </div>
+        </div>
+      )}
 
-      {/* Grid */}
+      {/* Grid or Loading */}
       <div className="flex-1 overflow-y-auto p-4">
-         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4">
-            {stacks.map((stack, i) => (
-               <StackCard
-                  key={stack.id}
-                  index={i}
-                  stack={stack}
-                  isSelected={selectedStackIds.has(stack.id)}
-                  onSelect={toggleSelect}
-                  onRemove={handleRemoveStack}
-                  draggedIdx={draggedStackIdx}
-               />
-            ))}
-         </div>
+         {isLoading ? (
+           <div className="flex flex-col items-center justify-center h-full gap-4">
+             <Loader className="w-8 h-8 text-stone-400 animate-spin" />
+             <p className="text-stone-500 text-sm">Processing {files.length} photos...</p>
+           </div>
+         ) : (
+           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4">
+              {stacks.map((stack, i) => (
+                 <StackCard
+                    key={stack.id}
+                    index={i}
+                    stack={stack}
+                    isSelected={selectedStackIds.has(stack.id)}
+                    onSelect={toggleSelect}
+                    onRemove={handleRemoveStack}
+                    draggedIdx={draggedStackIdx}
+                 />
+              ))}
+           </div>
+         )}
       </div>
 
       {expandedStackIdx !== null && <ExpandedStackModal stackIndex={expandedStackIdx} />}
 
+      {/* Processing Overlay */}
+      {isProcessingBatch && (
+        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
+            <Sparkles className="w-6 h-6 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold text-stone-800">Adding {stacks.length} items...</p>
+            <p className="text-sm text-stone-500">This may take a moment</p>
+          </div>
+        </div>
+      )}
+
       {/* Footer / Cancel */}
       <div className="p-4 bg-white border-t border-stone-200 flex justify-center">
-         <button onClick={onCancel} className="text-stone-400 hover:text-red-500 text-xs font-bold">
-            Cancel Staging
+         <button 
+           onClick={onCancel} 
+           disabled={isProcessingBatch}
+           className="text-stone-400 hover:text-red-500 text-xs font-bold disabled:opacity-50"
+         >
+            Cancel
          </button>
       </div>
     </div>
@@ -2599,23 +2742,25 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2">
-             {/* Add Item (Single) */}
+             {/* Add Item (Single) - ImagePlus icon */}
             <button
                 onClick={() => singleInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 shadow-sm active:scale-95"
+                title="Add single item (1-4 photos)"
              >
-                <Plus className="w-3.5 h-3.5" />
+                <ImagePlus className="w-4 h-4" />
                 <span className="hidden sm:inline">Add</span>
             </button>
 
-             {/* Bulk Upload */}
+             {/* Bulk Upload - Images (multiple) icon */}
               <button
                 onClick={() => bulkInputRef.current?.click()}
                 disabled={isUploading}
                 className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
+                title="Bulk upload (organize many photos into items)"
              >
-                <Layers className="w-3.5 h-3.5" />
+                <Images className="w-4 h-4" />
                 <span className="hidden sm:inline">Bulk</span>
              </button>
 
@@ -2914,6 +3059,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
             files={stagingFiles}
             onConfirm={handleConfirmBulkUpload}
             onCancel={() => { setStagingFiles([]); setView('dashboard'); if(bulkInputRef.current) bulkInputRef.current.value = ""; }}
+            isProcessingBatch={isUploading}
          />
       )}
 
