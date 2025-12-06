@@ -340,12 +340,12 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Map "Style" to Series/Set.
 
     [IF FASHION/SHOES]
-    - Identify: Brand (e.g. Nike, Gucci), Item Name (e.g. "Air Jordan 1 High", "Marmont Bag").
-    - Details: Size (US/EU), Gender (Men/Women/Unisex), Material (Leather, Canvas, Silk).
-    - Specifics: Look for "Made in" tags, RN numbers, Date codes (Louis Vuitton).
-    - Condition Checks: Sole wear, heel drag, pilling, stains, odor.
+    - Identify: Brand (High-end like Gucci OR Mid-tier like Madewell, Zara, Lululemon), Item Name.
+    - Details: Size (US/EU), Gender, Material (CRITICAL: Silk vs Polyester, Wool vs Acrylic).
+    - Specifics: Look for RN numbers, Style Numbers on inner tags (e.g. J.Crew style #, Zara Art #), Date codes.
+    - Condition Checks: Pilling, stains, loose threads, sole wear, heel drag.
     - Map "Maker" to Brand.
-    - Map "Style" to Specific Model/Cut (e.g. "Retro High", "Fit & Flare", "Trench").
+    - Map "Style" to Specific Cut/Model (e.g. "Wunder Under", "Ludlow Suit", "Fit & Flare").
 
     [IF AUTOMOTIVE/PARTS]
     - Identify: Part Name, Compatible Make/Model/Year (e.g. "1967 Ford Mustang Bumper").
