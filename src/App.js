@@ -1672,6 +1672,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      {/* Lightbox for full image view */}
       {isLightboxOpen && (
         <div 
           className="fixed inset-0 z-[70] bg-black flex items-center justify-center p-4 animate-in fade-in duration-200"
@@ -1690,165 +1691,163 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           />
         </div>
       )}
-      <div className="bg-white sm:rounded-2xl w-full max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row">
-        {/* Left: Image Gallery (Fixed height on mobile, full on desktop) */}
-        <div className="w-full md:w-1/2 h-64 md:h-auto bg-stone-900 flex flex-col relative group shrink-0">
-          <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black/20 p-4">
-            {formData.images.length > 0 ? (
-              <img
-                src={formData.images[activeImageIdx]}
-                alt="Preview"
-                onClick={() => setIsLightboxOpen(true)}
-                className="max-w-full max-h-full object-contain shadow-2xl cursor-zoom-in"
-              />
-            ) : (
-              <div className="text-white/50 flex flex-col items-center">
-                <Camera size={48} />
-                <span className="mt-2 text-sm">No images</span>
-              </div>
-            )}
-            {formData.images.length > 1 && (
-              <button
-                onClick={() => {
-                  const ni = formData.images.filter(
-                    (_, i) => i !== activeImageIdx
-                  );
-                  setFormData((p) => ({ ...p, images: ni }));
-                  setActiveImageIdx(0);
-                }}
-                className="absolute top-4 right-4 bg-black/50 hover:bg-red-600 text-white p-2 rounded-full backdrop-blur-md opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
+      
+      {/* Main Modal - Vertical Layout (Content-First) */}
+      <div className="bg-white sm:rounded-2xl w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+        
+        {/* Compact Header: Close + Title + Value + Status + Delete */}
+        <div className="px-3 py-2 border-b border-stone-200 bg-white flex items-center gap-2 shrink-0">
+          {/* Close Button (Left - where users expect it on mobile) */}
+          <button
+            onClick={onClose}
+            className="p-2 text-stone-400 hover:bg-stone-100 rounded-full shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          {/* Title (truncated) */}
+          <h2 className="flex-1 text-sm font-bold text-stone-800 truncate min-w-0">
+            {formData.title || "Untitled Item"}
+          </h2>
+          
+          {/* Value Input (compact) */}
+          <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 shrink-0">
+            <span className="text-emerald-600 text-xs font-bold">$</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={formData.valuation_low || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+              className="w-12 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-xs"
+            />
+            <span className="text-emerald-300">-</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={formData.valuation_high || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+              className="w-12 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-xs"
+            />
           </div>
           
-          {/* Draggable Thumbnail Strip */}
-          <div className="h-20 md:h-24 bg-stone-900 border-t border-white/10 p-2 md:p-3 flex gap-2 overflow-x-auto items-center no-scrollbar">
-            {formData.images.map((img, idx) => (
-                <ThumbnailItem 
-                    key={img} 
-                    id={img} 
-                    src={img} 
-                    index={idx}
-                    active={activeImageIdx === idx}
-                onClick={() => setActiveImageIdx(idx)}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
-                    onRemove={() => {
+          {/* Status Dropdown */}
+          <select
+            value={formData.status || "TBD"}
+            onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}
+            className={`text-xs font-bold px-2 py-1.5 rounded-lg border cursor-pointer shrink-0 ${
+              formData.status === "keep" ? "bg-blue-50 text-blue-700 border-blue-200" :
+              formData.status === "sell" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+              "bg-amber-50 text-amber-700 border-amber-200"
+            }`}
+          >
+            <option value="keep">KEEP</option>
+            <option value="sell">SELL</option>
+            <option value="TBD">TBD</option>
+          </select>
+          
+          {/* Delete Item */}
+          <button
+            onClick={() => {
+              if (confirm("Delete this item permanently?")) {
+                onDelete(item.id);
+                onClose();
+              }
+            }}
+            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full shrink-0"
+            title="Delete Item"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {/* Compact Thumbnail Strip (tap to expand, drag to reorder) */}
+        <div className="px-3 py-2 bg-stone-100 border-b border-stone-200 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+          {formData.images.length > 0 ? (
+            <>
+              {formData.images.map((img, idx) => (
+                <div
+                  key={img}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                    activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-transparent hover:border-stone-300"
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  {idx === 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">
+                      HERO
+                    </div>
+                  )}
+                  {/* Remove button on hover */}
+                  {formData.images.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const newImages = formData.images.filter((_, i) => i !== idx);
                         setFormData((prev) => ({ ...prev, images: newImages }));
-                        setActiveImageIdx(0);
-                    }}
-                />
-            ))}
-
-            <button
-              onClick={() => addPhotoInputRef.current?.click()}
-              className="flex-shrink-0 h-12 w-12 md:h-16 md:w-16 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 flex flex-col items-center justify-center text-white/50 hover:text-white transition-colors gap-1"
+                        if (activeImageIdx >= newImages.length) setActiveImageIdx(0);
+                      }}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 hover:opacity-100 transition-opacity shadow-md"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="flex items-center gap-2 text-stone-400 text-xs py-2">
+              <Camera size={16} /> No photos yet
+            </div>
+          )}
+          
+          {/* Add Photo Button */}
+          <button
+            onClick={() => addPhotoInputRef.current?.click()}
+            className="flex-shrink-0 w-14 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-white hover:bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            <Plus size={16} />
+            <span className="text-[8px] font-bold mt-0.5">ADD</span>
+          </button>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="hidden"
+            ref={addPhotoInputRef}
+            onChange={handleAddPhoto}
+          />
+        </div>
+        
+        {/* Tab Switcher */}
+        <div className="px-3 py-2 bg-white border-b border-stone-100 shrink-0">
+          <div className="flex p-1 bg-stone-100 rounded-xl">
+            <button 
+              onClick={() => setActiveTab("details")}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "details" ? "bg-white text-stone-800 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
             >
-              <Plus size={20} />
-              <span className="text-[9px] uppercase font-bold">Add</span>
+              Analysis & Details
             </button>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              ref={addPhotoInputRef}
-              onChange={handleAddPhoto}
-            />
+            <button 
+              onClick={() => setActiveTab("listing")}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === "listing" ? "bg-white text-rose-600 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
+            >
+              <Sparkles className="w-3 h-3" /> Listing Helper
+            </button>
           </div>
         </div>
 
-        {/* Right: Data Entry (Scrollable) */}
-        <div className="w-full md:w-1/2 flex flex-col flex-1 overflow-hidden bg-stone-50 border-l border-stone-200">
-          <div className="p-4 md:p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-               <div className="bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 flex items-center gap-2 shadow-sm">
-                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider mr-1 hidden sm:inline">Value:</span>
-                 <span className="text-emerald-700 font-bold text-sm">$</span>
-                 <input
-                    type="number"
-                    placeholder="Min"
-                    value={formData.valuation_low || ""}
-                    onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
-                    className="w-20 bg-white/50 border-b border-emerald-200 text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 p-1 text-sm rounded-t"
-                 />
-                 <span className="text-emerald-400 font-bold">-</span>
-                 <input
-                    type="number"
-                    placeholder="Max"
-                    value={formData.valuation_high || ""}
-                    onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
-                    className="w-20 bg-white/50 border-b border-emerald-200 text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 p-1 text-sm rounded-t"
-                 />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (confirm("Delete?")) {
-                    onDelete(item.id);
-                    onClose();
-                  }
-                }}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-full"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-              <button
-                onClick={onClose}
-                className="p-2 text-stone-400 hover:bg-stone-100 rounded-full"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Tab Switcher */}
-          <div className="px-4 py-2 bg-white border-b border-stone-200 shrink-0">
-            <div className="flex p-1 bg-stone-100 rounded-xl">
-              <button 
-                onClick={() => setActiveTab("details")}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === "details" ? "bg-white text-stone-800 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
-              >
-                Analysis & Details
-              </button>
-              <button 
-                onClick={() => setActiveTab("listing")}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === "listing" ? "bg-white text-rose-600 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
-              >
-                <Sparkles className="w-3 h-3" /> Listing Helper
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
-            {activeTab === "listing" ? (
-              <ListingGenerator formData={formData} />
-            ) : (
-            <div className="flex flex-col gap-4">
-              {/* Status Toggles */}
-              <div className="flex bg-white p-1 rounded-lg border border-stone-200 shadow-sm">
-                {["keep", "sell", "TBD"].map((status) => (
-              <button
-                    key={status}
-                    onClick={() => setFormData((prev) => ({ ...prev, status }))}
-                    className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-md transition-all ${
-                      formData.status === status
-                        ? "bg-stone-800 text-white shadow-sm"
-                        : "text-stone-500 hover:bg-stone-50"
-                    }`}
-                  >
-                    {status}
-              </button>
-                ))}
-              </div>
-              
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
+          {activeTab === "listing" ? (
+            <ListingGenerator formData={formData} />
+          ) : (
+            <div className="flex flex-col gap-3">
               {/* AI Clarification Questions */}
               {formData.questions && formData.questions.length > 0 && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm mb-4">
@@ -2119,34 +2118,33 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             )}
           </div>
           
-          {/* Footer */}
-          <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0 flex gap-3">
-            <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || formData.images.length === 0}
-              className={`flex-1 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                isAnalyzing 
-                  ? "bg-stone-100 text-stone-400 cursor-wait" 
-                  : "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:shadow-md border border-rose-100"
-              }`}
-            >
-              {isAnalyzing ? <Loader className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-              {formData.aiLastRun ? "Re-Run AI" : "Run AI Analysis"}
-            </button>
+        {/* Footer */}
+        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex gap-2">
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || formData.images.length === 0}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              isAnalyzing 
+                ? "bg-stone-100 text-stone-400 cursor-wait" 
+                : "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100"
+            }`}
+          >
+            {isAnalyzing ? <Loader className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            {formData.aiLastRun ? "Re-Run AI" : "Run AI"}
+          </button>
 
-            <button
-              onClick={() => {
-                onSave({
-                  ...formData,
-                  image: formData.images.length > 0 ? formData.images[0] : null,
-                });
-                onClose();
-              }}
-              className="flex-[2] py-3 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl shadow-lg shadow-stone-200 transition-all flex items-center justify-center gap-2"
-            >
-              <Save className="w-5 h-5" /> Save Changes
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              onSave({
+                ...formData,
+                image: formData.images.length > 0 ? formData.images[0] : null,
+              });
+              onClose();
+            }}
+            className="flex-[2] py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" /> Save Changes
+          </button>
         </div>
       </div>
     </div>
@@ -2588,7 +2586,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
   return (
     <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32">
       {/* --- Header --- */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
+      <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-30 overflow-visible">
         {/* Row 1: Logo + Actions */}
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -2676,7 +2674,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
         </div>
         
         {/* Row 2: Filters with Value + Sort */}
-        <div className="px-4 py-2 overflow-x-auto no-scrollbar flex items-center gap-2 border-t border-stone-50 bg-stone-50/50">
+        <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-50 bg-stone-50/50 overflow-visible">
            {["all", "keep", "sell", "TBD"].map((f) => {
               const stats = filterStats[f];
               const isActive = filter === f;
@@ -2735,10 +2733,10 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                
                {/* Sort Menu Dropdown */}
                {isSortMenuOpen && (
-                  <div className="fixed inset-0 z-40" onClick={() => setIsSortMenuOpen(false)} />
+                  <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
                )}
                {isSortMenuOpen && (
-                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
                    <div className="p-1">
                      {[
                        { label: "Newest", value: "date-desc" },
