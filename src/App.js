@@ -950,7 +950,7 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   };
 
   // Stack Card Component
-  const StackCard = ({ stack, index, isSelected, onSelect }) => {
+  const StackCard = ({ stack, index, isSelected, onSelect, onRemove }) => {
     const isMulti = stack.files.length > 1;
     const coverUrl = URL.createObjectURL(stack.files[0]);
 
@@ -996,13 +996,42 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
                </div>
            )}
 
+           {/* Delete Button (Only visible in normal mode, not dragging) */}
+           {!isSelectionMode && (
+             <button
+               onClick={(e) => {
+                 e.stopPropagation();
+                 if (confirm("Delete this photo/stack?")) {
+                   // Logic to remove stack passed from parent
+                   // We need to add onRemove prop to StackCard
+                   onRemove(index);
+                 }
+               }}
+               className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-sm hover:bg-red-600 z-20"
+               title="Delete"
+             >
+               <Trash2 size={12} strokeWidth={3} />
+             </button>
+           )}
+
            {/* Badge */}
-           <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full">
+           <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
               {stack.files.length} {stack.files.length === 1 ? 'Item' : 'Items'}
            </div>
         </div>
       </div>
     );
+  };
+
+  // Handle Deleting a Stack/Photo from Staging Area
+  const handleRemoveStack = (index) => {
+    const newStacks = [...stacks];
+    newStacks.splice(index, 1);
+    setStacks(newStacks);
+    // If no stacks left, maybe cancel? or just stay empty
+    if (newStacks.length === 0) {
+        onCancel();
+    }
   };
 
   return (
@@ -1033,9 +1062,14 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       <div className="flex-1 overflow-y-auto p-4">
          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
             {stacks.map((stack, i) => (
-               <div key={stack.id} onClick={() => setExpandedStackIdx(i)}>
-                  <StackCard stack={stack} index={i} />
-               </div>
+               <StackCard
+                  key={stack.id}
+                  index={i}
+                  stack={stack}
+                  isSelected={selectedStackIds.has(stack.id)}
+                  onSelect={toggleSelect}
+                  onRemove={handleRemoveStack}
+               />
             ))}
          </div>
       </div>
