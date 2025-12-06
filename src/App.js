@@ -720,7 +720,7 @@ const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, o
 };
 
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
-const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) => {
+const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingBatch = false }) => {
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
@@ -733,7 +733,13 @@ const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) 
   // Loading & Feedback States
   const [isLoading, setIsLoading] = useState(true);
   const [isAutoGrouping, setIsAutoGrouping] = useState(false);
-  const [groupingFeedback, setGroupingFeedback] = useState(null); // e.g. "Grouped into 5 items!"
+  const [groupingFeedback, setGroupingFeedback] = useState(null);
+  
+  // Ref for adding more photos
+  const addMoreInputRef = useRef(null);
+  
+  // Track total photos across all stacks
+  const totalPhotos = stacks.reduce((sum, s) => sum + s.files.length, 0);
 
   useEffect(() => {
     // Initialize: Every file is a stack of 1
@@ -748,6 +754,25 @@ const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) 
       setIsLoading(false);
     }, 300);
   }, [files]);
+  
+  // Handle adding more photos
+  const handleAddMore = (e) => {
+    const newFiles = Array.from(e.target.files);
+    if (newFiles.length === 0) return;
+    
+    // Create new stacks for the added files
+    const newStacks = newFiles.map((f) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      files: [f],
+    }));
+    
+    setStacks(prev => [...prev, ...newStacks]);
+    setGroupingFeedback(`📷 Added ${newFiles.length} more photos!`);
+    setTimeout(() => setGroupingFeedback(null), 3000);
+    
+    // Reset file input
+    if (addMoreInputRef.current) addMoreInputRef.current.value = "";
+  };
 
   const handleAutoGroup = () => {
     setIsAutoGrouping(true);
@@ -1152,50 +1177,43 @@ const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) 
 
   return (
     <div className="fixed inset-0 z-50 bg-[#FDFBF7] flex flex-col">
-      {/* Header */}
+      {/* Header - Simplified */}
       <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
-         <div>
-            <h2 className="text-lg font-serif font-bold text-stone-900">Organize Photos</h2>
-            <p className="text-xs text-stone-500">
-              {isLoading ? "Loading photos..." : "Drag photos together to create item groups."}
-            </p>
-         </div>
-         <div className="flex items-center gap-2 sm:gap-3">
+         <div className="flex items-center gap-3">
             <button 
-               onClick={handleAutoGroup}
-               disabled={isAutoGrouping || isLoading}
-               className={`text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                 isAutoGrouping 
-                   ? "bg-amber-100 text-amber-700 animate-pulse" 
-                   : "text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200"
-               }`}
+               onClick={onCancel}
+               disabled={isProcessingBatch}
+               className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors"
+               title="Cancel"
             >
-               {isAutoGrouping ? (
-                 <>
-                   <Loader className="w-3 h-3 animate-spin" /> Grouping...
-                 </>
-               ) : (
-                 <>
-                   <Wand2 className="w-3 h-3" /> Auto-Group
-                 </>
-               )}
+               <X className="w-5 h-5" />
             </button>
-            <button 
-               onClick={() => onConfirm(stacks)}
-               disabled={isLoading || stacks.length === 0 || isProcessingBatch}
-               className="bg-stone-900 text-white px-4 sm:px-5 py-2 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50"
-            >
-               {isProcessingBatch ? (
-                 <>
-                   <Loader className="w-4 h-4 animate-spin" /> Adding...
-                 </>
-               ) : (
-                 <>
-                   <Plus className="w-4 h-4" /> Add {stacks.length} {stacks.length === 1 ? "Item" : "Items"}
-                 </>
-               )}
-            </button>
+            <div>
+               <h2 className="text-lg font-serif font-bold text-stone-900">Organize Photos</h2>
+               <p className="text-xs text-stone-500">
+                 {isLoading ? "Loading photos..." : "Drag photos together to group them as single items."}
+               </p>
+            </div>
          </div>
+         <button 
+            onClick={handleAutoGroup}
+            disabled={isAutoGrouping || isLoading}
+            className={`text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${
+              isAutoGrouping 
+                ? "bg-amber-100 text-amber-700 animate-pulse" 
+                : "text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200"
+            }`}
+         >
+            {isAutoGrouping ? (
+              <>
+                <Loader className="w-3 h-3 animate-spin" /> Grouping...
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-3 h-3" /> Auto-Group
+              </>
+            )}
+         </button>
       </div>
       
       {/* Auto-Group Feedback Toast */}
@@ -1247,15 +1265,55 @@ const StagingArea = ({ files, onConfirm, onCancel, isProcessingBatch = false }) 
         </div>
       )}
 
-      {/* Footer / Cancel */}
-      <div className="p-4 bg-white border-t border-stone-200 flex justify-center">
-         <button 
-           onClick={onCancel} 
-           disabled={isProcessingBatch}
-           className="text-stone-400 hover:text-red-500 text-xs font-bold disabled:opacity-50"
-         >
-            Cancel
-         </button>
+      {/* Premium Footer Action Bar */}
+      <div className="bg-white border-t border-stone-200 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        {/* Stats Bar */}
+        <div className="px-4 py-2 bg-stone-50 border-b border-stone-100 flex items-center justify-center gap-2 text-xs text-stone-500">
+          <span className="font-medium">{totalPhotos} photos</span>
+          <span className="text-stone-300">→</span>
+          <span className="font-bold text-stone-700">{stacks.length} {stacks.length === 1 ? "item" : "items"}</span>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
+          {/* Add More Photos */}
+          <button 
+            onClick={() => addMoreInputRef.current?.click()}
+            disabled={isProcessingBatch}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 transition-all active:scale-95 disabled:opacity-50"
+          >
+            <ImagePlus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add More</span>
+            <span className="sm:hidden">+</span>
+          </button>
+          
+          {/* Hidden File Input */}
+          <input 
+            type="file"
+            multiple
+            accept="image/*"
+            className="hidden"
+            ref={addMoreInputRef}
+            onChange={handleAddMore}
+          />
+          
+          {/* Primary CTA - Add Items */}
+          <button 
+            onClick={() => onConfirm(stacks)}
+            disabled={isLoading || stacks.length === 0 || isProcessingBatch}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isProcessingBatch ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" /> Adding...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" /> Add {stacks.length} {stacks.length === 1 ? "Item" : "Items"}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2778,7 +2836,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
              </button>
 
              {/* Profile Dropdown */}
-             <div className="relative group cursor-pointer ml-1">
+             <div className="relative group cursor-pointer ml-1 z-50">
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
@@ -2791,7 +2849,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                   </div>
                 )}
                {/* Dropdown Menu */}
-               <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
+               <div className="absolute right-0 top-full pt-2 hidden group-hover:block z-[100]">
                  <div className="w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden p-1">
                    <div className="px-4 py-2 border-b border-stone-50 mb-1">
                     <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
