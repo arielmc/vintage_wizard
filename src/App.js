@@ -271,7 +271,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - Vintage Electronics & Cameras
     - Retro Toys & Trading Cards
     - Kitchenware & Glass
-
+    
     ${contextPrompt}
     ${userAnswersContext}
     
@@ -665,8 +665,8 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
   return links;
 };
 
-// --- Thumbnail Item Component (Draggable) ---
-const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, onDragOver, onDragEnd }) => {
+// --- Thumbnail Item Component (Draggable with Remove) ---
+const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, onDragOver, onDragEnd, onRemove }) => {
   return (
     <div
       onClick={onClick}
@@ -693,18 +693,20 @@ const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, o
         />
       </div>
       
-      {/* Remove Button - Prevent Drag Propagation */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          // We need to pass the ID or handle remove logic in parent via index
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10 hover:bg-red-600"
-        title="Remove image"
-      >
-        <X size={10} strokeWidth={3} />
-      </button>
+      {/* Remove Button - Now Functional if onRemove provided */}
+      {onRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10 hover:bg-red-600"
+          title="Un-group image"
+        >
+          <X size={10} strokeWidth={3} />
+        </button>
+      )}
     </div>
   );
 };
@@ -715,6 +717,10 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   const [stacks, setStacks] = useState([]);
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
   const [expandedStackIdx, setExpandedStackIdx] = useState(null); // For refining stacks
+  
+  // NEW: Selection Mode State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedStackIds, setSelectedStackIds] = useState(new Set());
 
   useEffect(() => {
     // Initialize: Every file is a stack of 1
@@ -726,7 +732,7 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   }, [files]);
 
   const handleAutoGroup = () => {
-    // Simple heuristic: Sort by lastModified, group if < 60s apart
+    // IMPROVED Heuristic: 3 Minute Threshold (180s) to catch "bursts"
     const sorted = [...files].sort((a, b) => a.lastModified - b.lastModified);
     const newStacks = [];
     let currentStack = [];
@@ -738,7 +744,8 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       } else {
         const prevFile = currentStack[currentStack.length - 1];
         const timeDiff = (file.lastModified - prevFile.lastModified) / 1000; // seconds
-        if (timeDiff < 60) {
+        // Increased from 60s to 180s (3 mins)
+        if (timeDiff < 180) {
           currentStack.push(file);
         } else {
           newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
@@ -750,9 +757,23 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
       newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
     }
     setStacks(newStacks);
+    
+    // Clear selections after auto-group
+    setIsSelectionMode(false);
+    setSelectedStackIds(new Set());
+  };
+
+  // Selection Mode Controls
+  const handleSelectionModeToggle = () => {
+     setIsSelectionMode(!isSelectionMode);
+     setSelectedStackIds(new Set());
   };
 
   const handleDragStart = (e, index) => {
+    if (isSelectionMode) {
+        e.preventDefault(); // Disable drag in selection mode
+        return;
+    }
     setDraggedStackIdx(index);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", index);
@@ -779,6 +800,48 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
     
     setStacks(newStacks);
     setDraggedStackIdx(null);
+  };
+
+  // Toggle Selection
+  const toggleSelect = (id) => {
+      const newSet = new Set(selectedStackIds);
+      if (newSet.has(id)) {
+          newSet.delete(id);
+      } else {
+          newSet.add(id);
+      }
+      setSelectedStackIds(newSet);
+  };
+
+  // Stack Selected Items
+  const handleStackSelected = () => {
+      if (selectedStackIds.size < 2) return;
+
+      const newStacks = [];
+      const filesToStack = [];
+      const remainingStacks = [];
+
+      // Separate stacks to merge vs keep
+      stacks.forEach(stack => {
+          if (selectedStackIds.has(stack.id)) {
+              filesToStack.push(...stack.files);
+          } else {
+              remainingStacks.push(stack);
+          }
+      });
+
+      // Create new merged stack
+      const mergedStack = {
+          id: Math.random().toString(36).substr(2, 9),
+          files: filesToStack
+      };
+
+      // Prepend merged stack
+      setStacks([mergedStack, ...remainingStacks]);
+      
+      // Reset mode
+      setIsSelectionMode(false);
+      setSelectedStackIds(new Set());
   };
 
   // Handle moving a photo OUT of a stack (Un-group)
@@ -883,17 +946,28 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   };
 
   // Stack Card Component
-  const StackCard = ({ stack, index }) => {
+  const StackCard = ({ stack, index, isSelected, onSelect }) => {
     const isMulti = stack.files.length > 1;
     const coverUrl = URL.createObjectURL(stack.files[0]);
 
+    const handleClick = () => {
+        if (isSelectionMode) {
+            onSelect(stack.id);
+        } else if (isMulti) {
+            setExpandedStackIdx(index);
+        }
+    };
+
     return (
       <div
-        draggable
+        draggable={!isSelectionMode}
         onDragStart={(e) => handleDragStart(e, index)}
         onDragOver={handleDragOver}
         onDrop={(e) => handleDrop(e, index)}
-        className="relative aspect-square cursor-grab active:cursor-grabbing group"
+        onClick={handleClick}
+        className={`relative aspect-square group transition-all duration-200 ${
+            isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+        } ${isSelected ? "scale-90" : "hover:scale-105"}`}
       >
         {/* Stack Effect (Underneath layers) */}
         {isMulti && (
@@ -904,9 +978,20 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
         )}
 
         {/* Main Card */}
-        <div className="absolute inset-0 bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden hover:scale-105 transition-transform">
+        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden ${
+            isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : "border-stone-200"
+        }`}>
            <img src={coverUrl} className="w-full h-full object-cover pointer-events-none" alt="stack cover" />
            
+           {/* Selection Checkmark Overlay */}
+           {isSelectionMode && (
+               <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${
+                   isSelected ? "bg-rose-500 border-rose-500" : "bg-white/80 border-stone-300"
+               }`}>
+                   {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+               </div>
+           )}
+
            {/* Badge */}
            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full">
               {stack.files.length} {stack.files.length === 1 ? 'Item' : 'Items'}
@@ -2026,6 +2111,7 @@ export default function App() {
           // Only run AI for single item immediate mode
           if (shouldAutoAnalyze) {
              try {
+               // Wait for analysis to complete strictly before continuing
                analysisResult = await analyzeImagesWithGemini(compressedImages, "");
              } catch (aiError) {
                console.error("Auto-analysis failed:", aiError);
