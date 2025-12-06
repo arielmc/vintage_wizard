@@ -1364,6 +1364,138 @@ const LoginScreen = () => {
   );
 };
 
+// --- LISTING GENERATOR COMPONENT ---
+const ListingGenerator = ({ formData }) => {
+  // Helper to copy text
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  };
+
+  // Generate Optimized Title
+  // Strategy: Maker + Style + Object + Era + Key Details
+  const generateTitle = () => {
+    const parts = [
+      formData.maker,
+      formData.style,
+      formData.title, // Usually the object name from AI
+      formData.era,
+      formData.materials
+    ].filter(Boolean);
+    
+    // Dedupe words and join
+    const uniqueParts = [...new Set(parts.join(" ").split(" "))];
+    return uniqueParts.join(" ").substring(0, 80); // eBay limit 80 chars
+  };
+
+  // Generate Description Template
+  const generateDescription = () => {
+    return `
+✨ RARE FIND: ${formData.title} ✨
+
+📝 DESCRIPTION:
+${formData.sales_blurb || "No description available."}
+
+🏷️ DETAILS:
+• Maker/Brand: ${formData.maker || "Unsigned"}
+• Style/Period: ${formData.style || "Vintage"}
+• Era: ${formData.era || "Unknown"}
+• Material: ${formData.materials || "See photos"}
+
+💎 CONDITION:
+${formData.condition || "Good vintage condition. Please see photos for details."}
+${formData.markings ? `• Markings: ${formData.markings}` : ""}
+
+📏 NOTES:
+${formData.userNotes || "Message for measurements or more details!"}
+
+sku: ${Math.random().toString(36).substr(2, 6).toUpperCase()}
+    `.trim();
+  };
+
+  // Generate Hashtags
+  const generateTags = () => {
+    const baseTags = [
+      formData.category,
+      formData.style,
+      formData.era,
+      "vintage",
+      "retro",
+      "preloved",
+      formData.maker
+    ].filter(Boolean);
+    
+    // Add AI search terms if available
+    if (formData.search_terms_broad) {
+        baseTags.push(...formData.search_terms_broad.split(" "));
+    }
+
+    return baseTags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
+  };
+
+  const generatedTitle = generateTitle();
+  const generatedDesc = generateDescription();
+  const generatedTags = generateTags();
+
+  return (
+    <div className="space-y-6 p-1">
+      {/* eBay / Poshmark Title */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Optimized Title ({generatedTitle.length}/80)
+            </label>
+            <button onClick={() => handleCopy(generatedTitle)} className="text-rose-600 text-xs font-bold hover:underline">
+                Copy
+            </button>
+        </div>
+        <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium text-stone-800 break-words">
+            {generatedTitle}
+        </div>
+      </div>
+
+      {/* Description Block */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Professional Description
+            </label>
+            <button onClick={() => handleCopy(generatedDesc)} className="text-rose-600 text-xs font-bold hover:underline">
+                Copy
+            </button>
+        </div>
+        <textarea 
+            readOnly
+            value={generatedDesc}
+            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-64 focus:outline-none resize-none"
+        />
+      </div>
+
+      {/* Tags */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            SEO Tags
+            </label>
+            <button onClick={() => handleCopy(generatedTags)} className="text-rose-600 text-xs font-bold hover:underline">
+                Copy
+            </button>
+        </div>
+        <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-blue-600 break-words">
+            {generatedTags}
+        </div>
+      </div>
+      
+      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+        <h4 className="text-blue-800 font-bold text-sm mb-1">🚀 Pro Tip</h4>
+        <p className="text-blue-700/80 text-xs">
+            Copy these blocks directly into eBay, Poshmark, or Depop. The title is optimized for search keywords, and the description includes all the details buyers ask for.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const EditModal = ({ item, onClose, onSave, onDelete }) => {
   const [formData, setFormData] = useState({
     ...item,
@@ -1393,6 +1525,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  const [activeTab, setActiveTab] = useState("details"); // "details" | "listing"
 
   const handleDragStart = (e, index) => {
     setDraggedIdx(index);
