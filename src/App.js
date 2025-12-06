@@ -1563,8 +1563,26 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
         {/* Right: Data Entry (Scrollable) */}
         <div className="w-full md:w-1/2 flex flex-col flex-1 overflow-hidden bg-stone-50 border-l border-stone-200">
           <div className="p-4 md:p-6 border-b border-stone-200 bg-white flex items-center justify-between shrink-0">
-            <div>
-              <h2 className="text-xl font-bold text-stone-800">Item Details</h2>
+            <div className="flex items-center gap-3">
+               <div className="bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 flex items-center gap-2 shadow-sm">
+                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider mr-1 hidden sm:inline">Value:</span>
+                 <span className="text-emerald-700 font-bold text-sm">$</span>
+                 <input
+                    type="number"
+                    placeholder="Min"
+                    value={formData.valuation_low || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+                    className="w-20 bg-white/50 border-b border-emerald-200 text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 p-1 text-sm rounded-t"
+                 />
+                 <span className="text-emerald-400 font-bold">-</span>
+                 <input
+                    type="number"
+                    placeholder="Max"
+                    value={formData.valuation_high || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+                    className="w-20 bg-white/50 border-b border-emerald-200 text-center font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 p-1 text-sm rounded-t"
+                 />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1840,36 +1858,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   placeholder="AI generated sales text will appear here..."
                   className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
                 />
-              </div>
-              <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 relative">
-                <label className="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3 text-center">
-                  Estimated Value ($)
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={formData.valuation_low || ""}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        valuation_low: e.target.value,
-                      }))
-                    }
-                    className="w-full p-2 bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center font-bold text-emerald-900"
-                  />
-                  <span className="text-emerald-300 font-bold">-</span>
-                  <input
-                    type="number"
-                    value={formData.valuation_high || ""}
-                    onChange={(e) =>
-                      setFormData((p) => ({
-                        ...p,
-                        valuation_high: e.target.value,
-                      }))
-                    }
-                    className="w-full p-2 bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center font-bold text-emerald-900"
-                  />
-                </div>
               </div>
               {formData.reasoning && (
                 <div className="p-4 bg-stone-100 rounded-xl border border-stone-200 text-sm text-stone-600">
