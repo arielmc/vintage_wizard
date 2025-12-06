@@ -2800,75 +2800,110 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2">
-             {/* Add Item (Single) - ImagePlus icon */}
-            <button
-                onClick={() => singleInputRef.current?.click()}
-                disabled={isUploading}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-900 text-white hover:bg-stone-800 shadow-sm active:scale-95"
-                title="Add single item (1-4 photos)"
-             >
-                <ImagePlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add</span>
-            </button>
+             {/* Add Item (Single) - with Premium Tooltip */}
+             <div className="relative group/tooltip">
+                <button
+                    onClick={() => singleInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-stone-900 text-white hover:bg-stone-800 hover:shadow-md hover:scale-[1.02] shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                 >
+                    <ImagePlus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Add</span>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  Add single item (1-4 photos)
+                </div>
+             </div>
 
-             {/* Bulk Upload - Images (multiple) icon */}
-              <button
-                onClick={() => bulkInputRef.current?.click()}
-                disabled={isUploading}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-stone-700 hover:bg-stone-50 border border-stone-200 shadow-sm active:scale-95"
-                title="Bulk upload (organize many photos into items)"
-             >
-                <Images className="w-4 h-4" />
-                <span className="hidden sm:inline">Bulk</span>
-             </button>
+             {/* Bulk Upload - with Premium Tooltip */}
+             <div className="relative group/tooltip">
+                <button
+                    onClick={() => bulkInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-white text-stone-700 hover:bg-stone-50 hover:shadow-md hover:scale-[1.02] border border-stone-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                 >
+                    <Images className="w-4 h-4" />
+                    <span className="hidden sm:inline">Bulk</span>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  Bulk upload & organize photos
+                </div>
+             </div>
 
-             {/* Batch AI Toggle */}
-             <button
-                onClick={() => setIsSelectionMode(!isSelectionMode)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                  isSelectionMode 
-                    ? "bg-rose-100 text-rose-700 border-rose-200" 
-                    : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
-                }`}
-             >
-                <Wand2 className={`w-3.5 h-3.5 ${isSelectionMode ? "fill-current" : ""}`} />
-                <span className="hidden sm:inline">AI</span>
-             </button>
+             {/* Batch AI Analysis Toggle - with Premium Tooltip */}
+             <div className="relative group/tooltip">
+                <button
+                    onClick={() => setIsSelectionMode(!isSelectionMode)}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border hover:shadow-md hover:scale-[1.02] active:scale-95 ${
+                      isSelectionMode 
+                        ? "bg-rose-100 text-rose-700 border-rose-200 shadow-sm" 
+                        : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+                    }`}
+                 >
+                    <Wand2 className={`w-4 h-4 ${isSelectionMode ? "fill-current" : ""}`} />
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  {isSelectionMode ? "Exit batch mode" : "Select items for batch analysis"}
+                </div>
+             </div>
 
              {/* Profile Dropdown */}
              <div className="relative group cursor-pointer ml-1 z-50">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="Profile"
-                   className="w-8 h-8 rounded-full border border-stone-200 shadow-sm"
-                  />
-                ) : (
-                 <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center">
-                    <UserCircle className="w-5 h-5 text-stone-400" />
-                  </div>
-                )}
+                <div className="transition-all duration-200 hover:scale-105 hover:shadow-md rounded-full">
+                   {user.photoURL ? (
+                     <img
+                       src={user.photoURL}
+                       alt="Profile"
+                      className="w-8 h-8 rounded-full border-2 border-stone-200 shadow-sm transition-all duration-200 group-hover:border-stone-400"
+                     />
+                   ) : (
+                    <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center transition-all duration-200 group-hover:bg-stone-300">
+                       <UserCircle className="w-5 h-5 text-stone-400" />
+                     </div>
+                   )}
+                </div>
                {/* Dropdown Menu */}
                <div className="absolute right-0 top-full pt-2 hidden group-hover:block z-[100]">
-                 <div className="w-48 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden p-1">
-                   <div className="px-4 py-2 border-b border-stone-50 mb-1">
-                    <p className="text-xs font-bold text-stone-900 truncate">{user.displayName}</p>
-                    <p className="text-[10px] text-stone-500 truncate flex items-center gap-1">
+                 <div className="w-52 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                   {/* User Info Header */}
+                   <div className="px-3 py-2.5 bg-gradient-to-r from-stone-50 to-stone-100 rounded-lg mb-1.5">
+                    <p className="text-sm font-bold text-stone-900 truncate">{user.displayName}</p>
+                    <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
                       <Cloud className="w-2.5 h-2.5 text-emerald-500" /> Synced • {user.email}
                     </p>
                    </div>
+                   
+                   {/* Menu Items */}
                    <button
                      onClick={handleExportCSV}
                      disabled={items.length === 0}
-                     className="w-full text-left px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
                    >
-                     <Download className="w-3 h-3" /> Export CSV
+                     <div className="w-7 h-7 rounded-md bg-stone-100 group-hover/item:bg-stone-200 flex items-center justify-center transition-colors">
+                       <Download className="w-3.5 h-3.5" />
+                     </div>
+                     <div>
+                       <span className="block">Export CSV</span>
+                       <span className="text-[10px] text-stone-400">Download your inventory</span>
+                     </div>
                    </button>
+                   
+                   <div className="h-px bg-stone-100 my-1" />
+                   
                    <button
                      onClick={() => signOut(auth)}
-                     className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
-                     <LogOut className="w-3 h-3" /> Sign Out
+                     <div className="w-7 h-7 rounded-md bg-red-50 group-hover/item:bg-red-100 flex items-center justify-center transition-colors">
+                       <LogOut className="w-3.5 h-3.5" />
+                     </div>
+                     <span>Sign Out</span>
                    </button>
                  </div>
                </div>
@@ -2887,10 +2922,10 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`flex-shrink-0 transition-all ${
+                  className={`flex-shrink-0 transition-all duration-200 ${
                     isActive
-                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
-                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-300 hover:bg-white"
+                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2 scale-[1.02]"
+                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white hover:shadow-sm hover:scale-[1.02] active:scale-95"
                   }`}
                 >
                   {isActive ? (
@@ -2914,12 +2949,12 @@ ${item.userNotes || "Message for measurements or more details!"}`;
               );
             })}
             
-            {/* Sort Dropdown - inline with filters */}
-            <div className="ml-auto flex-shrink-0 relative">
+            {/* Sort Dropdown - with Premium Tooltip */}
+            <div className="ml-auto flex-shrink-0 relative group/sort">
                <button 
                  onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
                  disabled={dataLoading}
-                 className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-700 bg-white/80 hover:bg-white px-2.5 py-1.5 rounded-lg border border-stone-200 transition-colors"
+                 className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-700 bg-white/80 hover:bg-white hover:shadow-sm px-2.5 py-1.5 rounded-lg border border-stone-200 hover:border-stone-300 transition-all duration-200 hover:scale-[1.02] active:scale-95"
                >
                  <ArrowUpDown className="w-3.5 h-3.5" />
                  <span className="hidden sm:inline">
@@ -2933,6 +2968,13 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                     }[sortBy]}
                  </span>
                </button>
+               {/* Tooltip for Sort */}
+               {!isSortMenuOpen && (
+                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                   Sort items
+                 </div>
+               )}
                
                {/* Sort Menu Dropdown */}
                {isSortMenuOpen && (
@@ -2940,19 +2982,19 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                )}
                {isSortMenuOpen && (
                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
-                   <div className="p-1">
+                   <div className="p-1.5">
                      {[
-                       { label: "Newest", value: "date-desc" },
-                       { label: "Oldest", value: "date-asc" },
+                       { label: "Newest First", value: "date-desc" },
+                       { label: "Oldest First", value: "date-asc" },
                        { label: "High → Low $", value: "value-desc" },
                        { label: "Low → High $", value: "value-asc" },
                        { label: "A → Z", value: "alpha-asc" },
-                       { label: "Category", value: "category-asc" },
+                       { label: "By Category", value: "category-asc" },
                      ].map((opt) => (
                        <button
                          key={opt.value}
                          onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                         className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                         className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all duration-150 ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"}`}
                        >
                          {opt.label}
                          {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
