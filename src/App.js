@@ -2110,7 +2110,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             </div>
           )}
           </div>
-          </div>
+          
           <div className="p-3 md:p-4 bg-white border-t border-stone-200 shrink-0 flex gap-3">
             <button
               onClick={handleAnalyze}
