@@ -950,9 +950,12 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
   };
 
   // Stack Card Component
-  const StackCard = ({ stack, index, isSelected, onSelect, onRemove }) => {
+  const StackCard = ({ stack, index, isSelected, onSelect, onRemove, draggedIdx }) => {
     const isMulti = stack.files.length > 1;
     const coverUrl = URL.createObjectURL(stack.files[0]);
+    const isBeingDragged = draggedIdx === index;
+    // Determine if this is a potential drop target (simplistic check: if something else is being dragged)
+    const isDropTarget = draggedIdx !== null && draggedIdx !== index;
 
     const handleClick = () => {
         if (isSelectionMode) {
@@ -965,24 +968,52 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
     return (
       <div
         draggable={!isSelectionMode}
-        onDragStart={(e) => handleDragStart(e, index)}
-        onDragOver={handleDragOver}
+        onDragStart={(e) => {
+            // Standardize drag start
+            // We need to call the parent's handler manually since we're inside the component
+            // But wait, the previous code was passing the handler via the `onDragStart` prop *on the component call*,
+            // not *inside* the component definition if we defined it separately.
+            // Actually, in the previous code: 
+            // <div onDragStart={(e) => handleDragStart(e, index)} ... >
+            // `handleDragStart` was available because `StackCard` was defined *inside* `StagingArea` scope.
+            // So we can still call it.
+            
+            // Custom Ghost Image
+            const img = new Image();
+            img.src = coverUrl;
+            // Center the ghost
+            e.dataTransfer.setDragImage(img, 50, 50); 
+            
+            handleDragStart(e, index);
+        }}
+        onDragOver={(e) => {
+            e.preventDefault();
+            // Add drop effect
+            e.dataTransfer.dropEffect = "move";
+        }}
         onDrop={(e) => handleDrop(e, index)}
         onClick={handleClick}
-        className={`relative aspect-square group transition-all duration-200 ${
+        className={`relative aspect-square group transition-all duration-200 touch-manipulation ${
             isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
-        } ${isSelected ? "scale-90" : "hover:scale-105"}`}
+        } ${isSelected ? "scale-90" : "hover:scale-105"} ${
+            isBeingDragged ? "opacity-40 scale-95 grayscale" : "opacity-100"
+        }`}
       >
+        {/* Expanded Hit Area / Visual Magnetism */}
+        <div className={`absolute -inset-4 rounded-3xl z-0 transition-all duration-200 ${
+            isDropTarget ? "border-4 border-rose-400/50 bg-rose-50/20 scale-105" : "border-transparent"
+        }`} />
+
         {/* Stack Effect (Underneath layers) */}
         {isMulti && (
-           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm" />
+           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm z-10" />
         )}
         {stack.files.length > 2 && (
            <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm" />
         )}
 
         {/* Main Card */}
-        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden ${
+        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 ${
             isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : "border-stone-200"
         }`}>
            <img src={coverUrl} className="w-full h-full object-cover pointer-events-none" alt="stack cover" />
@@ -1060,7 +1091,7 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
 
       {/* Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
+         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4">
             {stacks.map((stack, i) => (
                <StackCard
                   key={stack.id}
@@ -1069,6 +1100,7 @@ const StagingArea = ({ files, onConfirm, onCancel }) => {
                   isSelected={selectedStackIds.has(stack.id)}
                   onSelect={toggleSelect}
                   onRemove={handleRemoveStack}
+                  draggedIdx={draggedStackIdx}
                />
             ))}
          </div>
