@@ -780,8 +780,18 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     
     // Small delay to show the animation
     setTimeout(() => {
+      // FIX: Use current stacks (reflects deletions & additions), NOT original files prop
+      const currentFiles = stacks.flatMap(stack => stack.files);
+      
+      if (currentFiles.length === 0) {
+        setIsAutoGrouping(false);
+        setGroupingFeedback(`⚠️ No photos to group`);
+        setTimeout(() => setGroupingFeedback(null), 3000);
+        return;
+      }
+      
       // IMPROVED Heuristic: 3 Minute Threshold (180s) to catch "bursts"
-      const sorted = [...files].sort((a, b) => a.lastModified - b.lastModified);
+      const sorted = [...currentFiles].sort((a, b) => a.lastModified - b.lastModified);
       const newStacks = [];
       let currentStack = [];
 
