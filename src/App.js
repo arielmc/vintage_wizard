@@ -1639,14 +1639,26 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
       </div>
       <div className="p-3 flex-1 flex flex-col">
         <h3 className="font-semibold text-stone-800 line-clamp-1 mb-1">
-          {item.title || "Untitled Item"}
+          {getDisplayTitle(item)}
         </h3>
         <p className="text-xs text-stone-500 line-clamp-2 mb-2 flex-1">
-          {[item.maker, item.style, item.materials].filter(Boolean).join(" • ") || item.userNotes || "No details yet"}
+          {[
+            item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null,
+            item.style && item.style.toLowerCase() !== "unknown" ? item.style : null,
+            item.materials
+          ].filter(Boolean).join(" • ") || item.userNotes || "No details yet"}
         </p>
         <div className="flex items-center justify-between text-xs text-stone-400 mt-auto pt-2 border-t border-stone-50">
           <span>{item.category || "Unsorted"}</span>
-          {item.era && <span>{item.era}</span>}
+          {/* AI Timestamp */}
+          {item.aiLastRun ? (
+            <span className="flex items-center gap-1 text-emerald-600" title={`AI analyzed ${new Date(item.aiLastRun).toLocaleString()}`}>
+              <Sparkles className="w-2.5 h-2.5" />
+              {formatTimeAgo(item.aiLastRun)}
+            </span>
+          ) : (
+            item.era && item.era.toLowerCase() !== "unknown" && <span>{item.era}</span>
+          )}
         </div>
       </div>
     </div>
@@ -1725,54 +1737,82 @@ const LoginScreen = () => {
 
 // --- LISTING GENERATOR COMPONENT ---
 const ListingGenerator = ({ formData }) => {
-  // Helper to copy text
+  // Helper to copy text with feedback
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    alert("Copied to clipboard!");
+    playSuccessFeedback();
+    // Show brief toast instead of alert
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2 rounded-xl shadow-xl text-sm font-medium z-[100] animate-in fade-in slide-in-from-bottom-4';
+    toast.textContent = '✓ Copied to clipboard';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
   };
 
-  // Generate Optimized Title
-  // Strategy: Maker + Style + Object + Era + Key Details
+  // Generate Optimized Title (avoid Unknown)
   const generateTitle = () => {
-    const parts = [
-      formData.maker,
-      formData.style,
-      formData.title, // Usually the object name from AI
-      formData.era,
-      formData.materials
-    ].filter(Boolean);
+    const parts = [];
+    
+    // Only add maker if it's not "Unknown"
+    if (formData.maker && formData.maker.toLowerCase() !== "unknown") {
+      parts.push(formData.maker);
+    }
+    if (formData.style && formData.style.toLowerCase() !== "unknown") {
+      parts.push(formData.style);
+    }
+    // Add title but clean it
+    if (formData.title) {
+      const cleanTitle = formData.title.replace(/^Unknown\s*/i, "").trim();
+      if (cleanTitle) parts.push(cleanTitle);
+    }
+    if (formData.era && formData.era.toLowerCase() !== "unknown") {
+      parts.push(formData.era);
+    }
+    if (formData.materials) {
+      parts.push(formData.materials);
+    }
     
     // Dedupe words and join
     const uniqueParts = [...new Set(parts.join(" ").split(" "))];
-    return uniqueParts.join(" ").substring(0, 80); // eBay limit 80 chars
+    return uniqueParts.join(" ").substring(0, 80) || "Vintage Item"; // eBay limit 80 chars
   };
 
-  // Generate Description Template
+  // Generate Description - Use sales_blurb as primary hook (NOT "RARE FIND")
   const generateDescription = () => {
+    // Use sales_blurb as the compelling intro if available
+    const hook = formData.sales_blurb || formData.title || "Beautiful vintage piece ready for a new home.";
+    
+    // Build maker line intelligently
+    const makerLine = formData.maker && formData.maker.toLowerCase() !== "unknown" 
+      ? `• Maker/Brand: ${formData.maker}` 
+      : "• Maker: See photos for any marks";
+    
+    // Build era line
+    const eraLine = formData.era && formData.era.toLowerCase() !== "unknown"
+      ? `• Era: ${formData.era}`
+      : "• Era: Vintage";
+    
     return `
-✨ RARE FIND: ${formData.title} ✨
-
-📝 DESCRIPTION:
-${formData.sales_blurb || "No description available."}
+${hook}
 
 🏷️ DETAILS:
-• Maker/Brand: ${formData.maker || "Unsigned"}
+${makerLine}
 • Style/Period: ${formData.style || "Vintage"}
-• Era: ${formData.era || "Unknown"}
+${eraLine}
 • Material: ${formData.materials || "See photos"}
 
 💎 CONDITION:
 ${formData.condition || "Good vintage condition. Please see photos for details."}
-${formData.markings ? `• Markings: ${formData.markings}` : ""}
+${formData.markings ? `\n• Markings: ${formData.markings}` : ""}
 
-📏 NOTES:
-${formData.userNotes || "Message for measurements or more details!"}
+📏 SHIPPING & QUESTIONS:
+${formData.userNotes || "Message me for measurements, shipping quotes, or more photos!"}
 
-sku: ${formData.id ? formData.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substr(2, 8).toUpperCase()}
+SKU: ${formData.id ? formData.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substr(2, 8).toUpperCase()}
     `.trim();
   };
 
-  // Generate Hashtags
+  // Generate Hashtags (filter out "unknown")
   const generateTags = () => {
     const baseTags = [
       formData.category,
@@ -1782,75 +1822,103 @@ sku: ${formData.id ? formData.id.substring(0, 8).toUpperCase() : Math.random().t
       "retro",
       "preloved",
       formData.maker
-    ].filter(Boolean);
+    ].filter(t => t && t.toLowerCase() !== "unknown");
     
     // Add AI search terms if available
     if (formData.search_terms_broad) {
-        baseTags.push(...formData.search_terms_broad.split(" "));
+        baseTags.push(...formData.search_terms_broad.split(" ").filter(t => t.toLowerCase() !== "unknown"));
     }
 
-    return baseTags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
+    return [...new Set(baseTags)].map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
   };
 
   const generatedTitle = generateTitle();
   const generatedDesc = generateDescription();
   const generatedTags = generateTags();
 
+  const itemSku = formData.id ? formData.id.substring(0, 8).toUpperCase() : "N/A";
+
   return (
-    <div className="space-y-6 p-1">
+    <div className="space-y-4 p-1 pb-6">
       {/* eBay / Poshmark Title */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
             <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
             Optimized Title ({generatedTitle.length}/80)
             </label>
-            <button onClick={() => handleCopy(generatedTitle)} className="text-rose-600 text-xs font-bold hover:underline">
-                Copy
+            <button onClick={() => handleCopy(generatedTitle)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+                <Copy className="w-3 h-3" /> Copy
             </button>
         </div>
-        <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium text-stone-800 break-words">
+        <div className="p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 break-words shadow-sm">
             {generatedTitle}
         </div>
       </div>
 
-      {/* Description Block */}
+      {/* Description Block - Collapsible on mobile */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
             <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
             Professional Description
             </label>
-            <button onClick={() => handleCopy(generatedDesc)} className="text-rose-600 text-xs font-bold hover:underline">
-                Copy
+            <button onClick={() => handleCopy(generatedDesc)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+                <Copy className="w-3 h-3" /> Copy
             </button>
         </div>
         <textarea 
             readOnly
             value={generatedDesc}
-            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-64 focus:outline-none resize-none"
+            className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-40 md:h-48 focus:outline-none resize-y shadow-sm"
         />
       </div>
 
-      {/* Tags */}
+      {/* SEO Tags - More prominent */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            SEO Tags
+            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-blue-500">#</span> SEO Tags
             </label>
-            <button onClick={() => handleCopy(generatedTags)} className="text-rose-600 text-xs font-bold hover:underline">
-                Copy
+            <button onClick={() => handleCopy(generatedTags)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+                <Copy className="w-3 h-3" /> Copy
             </button>
         </div>
-        <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-blue-600 break-words">
-            {generatedTags}
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 break-words shadow-sm">
+            {generatedTags || "No tags generated"}
         </div>
       </div>
       
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-        <h4 className="text-blue-800 font-bold text-sm mb-1">🚀 Pro Tip</h4>
-        <p className="text-blue-700/80 text-xs">
-            Copy these blocks directly into eBay, Poshmark, or Depop. The title is optimized for search keywords, and the description includes all the details buyers ask for.
+      {/* SKU */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+              SKU
+            </label>
+            <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+                <Copy className="w-3 h-3" /> Copy
+            </button>
+        </div>
+        <div className="p-2 bg-stone-100 border border-stone-200 rounded-lg text-sm font-mono text-stone-700 inline-block">
+            {itemSku}
+        </div>
+      </div>
+      
+      {/* Pro Tip */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl">
+        <h4 className="text-blue-800 font-bold text-sm mb-1 flex items-center gap-2">
+          <span>🚀</span> Pro Tip
+        </h4>
+        <p className="text-blue-700/80 text-xs leading-relaxed">
+            Copy these blocks directly into eBay, Poshmark, or Depop. The title is optimized for search keywords, and the description includes all the details buyers need.
         </p>
       </div>
+      
+      {/* Copy All Button */}
+      <button 
+        onClick={() => handleCopy(`${generatedTitle}\n\n${generatedDesc}\n\n${generatedTags}\n\nSKU: ${itemSku}`)}
+        className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+      >
+        <Copy className="w-4 h-4" /> Copy Everything
+      </button>
     </div>
   );
 };
@@ -1918,6 +1986,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
       ...formData,
       image: formData.images.length > 0 ? formData.images[0] : null,
     });
+    playSuccessFeedback(); // Sound/haptic confirmation
     onClose();
   };
 
@@ -2501,12 +2570,72 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   );
 };
 
+// Helper: Play success sound/haptic
+const playSuccessFeedback = () => {
+  // Haptic feedback (mobile)
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+  // Audio feedback - subtle chime
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+  } catch (e) {
+    // Audio not supported, fail silently
+  }
+};
+
+// Helper: Format relative time
+const formatTimeAgo = (isoString) => {
+  if (!isoString) return null;
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+};
+
+// Helper: Get smart display title (avoids "Unknown")
+const getDisplayTitle = (item) => {
+  // Don't show "Unknown" maker in title
+  const title = item.title || "";
+  const maker = item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null;
+  const style = item.style && item.style.toLowerCase() !== "unknown" ? item.style : null;
+  const category = item.category || "";
+  
+  // If title starts with "Unknown" or is empty, create a better one
+  if (!title || title.toLowerCase().startsWith("unknown")) {
+    const parts = [style, category].filter(Boolean);
+    return parts.length > 0 ? parts.join(" ") : "Untitled Item";
+  }
+  
+  // Remove "Unknown" prefix if present
+  return title.replace(/^Unknown\s*/i, "").trim() || "Untitled Item";
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search state
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -2860,10 +2989,32 @@ ${item.userNotes || "Message for measurements or more details!"}`;
 
   const filteredItems = useMemo(
     () => {
-      let result = (filter === "all" ? items : items.filter((i) => {
-         if (filter === "TBD") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
-         return i.status === filter;
-      }));
+      let result = items;
+      
+      // Apply filter
+      if (filter !== "all") {
+        result = result.filter((i) => {
+           if (filter === "TBD") return i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe";
+           return i.status === filter;
+        });
+      }
+      
+      // Apply search (searches title, maker, category, style)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        result = result.filter((i) => {
+          const searchFields = [
+            i.title,
+            i.maker,
+            i.category,
+            i.style,
+            i.materials,
+            i.search_terms,
+            i.search_terms_broad
+          ].filter(Boolean).join(" ").toLowerCase();
+          return searchFields.includes(query);
+        });
+      }
 
       return result.sort((a, b) => {
         switch (sortBy) {
@@ -2884,7 +3035,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
         }
       });
     },
-    [items, filter, sortBy]
+    [items, filter, sortBy, searchQuery]
   );
 
   const totalLowEst = useMemo(
@@ -2937,18 +3088,38 @@ ${item.userNotes || "Message for measurements or more details!"}`;
     <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32">
       {/* --- Header --- */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-30 overflow-visible">
-        {/* Row 1: Logo + Actions */}
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        {/* Row 1: Logo + Search + Actions */}
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
-            <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden md:block">
+            <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
               Resale Helper Bot
             </h1>
           </div>
           
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xs relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-200 transition-all placeholder:text-stone-400"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
              {/* Add Item (Single) - with Premium Tooltip */}
              <div className="relative group/tooltip">
                 <button
@@ -3179,6 +3350,29 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           </div>
         )}
 
+        {/* Empty State for Filters/Search */}
+        {!dataLoading && items.length > 0 && filteredItems.length === 0 && (
+          <div className="text-center py-16 animate-in fade-in duration-300">
+            <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-stone-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-stone-700 mb-2">
+              {searchQuery ? `No results for "${searchQuery}"` : `No items marked as "${filter}"`}
+            </h3>
+            <p className="text-sm text-stone-500 mb-4">
+              {searchQuery 
+                ? "Try a different search term or clear your search" 
+                : `You haven't marked any items as "${filter}" yet`}
+            </p>
+            <button 
+              onClick={() => { setSearchQuery(""); setFilter("all"); }}
+              className="text-rose-600 text-sm font-semibold hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {dataLoading ? (
              // Skeleton Loading Grid
@@ -3205,29 +3399,43 @@ ${item.userNotes || "Message for measurements or more details!"}`;
       {isSelectionMode && (
          <div className="fixed bottom-6 md:bottom-12 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
             <div className="bg-stone-900 text-white rounded-2xl shadow-2xl shadow-stone-900/50 p-4 border border-stone-700/50 flex items-center justify-between gap-4 backdrop-blur-md">
-               <div className="flex items-center gap-3 pl-2">
-                  <div className="bg-stone-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-inner">
-                     {selectedIds.size} Selected
+               <div className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2">
+                  <div className="bg-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold shadow-inner">
+                     {selectedIds.size}/{filteredItems.length}
                   </div>
-                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-400 hover:text-white text-sm font-medium transition-colors">
+                  {/* Select All / Deselect All */}
+                  <button 
+                     onClick={() => {
+                       if (selectedIds.size === filteredItems.length) {
+                         setSelectedIds(new Set());
+                       } else {
+                         setSelectedIds(new Set(filteredItems.map(i => i.id)));
+                       }
+                     }}
+                     className="text-stone-300 hover:text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                  >
+                     {selectedIds.size === filteredItems.length ? "Deselect All" : "Select All"}
+                  </button>
+                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-500 hover:text-stone-300 text-xs sm:text-sm font-medium transition-colors">
                      Cancel
                   </button>
                </div>
-               <div className="flex items-center gap-3">
+               <div className="flex items-center gap-2 sm:gap-3">
                   <button 
                      onClick={handleBatchDelete}
-                     className="p-2.5 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-stone-700"
+                     disabled={selectedIds.size === 0}
+                     className="p-2 sm:p-2.5 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
                      title="Delete Selected"
                   >
-                     <Trash2 className="w-5 h-5" />
+                     <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button 
                      onClick={handleBatchAnalyze}
-                     disabled={isBatchProcessing}
-                     className="bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95 border-t border-white/20"
+                     disabled={isBatchProcessing || selectedIds.size === 0}
+                     className="bg-rose-500 hover:bg-rose-600 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95 border-t border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                      {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white" />}
-                     <span className="hidden sm:inline">Analyze Items</span>
+                     <span className="hidden sm:inline">Analyze</span>
                      <span className="sm:hidden">AI</span>
                   </button>
                </div>
