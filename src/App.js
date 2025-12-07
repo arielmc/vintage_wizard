@@ -1807,8 +1807,6 @@ ${formData.markings ? `\n• Markings: ${formData.markings}` : ""}
 
 📏 SHIPPING & QUESTIONS:
 ${formData.userNotes || "Message me for measurements, shipping quotes, or more photos!"}
-
-SKU: ${formData.id ? formData.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substr(2, 8).toUpperCase()}
     `.trim();
   };
 
@@ -2887,39 +2885,53 @@ export default function App() {
   const handleExportCSV = () => {
     if (items.length === 0) return;
     
-    // Helper: Generate optimized title (80 char limit for eBay)
+    // Helper: Generate optimized title (80 char limit for eBay, no "Unknown")
     const generateOptimizedTitle = (item) => {
-      const parts = [item.maker, item.style, item.title, item.era, item.materials].filter(Boolean);
+      const parts = [
+        item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null,
+        item.style && item.style.toLowerCase() !== "unknown" ? item.style : null,
+        item.title ? item.title.replace(/^Unknown\s*/i, "").trim() : null,
+        item.era && item.era.toLowerCase() !== "unknown" ? item.era : null,
+        item.materials
+      ].filter(Boolean);
       const uniqueParts = [...new Set(parts.join(" ").split(" "))];
-      return uniqueParts.join(" ").substring(0, 80);
+      return uniqueParts.join(" ").substring(0, 80) || "Vintage Item";
     };
     
-    // Helper: Generate listing description
+    // Helper: Generate listing description (uses sales_blurb as hook, no "RARE FIND")
     const generateDescription = (item) => {
-      return `RARE FIND: ${item.title || "Vintage Item"}
-
-DESCRIPTION:
-${item.sales_blurb || "No description available."}
+      const hook = item.sales_blurb || item.title || "Beautiful vintage piece ready for a new home.";
+      const makerLine = item.maker && item.maker.toLowerCase() !== "unknown" 
+        ? `- Maker/Brand: ${item.maker}` 
+        : "- Maker: See photos for any marks";
+      const eraLine = item.era && item.era.toLowerCase() !== "unknown"
+        ? `- Era: ${item.era}`
+        : "- Era: Vintage";
+        
+      return `${hook}
 
 DETAILS:
-- Maker/Brand: ${item.maker || "Unsigned"}
+${makerLine}
 - Style/Period: ${item.style || "Vintage"}
-- Era: ${item.era || "Unknown"}
+${eraLine}
 - Material: ${item.materials || "See photos"}
 
 CONDITION:
 ${item.condition || "Good vintage condition. Please see photos for details."}
 ${item.markings ? `- Markings: ${item.markings}` : ""}
 
-NOTES:
+SHIPPING & QUESTIONS:
 ${item.userNotes || "Message for measurements or more details!"}`;
     };
     
-    // Helper: Generate SEO tags
+    // Helper: Generate SEO tags (filter out "unknown")
     const generateTags = (item) => {
-      const baseTags = [item.category, item.style, item.era, "vintage", "retro", item.maker].filter(Boolean);
-      if (item.search_terms_broad) baseTags.push(...item.search_terms_broad.split(" "));
-      return baseTags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
+      const baseTags = [item.category, item.style, item.era, "vintage", "retro", item.maker]
+        .filter(t => t && t.toLowerCase() !== "unknown");
+      if (item.search_terms_broad) {
+        baseTags.push(...item.search_terms_broad.split(" ").filter(t => t.toLowerCase() !== "unknown"));
+      }
+      return [...new Set(baseTags)].map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
     };
     
     // Helper: Generate SKU (consistent per item using ID)
