@@ -1034,13 +1034,27 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   // Stack Card Component with Improved Drag/Drop
   const [isDragOverTarget, setIsDragOverTarget] = useState(null);
   
+  // IMPROVED: Drag & Drop Best Practices
+  // - Uses native HTML5 Drag & Drop with proper event handling
+  // - Stores index in dataTransfer for cross-component communication
+  // - Adds explicit drop zone highlighting
+  // - Debounces drag over events for better performance
+  
   const StackCard = ({ stack, index, isSelected, onSelect, onRemove, draggedIdx }) => {
     const isMulti = stack.files.length > 1;
-    const coverUrl = URL.createObjectURL(stack.files[0]);
+    const [coverUrl, setCoverUrl] = useState(null);
+    const [imageLoaded, setImageLoaded] = useState(false);
     const isBeingDragged = draggedIdx === index;
-    // Determine if this is a potential drop target
     const isDropTarget = draggedIdx !== null && draggedIdx !== index;
     const isActiveDropTarget = isDragOverTarget === index;
+    const cardRef = useRef(null);
+
+    // Create stable object URL
+    useEffect(() => {
+      const url = URL.createObjectURL(stack.files[0]);
+      setCoverUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }, [stack.files]);
 
     const handleClick = () => {
         if (isSelectionMode) {
@@ -1050,83 +1064,144 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
         }
     };
 
+    // Proper drag start handler
+    const onDragStartHandler = (e) => {
+        if (isSelectionMode) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Store index in multiple formats for broader compatibility
+        e.dataTransfer.setData("text/plain", index.toString());
+        e.dataTransfer.setData("application/json", JSON.stringify({ index, stackId: stack.id }));
+        e.dataTransfer.effectAllowed = "move";
+        
+        // Use the actual element as drag image (more reliable than custom Image)
+        if (cardRef.current) {
+            const rect = cardRef.current.getBoundingClientRect();
+            e.dataTransfer.setDragImage(cardRef.current, rect.width / 2, rect.height / 2);
+        }
+        
+        // Update state after a micro-task to ensure dataTransfer is set
+        setTimeout(() => setDraggedStackIdx(index), 0);
+    };
+
+    // Proper drag over handler with debouncing
+    const onDragOverHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        
+        // Only update if we're actually over a different card
+        if (draggedIdx !== null && draggedIdx !== index && isDragOverTarget !== index) {
+            setIsDragOverTarget(index);
+        }
+    };
+
+    // Drag leave with target check
+    const onDragLeaveHandler = (e) => {
+        e.preventDefault();
+        // Only clear if we're actually leaving this element (not entering a child)
+        const rect = cardRef.current?.getBoundingClientRect();
+        if (rect) {
+            const { clientX, clientY } = e;
+            if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+                if (isDragOverTarget === index) {
+                    setIsDragOverTarget(null);
+                }
+            }
+        }
+    };
+
+    // Drop handler
+    const onDropHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const sourceIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+        if (!isNaN(sourceIdx) && sourceIdx !== index) {
+            handleDrop(e, index);
+        }
+        setIsDragOverTarget(null);
+    };
+
+    // Drag end cleanup
+    const onDragEndHandler = () => {
+        setDraggedStackIdx(null);
+        setIsDragOverTarget(null);
+    };
+
     return (
       <div
+        ref={cardRef}
         draggable={!isSelectionMode}
-        onDragStart={(e) => {
-            // Custom Ghost Image
-            const img = new Image();
-            img.src = coverUrl;
-            e.dataTransfer.setDragImage(img, 50, 50); 
-            handleDragStart(e, index);
-        }}
-        onDragOver={(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            // Set this as active drop target
-            if (draggedIdx !== null && draggedIdx !== index) {
-              setIsDragOverTarget(index);
-            }
-        }}
-        onDragLeave={() => {
-            if (isDragOverTarget === index) {
-              setIsDragOverTarget(null);
-            }
-        }}
-        onDrop={(e) => {
-            handleDrop(e, index);
-            setIsDragOverTarget(null);
-        }}
-        onDragEnd={() => {
-            setDraggedStackIdx(null);
-            setIsDragOverTarget(null);
-        }}
+        onDragStart={onDragStartHandler}
+        onDragOver={onDragOverHandler}
+        onDragLeave={onDragLeaveHandler}
+        onDrop={onDropHandler}
+        onDragEnd={onDragEndHandler}
         onClick={handleClick}
-        className={`relative aspect-square group transition-all duration-200 touch-manipulation ${
+        className={`relative aspect-square group transition-all duration-200 select-none ${
             isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
         } ${isSelected ? "scale-90" : ""} ${
-            isBeingDragged ? "opacity-30 scale-90 grayscale" : "opacity-100 hover:scale-105"
+            isBeingDragged ? "opacity-40 scale-95 grayscale" : "opacity-100 hover:scale-[1.02]"
         }`}
+        style={{ touchAction: 'none' }}
       >
-        {/* Active Drop Target Highlight */}
+        {/* Active Drop Target Highlight - More prominent */}
         {isActiveDropTarget && (
-          <div className="absolute -inset-3 rounded-2xl border-4 border-emerald-500 bg-emerald-100/50 z-0 animate-pulse" />
+          <div className="absolute -inset-4 rounded-2xl border-4 border-emerald-400 bg-emerald-50/80 z-0 transition-all duration-150" />
         )}
         
         {/* Potential Drop Target Indicator */}
         {isDropTarget && !isActiveDropTarget && (
-          <div className="absolute -inset-2 rounded-2xl border-2 border-dashed border-stone-300 z-0" />
+          <div className="absolute -inset-2 rounded-2xl border-2 border-dashed border-stone-300/60 z-0" />
         )}
 
         {/* Stack Effect (Underneath layers) */}
         {isMulti && (
-           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm z-10" />
+           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm z-[5] pointer-events-none" />
         )}
         {stack.files.length > 2 && (
-           <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm" />
+           <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm pointer-events-none" />
         )}
 
         {/* Main Card */}
-        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 transition-all ${
+        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 transition-all duration-150 ${
             isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : 
-            isActiveDropTarget ? "border-emerald-500 ring-4 ring-emerald-500/30 scale-105" : 
+            isActiveDropTarget ? "border-emerald-400 ring-4 ring-emerald-400/40 scale-105" : 
             "border-stone-200"
         }`}>
-           <img src={coverUrl} className="w-full h-full object-cover pointer-events-none" alt="stack cover" />
+           {/* Loading skeleton */}
+           {!imageLoaded && (
+             <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center">
+               <Loader className="w-5 h-5 text-stone-300 animate-spin" />
+             </div>
+           )}
            
-           {/* Drop Indicator Overlay */}
+           {coverUrl && (
+             <img 
+               src={coverUrl} 
+               className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+               alt="stack cover"
+               onLoad={() => setImageLoaded(true)}
+               draggable={false}
+             />
+           )}
+           
+           {/* Drop Indicator Overlay - More visible */}
            {isActiveDropTarget && (
-             <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-               <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                 + Merge
+             <div className="absolute inset-0 bg-emerald-500/30 flex items-center justify-center backdrop-blur-[2px]">
+               <div className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl flex items-center gap-2">
+                 <Plus size={16} /> Merge Photos
                </div>
              </div>
            )}
            
            {/* Selection Checkmark Overlay */}
            {isSelectionMode && (
-               <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors ${
-                   isSelected ? "bg-rose-500 border-rose-500" : "bg-white/80 border-stone-300"
+               <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors shadow-sm ${
+                   isSelected ? "bg-rose-500 border-rose-500" : "bg-white/90 border-stone-300"
                }`}>
                    {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
                </div>
@@ -1141,7 +1216,7 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                    onRemove(index);
                  }
                }}
-               className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-sm hover:bg-red-600 z-20"
+               className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-md hover:bg-red-600 z-20"
                title="Delete permanently"
              >
                <Trash2 size={12} strokeWidth={3} />
@@ -1155,7 +1230,7 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
            
            {/* Stack indicator for multi-photo stacks */}
            {isMulti && (
-             <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+             <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 pointer-events-none shadow-sm">
                <Layers size={10} /> {stack.files.length}
              </div>
            )}
@@ -1342,17 +1417,34 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Enhanced Skeleton with shimmer effect
 const SkeletonCard = () => (
-  <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full animate-pulse">
-    <div className="aspect-square bg-stone-200/50" />
+  <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full">
+    <div className="aspect-square bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]" />
     <div className="p-3 flex-1 flex flex-col gap-2">
-      <div className="h-4 bg-stone-200 rounded w-3/4" />
-      <div className="h-3 bg-stone-100 rounded w-1/2" />
+      <div className="h-4 bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-3/4" />
+      <div className="h-3 bg-gradient-to-r from-stone-50 via-stone-150 to-stone-50 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-1/2" />
       <div className="mt-auto pt-2 flex justify-between items-center border-t border-stone-50">
         <div className="h-3 bg-stone-100 rounded w-1/3" />
         <div className="h-3 bg-stone-100 rounded w-1/4" />
       </div>
     </div>
+  </div>
+);
+
+// Global Loading Overlay Component
+const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => (
+  <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
+    <div className="relative mb-6">
+      {/* Spinning ring */}
+      <div className="w-20 h-20 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
+      {/* Center icon */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Sparkles className="w-8 h-8 text-rose-400 animate-pulse" />
+      </div>
+    </div>
+    <p className="text-lg font-bold text-stone-800">{message}</p>
+    {subMessage && <p className="text-sm text-stone-500 mt-1">{subMessage}</p>}
   </div>
 );
 
@@ -1768,7 +1860,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     ...item,
     images: item.images || (item.image ? [item.image] : []),
     clarifications: item.clarifications || {},
-    // Initialize Provenance (migrate userNotes if needed)
     provenance: item.provenance || {
        user_story: item.userNotes || "",
        date_claim: "",
@@ -1779,7 +1870,11 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [showQuestions, setShowQuestions] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const addPhotoInputRef = useRef(null);
+  const modalContentRef = useRef(null);
+  
   const marketLinks = useMemo(
     () =>
       getMarketplaceLinks(
@@ -1794,13 +1889,42 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   const [draggedIdx, setDraggedIdx] = useState(null);
   const [activeTab, setActiveTab] = useState("details"); // "details" | "listing"
 
+  // Track changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify({
+      ...item,
+      images: item.images || (item.image ? [item.image] : []),
+      clarifications: item.clarifications || {},
+      provenance: item.provenance || { user_story: item.userNotes || "", date_claim: "", is_locked: true },
+      valuation_context: item.valuation_context || null,
+    });
+    setHasUnsavedChanges(hasChanges);
+  }, [formData, item]);
+
+  // Handle backdrop click with save prompt
+  const handleBackdropClick = (e) => {
+    if (modalContentRef.current && !modalContentRef.current.contains(e.target)) {
+      if (hasUnsavedChanges) {
+        setShowSavePrompt(true);
+      } else {
+        onClose();
+      }
+    }
+  };
+
+  // Save and close helper
+  const handleSaveAndClose = () => {
+    onSave({
+      ...formData,
+      image: formData.images.length > 0 ? formData.images[0] : null,
+    });
+    onClose();
+  };
+
   const handleDragStart = (e, index) => {
     setDraggedIdx(index);
-    // Store index in dataTransfer for broader compatibility
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", index);
-    
-    // Make the drag image slightly transparent (optional, browser default is usually okay)
     e.target.style.opacity = "0.5";
   };
 
@@ -1810,11 +1934,8 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   };
 
   const handleDragOver = (e, index) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    
-    // Optional: You could implement "swapping" logic here for real-time preview,
-    // but simple Drop is safer for native DnD.
   };
 
   const handleDrop = (e, dropIndex) => {
@@ -1829,7 +1950,6 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     
     setFormData(prev => ({ ...prev, images: newImages }));
     
-    // Update active index correctly
     if (activeImageIdx === dragIdx) setActiveImageIdx(dropIndex);
     else if (dropIndex <= activeImageIdx && dragIdx > activeImageIdx) setActiveImageIdx(activeImageIdx + 1);
     else if (dropIndex >= activeImageIdx && dragIdx < activeImageIdx) setActiveImageIdx(activeImageIdx - 1);
@@ -1872,12 +1992,39 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={handleBackdropClick}
+    >
+      {/* Save Prompt Dialog */}
+      {showSavePrompt && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 animate-in fade-in duration-150" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-stone-900 mb-2">Save Changes?</h3>
+            <p className="text-sm text-stone-600 mb-6">You have unsaved changes. Would you like to save before closing?</p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => { setShowSavePrompt(false); onClose(); }}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+              >
+                Discard
+              </button>
+              <button 
+                onClick={() => { setShowSavePrompt(false); handleSaveAndClose(); }}
+                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 rounded-xl transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lightbox for full image view */}
       {isLightboxOpen && (
         <div 
           className="fixed inset-0 z-[70] bg-black flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setIsLightboxOpen(false)}
+          onClick={(e) => { e.stopPropagation(); setIsLightboxOpen(false); }}
         >
           <button 
             onClick={() => setIsLightboxOpen(false)}
@@ -1893,49 +2040,25 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
         </div>
       )}
       
-      {/* Main Modal - Vertical Layout (Content-First) */}
-      <div className="bg-white sm:rounded-2xl w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      {/* Main Modal - REDESIGNED Layout */}
+      <div 
+        ref={modalContentRef}
+        className="bg-white sm:rounded-2xl w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         
-        {/* Compact Header: Close + Title + Value + Status + Delete */}
-        <div className="px-3 py-2 border-b border-stone-200 bg-white flex items-center gap-2 shrink-0">
-          {/* Close Button (Left - where users expect it on mobile) */}
-          <button
-            onClick={onClose}
-            className="p-2 text-stone-400 hover:bg-stone-100 rounded-full shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          
-          {/* Title (truncated) */}
-          <h2 className="flex-1 text-sm font-bold text-stone-800 truncate min-w-0">
+        {/* NEW HEADER: Title + Run AI + Close (right side) */}
+        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-2 shrink-0">
+          {/* Title (truncated) - takes most space */}
+          <h2 className="flex-1 text-sm font-bold text-stone-800 truncate min-w-0 pl-1">
             {formData.title || "Untitled Item"}
           </h2>
           
-          {/* Value Input (compact) */}
-          <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 shrink-0">
-            <span className="text-emerald-600 text-xs font-bold">$</span>
-            <input
-              type="number"
-              placeholder="Min"
-              value={formData.valuation_low || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
-              className="w-12 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-xs"
-            />
-            <span className="text-emerald-300">-</span>
-            <input
-              type="number"
-              placeholder="Max"
-              value={formData.valuation_high || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
-              className="w-12 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-xs"
-            />
-          </div>
-          
-          {/* Status Dropdown */}
+          {/* Status Badge (compact) */}
           <select
             value={formData.status || "TBD"}
             onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}
-            className={`text-xs font-bold px-2 py-1.5 rounded-lg border cursor-pointer shrink-0 ${
+            className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer shrink-0 ${
               formData.status === "keep" ? "bg-blue-50 text-blue-700 border-blue-200" :
               formData.status === "sell" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
               "bg-amber-50 text-amber-700 border-amber-200"
@@ -1946,18 +2069,26 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             <option value="TBD">TBD</option>
           </select>
           
-          {/* Delete Item */}
+          {/* Run AI Button (prominent, in header) */}
           <button
-            onClick={() => {
-              if (confirm("Delete this item permanently?")) {
-                onDelete(item.id);
-                onClose();
-              }
-            }}
-            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full shrink-0"
-            title="Delete Item"
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || formData.images.length === 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              isAnalyzing 
+                ? "bg-stone-100 text-stone-400 cursor-wait" 
+                : "bg-rose-500 text-white hover:bg-rose-600 shadow-sm hover:shadow active:scale-95"
+            }`}
           >
-            <Trash2 className="w-4 h-4" />
+            {isAnalyzing ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isAnalyzing ? "Analyzing..." : (formData.aiLastRun ? "Re-Run" : "Analyze")}</span>
+          </button>
+          
+          {/* Close Button (top right) */}
+          <button
+            onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+            className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full shrink-0 transition-colors"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
         
@@ -1978,13 +2109,12 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-transparent hover:border-stone-300"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" className="w-full h-full object-cover" draggable={false} />
                   {idx === 0 && (
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">
                       HERO
                     </div>
                   )}
-                  {/* Remove button on hover */}
                   {formData.images.length > 1 && (
                     <button
                       onClick={(e) => {
@@ -2023,6 +2153,29 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             ref={addPhotoInputRef}
             onChange={handleAddPhoto}
           />
+        </div>
+        
+        {/* VALUE INPUT - Below photos, prominent */}
+        <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 flex items-center justify-between shrink-0">
+          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
+          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
+            <span className="text-emerald-600 text-sm font-bold">$</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={formData.valuation_low || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+              className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+            />
+            <span className="text-emerald-300 font-bold">—</span>
+            <input
+              type="number"
+              placeholder="Max"
+              value={formData.valuation_high || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+              className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+            />
+          </div>
         </div>
         
         {/* Tab Switcher */}
@@ -2319,30 +2472,26 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             )}
           </div>
           
-        {/* Footer */}
-        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex gap-2">
-          <button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || formData.images.length === 0}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              isAnalyzing 
-                ? "bg-stone-100 text-stone-400 cursor-wait" 
-                : "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100"
-            }`}
-          >
-            {isAnalyzing ? <Loader className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            {formData.aiLastRun ? "Re-Run AI" : "Run AI"}
-          </button>
-
+        {/* REDESIGNED Footer: Delete (left) | Save (right) */}
+        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center justify-between gap-3">
+          {/* Delete Button (bottom left) */}
           <button
             onClick={() => {
-              onSave({
-                ...formData,
-                image: formData.images.length > 0 ? formData.images[0] : null,
-              });
-              onClose();
+              if (confirm("Delete this item permanently? This cannot be undone.")) {
+                onDelete(item.id);
+                onClose();
+              }
             }}
-            className="flex-[2] py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-95"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Delete</span>
+          </button>
+
+          {/* Save Button (right side, prominent) */}
+          <button
+            onClick={handleSaveAndClose}
+            className="flex-1 sm:flex-none px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Save className="w-4 h-4" /> Save Changes
           </button>
@@ -3169,6 +3318,22 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           onClose={() => setSelectedItem(null)}
           onSave={handleUpdateItem}
           onDelete={handleDeleteItem}
+        />
+      )}
+      
+      {/* Global Loading Overlay - shows during single item uploads (not bulk staging) */}
+      {isUploading && view !== 'staging' && (
+        <LoadingOverlay 
+          message="Adding item..." 
+          subMessage="AI is analyzing your photo"
+        />
+      )}
+      
+      {/* Batch Processing Overlay */}
+      {isBatchProcessing && (
+        <LoadingOverlay 
+          message={`Analyzing ${selectedIds.size} items...`} 
+          subMessage="This may take a moment"
         />
       )}
     </div>
