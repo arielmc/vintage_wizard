@@ -1799,34 +1799,46 @@ const ListingGenerator = ({ formData }) => {
   // Generate Description - Use sales_blurb as primary hook (NOT "RARE FIND")
   const generateDescription = () => {
     // Use sales_blurb as the compelling intro if available
-    const hook = formData.sales_blurb || formData.title || "Beautiful vintage piece ready for a new home.";
+    const hook = formData.sales_blurb || "";
     
-    // Build maker line intelligently
-    const makerLine = formData.maker && formData.maker.toLowerCase() !== "unknown" 
-      ? `• Maker/Brand: ${formData.maker}` 
-      : "• Maker: See photos for any marks";
+    // Helper to check if a value is meaningful (not empty, unknown, or generic placeholder)
+    const isReal = (val) => {
+      if (!val) return false;
+      const lower = val.toLowerCase().trim();
+      return lower !== "unknown" && lower !== "vintage" && lower !== "see photos" && 
+             lower !== "contemporary" && lower !== "modern" && lower !== "n/a" && lower.length > 0;
+    };
     
-    // Build era line
-    const eraLine = formData.era && formData.era.toLowerCase() !== "unknown"
-      ? `• Era: ${formData.era}`
-      : "• Era: Vintage";
+    // Build details array - only include fields we actually know
+    const details = [];
+    if (isReal(formData.maker)) details.push(`• Maker/Brand: ${formData.maker}`);
+    if (isReal(formData.style)) details.push(`• Style/Period: ${formData.style}`);
+    if (isReal(formData.era)) details.push(`• Era: ${formData.era}`);
+    if (isReal(formData.materials)) details.push(`• Material: ${formData.materials}`);
+    if (formData.markings) details.push(`• Markings: ${formData.markings}`);
     
-    return `
-${hook}
-
-🏷️ DETAILS:
-${makerLine}
-• Style/Period: ${formData.style || "Vintage"}
-${eraLine}
-• Material: ${formData.materials || "See photos"}
-
-💎 CONDITION:
-${formData.condition || "Good vintage condition. Please see photos for details."}
-${formData.markings ? `\n• Markings: ${formData.markings}` : ""}
-
-📏 SHIPPING & QUESTIONS:
-${formData.userNotes || "Message me for measurements, shipping quotes, or more photos!"}
-    `.trim();
+    // Build condition section
+    const conditionText = isReal(formData.condition) ? formData.condition : "";
+    
+    // Build the description - only include sections with content
+    let desc = hook;
+    
+    if (details.length > 0) {
+      desc += `\n\n🏷️ DETAILS:\n${details.join("\n")}`;
+    }
+    
+    if (conditionText) {
+      desc += `\n\n💎 CONDITION:\n${conditionText}`;
+    }
+    
+    if (formData.userNotes) {
+      desc += `\n\n📏 NOTES:\n${formData.userNotes}`;
+    }
+    
+    // Add standard call-to-action
+    desc += "\n\n💬 Message me for measurements, shipping quotes, or more photos!";
+    
+    return desc.trim();
   };
 
   // Generate Hashtags (filter out "unknown")
@@ -2653,6 +2665,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
   const [error, setError] = useState(null);
   const [ownerName, setOwnerName] = useState("");
   const [filter, setFilter] = useState(filterParam || "all");
+  const [expandedItemIndex, setExpandedItemIndex] = useState(null); // Index in filteredItems
 
   useEffect(() => {
     const loadSharedCollection = async () => {
@@ -2774,10 +2787,14 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
         {/* Filter Tabs */}
         <div className="px-4 py-2 border-t border-stone-50 bg-stone-50/50 overflow-x-auto">
           <div className="max-w-6xl mx-auto flex gap-2">
-            {["all", "keep", "sell", "TBD"].map((f) => {
+            {[
+              { value: "all", label: "All", icon: Grid },
+              { value: "keep", label: "Keep", icon: Lock },
+              { value: "sell", label: "Sell", icon: Heart },
+              { value: "TBD", label: "TBD", icon: HelpCircle },
+            ].map(({ value: f, label: displayName, icon: Icon }) => {
               const stats = filterStats[f];
               const isActive = filter === f;
-              const displayName = f === "all" ? "All" : f === "TBD" ? "TBD" : f.charAt(0).toUpperCase() + f.slice(1);
               
               return (
                 <button
@@ -2792,6 +2809,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
                   {isActive ? (
                     <div className="flex flex-col items-start">
                       <div className="flex items-center gap-2">
+                        <Icon className="w-3 h-3 text-stone-600" />
                         <span className="text-xs font-bold text-stone-800">{displayName}</span>
                         <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
                       </div>
@@ -2802,7 +2820,8 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
                       )}
                     </div>
                   ) : (
-                    <span className="text-xs font-bold whitespace-nowrap">
+                    <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
+                      <Icon className="w-3 h-3" />
                       {displayName} <span className="opacity-60">{stats.count}</span>
                     </span>
                   )}
@@ -2821,12 +2840,29 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {filteredItems.map((item) => (
-              <SharedItemCard key={item.id} item={item} />
+            {filteredItems.map((item, idx) => (
+              <SharedItemCard 
+                key={item.id} 
+                item={item}
+                onExpand={() => setExpandedItemIndex(idx)}
+              />
             ))}
           </div>
         )}
       </main>
+      
+      {/* Expanded Item View */}
+      {expandedItemIndex !== null && filteredItems[expandedItemIndex] && (
+        <SharedItemCard
+          item={filteredItems[expandedItemIndex]}
+          isExpandedView={true}
+          onClose={() => setExpandedItemIndex(null)}
+          onNext={() => setExpandedItemIndex(prev => Math.min(prev + 1, filteredItems.length - 1))}
+          onPrev={() => setExpandedItemIndex(prev => Math.max(prev - 1, 0))}
+          hasNext={expandedItemIndex < filteredItems.length - 1}
+          hasPrev={expandedItemIndex > 0}
+        />
+      )}
       
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
@@ -2840,34 +2876,75 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
 };
 
 // Simplified card for shared view (read-only)
-const SharedItemCard = ({ item }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+// Shared Item Card with expanded view, image gallery, and item navigation
+const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPrev, hasNext, hasPrev }) => {
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
   const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
-  const displayImage = images.length > 0 ? images[0] : null;
+  const displayImage = images.length > 0 ? images[activeImageIdx] : null;
 
-  return (
-    <>
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isExpandedView) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight") {
+        if (activeImageIdx < images.length - 1) {
+          setActiveImageIdx(prev => prev + 1);
+        } else if (hasNext) {
+          onNext?.();
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (activeImageIdx > 0) {
+          setActiveImageIdx(prev => prev - 1);
+        } else if (hasPrev) {
+          onPrev?.();
+        }
+      } else if (e.key === "Escape") {
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isExpandedView, activeImageIdx, images.length, hasNext, hasPrev, onNext, onPrev, onClose]);
+
+  // Reset image index when item changes
+  useEffect(() => {
+    setActiveImageIdx(0);
+  }, [item.id]);
+
+  // Simple card view (not expanded)
+  if (!isExpandedView) {
+    return (
       <div
-        onClick={() => setIsExpanded(true)}
+        onClick={() => onExpand?.(item)}
         className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden cursor-pointer"
       >
         <div className="relative aspect-square bg-stone-100">
-          {displayImage ? (
-            <img src={displayImage} alt={item.title || "Item"} className="w-full h-full object-cover" />
+          {images[0] ? (
+            <img src={images[0]} alt={item.title || "Item"} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-stone-400">
               <Camera size={32} />
             </div>
           )}
           
-          {/* Status Badge */}
+          {/* Multi-image indicator */}
+          {images.length > 1 && (
+            <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+              <Layers size={10} /> {images.length}
+            </div>
+          )}
+          
+          {/* Status Badge with Icon */}
           <div className="absolute top-2 right-2">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 ${
               item.status === "keep" ? "bg-blue-100 text-blue-700" :
               item.status === "sell" ? "bg-emerald-100 text-emerald-700" :
               "bg-amber-100 text-amber-700"
             }`}>
-              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : item.status}
+              {item.status === "keep" && <Lock size={10} />}
+              {item.status === "sell" && <Heart size={10} />}
+              {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
+              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
             </span>
           </div>
           
@@ -2890,64 +2967,146 @@ const SharedItemCard = ({ item }) => {
           </p>
         </div>
       </div>
-      
-      {/* Expanded Detail Modal */}
-      {isExpanded && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setIsExpanded(false)}
+    );
+  }
+
+  // Expanded view with full gallery
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Prev Item Button */}
+      {hasPrev && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+          className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-10 transition-all"
         >
-          <div 
-            className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Images */}
-            <div className="relative aspect-square bg-stone-100">
-              {displayImage && (
-                <img src={displayImage} alt="" className="w-full h-full object-contain" />
-              )}
-              <button 
-                onClick={() => setIsExpanded(false)}
-                className="absolute top-3 right-3 bg-black/50 text-white p-2 rounded-full"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Details */}
-            <div className="p-4 space-y-3">
-              <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
-              
-              {item.valuation_high > 0 && (
-                <div className="bg-emerald-50 p-3 rounded-xl">
-                  <p className="text-xs text-emerald-600 font-semibold mb-1">Estimated Value</p>
-                  <p className="text-xl font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</p>
-                </div>
-              )}
-              
-              {item.sales_blurb && (
-                <p className="text-sm text-stone-600">{item.sales_blurb}</p>
-              )}
-              
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {item.maker && item.maker.toLowerCase() !== "unknown" && (
-                  <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
-                )}
-                {item.era && item.era.toLowerCase() !== "unknown" && (
-                  <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
-                )}
-                {item.materials && (
-                  <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
-                )}
-                {item.condition && (
-                  <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          <ChevronLeft size={24} />
+        </button>
       )}
-    </>
+      
+      {/* Next Item Button */}
+      {hasNext && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+          className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-10 transition-all"
+        >
+          <ChevronRight size={24} />
+        </button>
+      )}
+      
+      <div 
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto mx-4"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Image Gallery */}
+        <div className="relative aspect-square bg-stone-900">
+          {displayImage && (
+            <img src={displayImage} alt="" className="w-full h-full object-contain" />
+          )}
+          
+          {/* Close button */}
+          <button 
+            onClick={onClose}
+            className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+          >
+            <X size={20} />
+          </button>
+          
+          {/* Image counter */}
+          {images.length > 1 && (
+            <div className="absolute top-3 left-3 bg-black/50 text-white text-xs font-bold px-2 py-1 rounded-full">
+              {activeImageIdx + 1} / {images.length}
+            </div>
+          )}
+          
+          {/* Image navigation arrows */}
+          {images.length > 1 && (
+            <>
+              <button 
+                onClick={() => setActiveImageIdx(prev => prev > 0 ? prev - 1 : images.length - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                onClick={() => setActiveImageIdx(prev => prev < images.length - 1 ? prev + 1 : 0)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </>
+          )}
+          
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 px-4">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIdx(idx)}
+                  className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                    idx === activeImageIdx ? "border-white scale-105" : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Details */}
+        <div className="p-4 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
+            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 shrink-0 ${
+              item.status === "keep" ? "bg-blue-100 text-blue-700" :
+              item.status === "sell" ? "bg-emerald-100 text-emerald-700" :
+              "bg-amber-100 text-amber-700"
+            }`}>
+              {item.status === "keep" && <Lock size={10} />}
+              {item.status === "sell" && <Heart size={10} />}
+              {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
+              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
+            </span>
+          </div>
+          
+          {item.valuation_high > 0 && (
+            <div className="bg-emerald-50 p-3 rounded-xl">
+              <p className="text-xs text-emerald-600 font-semibold mb-1">Estimated Value</p>
+              <p className="text-xl font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</p>
+            </div>
+          )}
+          
+          {item.sales_blurb && (
+            <p className="text-sm text-stone-600">{item.sales_blurb}</p>
+          )}
+          
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {item.maker && item.maker.toLowerCase() !== "unknown" && (
+              <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
+            )}
+            {item.era && item.era.toLowerCase() !== "unknown" && (
+              <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
+            )}
+            {item.materials && (
+              <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
+            )}
+            {item.condition && (
+              <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
+            )}
+          </div>
+          
+          {/* Navigation hint */}
+          <p className="text-xs text-stone-400 text-center pt-2 border-t border-stone-100">
+            {images.length > 1 && "← → to browse photos • "}
+            Use arrow keys to navigate items
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -3439,28 +3598,37 @@ export default function App() {
     
     // Helper: Generate listing description (uses sales_blurb as hook, no "RARE FIND")
     const generateDescription = (item) => {
-      const hook = item.sales_blurb || item.title || "Beautiful vintage piece ready for a new home.";
-      const makerLine = item.maker && item.maker.toLowerCase() !== "unknown" 
-        ? `- Maker/Brand: ${item.maker}` 
-        : "- Maker: See photos for any marks";
-      const eraLine = item.era && item.era.toLowerCase() !== "unknown"
-        ? `- Era: ${item.era}`
-        : "- Era: Vintage";
-        
-      return `${hook}
-
-DETAILS:
-${makerLine}
-- Style/Period: ${item.style || "Vintage"}
-${eraLine}
-- Material: ${item.materials || "See photos"}
-
-CONDITION:
-${item.condition || "Good vintage condition. Please see photos for details."}
-${item.markings ? `- Markings: ${item.markings}` : ""}
-
-SHIPPING & QUESTIONS:
-${item.userNotes || "Message for measurements or more details!"}`;
+      const hook = item.sales_blurb || "";
+      
+      // Helper to check if a value is meaningful
+      const isReal = (val) => {
+        if (!val) return false;
+        const lower = val.toLowerCase().trim();
+        return lower !== "unknown" && lower !== "vintage" && lower !== "see photos" && 
+               lower !== "contemporary" && lower !== "modern" && lower !== "n/a" && lower.length > 0;
+      };
+      
+      // Build details - only include fields we actually know
+      const details = [];
+      if (isReal(item.maker)) details.push(`- Maker/Brand: ${item.maker}`);
+      if (isReal(item.style)) details.push(`- Style/Period: ${item.style}`);
+      if (isReal(item.era)) details.push(`- Era: ${item.era}`);
+      if (isReal(item.materials)) details.push(`- Material: ${item.materials}`);
+      if (item.markings) details.push(`- Markings: ${item.markings}`);
+      
+      let desc = hook;
+      if (details.length > 0) {
+        desc += `\n\nDETAILS:\n${details.join("\n")}`;
+      }
+      if (isReal(item.condition)) {
+        desc += `\n\nCONDITION:\n${item.condition}`;
+      }
+      if (item.userNotes) {
+        desc += `\n\nNOTES:\n${item.userNotes}`;
+      }
+      desc += "\n\nMessage for measurements or more details!";
+      
+      return desc.trim();
     };
     
     // Helper: Generate SEO tags (filter out "unknown")
@@ -3799,10 +3967,14 @@ ${item.userNotes || "Message for measurements or more details!"}`;
         {/* Row 2: Filters with Value + Sort */}
         <div className="border-t border-stone-50 bg-stone-50/50 overflow-visible">
           <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2">
-           {["all", "keep", "sell", "TBD"].map((f) => {
+           {[
+              { value: "all", label: "All", icon: Grid },
+              { value: "keep", label: "Keep", icon: Lock },
+              { value: "sell", label: "Sell", icon: Heart },
+              { value: "TBD", label: "TBD", icon: HelpCircle },
+            ].map(({ value: f, label: displayName, icon: Icon }) => {
               const stats = filterStats[f];
               const isActive = filter === f;
-              const displayName = f === "all" ? "All" : f === "TBD" ? "TBD" : f.charAt(0).toUpperCase() + f.slice(1);
               
               return (
                 <button
@@ -3817,6 +3989,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                   {isActive ? (
                     <div className="flex flex-col items-start">
                       <div className="flex items-center gap-2">
+                        <Icon className="w-3 h-3 text-stone-600" />
                         <span className="text-xs font-bold text-stone-800">{displayName}</span>
                         <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
                       </div>
@@ -3827,7 +4000,8 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                       )}
                     </div>
                   ) : (
-                    <span className="text-xs font-bold whitespace-nowrap">
+                    <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
+                      <Icon className="w-3 h-3" />
                       {displayName} <span className="opacity-60">{stats.count}</span>
                     </span>
                   )}
