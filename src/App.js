@@ -4196,7 +4196,7 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
-              Stuffboard
+              {user.displayName?.split(' ')[0] || "My"}'s Stuffboard
             </h1>
           </div>
           
