@@ -65,6 +65,7 @@ import {
   Unlock,
   BookOpen,
   Heart,
+  Tag,
   ShieldCheck,
   AlertTriangle,
   ImagePlus,
@@ -2790,7 +2791,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
             {[
               { value: "all", label: "All", icon: Grid },
               { value: "keep", label: "Keep", icon: Lock },
-              { value: "sell", label: "Sell", icon: Heart },
+              { value: "sell", label: "Sell", icon: Tag },
               { value: "TBD", label: "TBD", icon: HelpCircle },
             ].map(({ value: f, label: displayName, icon: Icon }) => {
               const stats = filterStats[f];
@@ -2942,7 +2943,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
               "bg-amber-100 text-amber-700"
             }`}>
               {item.status === "keep" && <Lock size={10} />}
-              {item.status === "sell" && <Heart size={10} />}
+              {item.status === "sell" && <Tag size={10} />}
               {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
               {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
             </span>
@@ -3067,7 +3068,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
               "bg-amber-100 text-amber-700"
             }`}>
               {item.status === "keep" && <Lock size={10} />}
-              {item.status === "sell" && <Heart size={10} />}
+              {item.status === "sell" && <Tag size={10} />}
               {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
               {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
             </span>
@@ -3247,7 +3248,7 @@ const ShareModal = ({ user, items, onClose }) => {
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "all", label: "Everything", icon: Grid },
-                  { value: "sell", label: "For Sale", icon: Heart },
+                  { value: "sell", label: "For Sale", icon: Tag },
                   { value: "keep", label: "Keepers", icon: Lock },
                   { value: "TBD", label: "Undecided", icon: HelpCircle },
                 ].map(({ value, label, icon: Icon }) => (
@@ -3970,7 +3971,7 @@ export default function App() {
            {[
               { value: "all", label: "All", icon: Grid },
               { value: "keep", label: "Keep", icon: Lock },
-              { value: "sell", label: "Sell", icon: Heart },
+              { value: "sell", label: "Sell", icon: Tag },
               { value: "TBD", label: "TBD", icon: HelpCircle },
             ].map(({ value: f, label: displayName, icon: Icon }) => {
               const stats = filterStats[f];
