@@ -16,10 +16,14 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
+  setDoc,
   onSnapshot,
   query,
   orderBy,
-  serverTimestamp, } from "firebase/firestore";
+  serverTimestamp,
+  getDocs,
+} from "firebase/firestore";
 import {
   Camera,
   Upload,
@@ -67,6 +71,11 @@ import {
   Images,
   Copy,
   Undo2,
+  Share2,
+  Link,
+  Globe,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -2637,6 +2646,514 @@ const getDisplayTitle = (item) => {
   return title.replace(/^Unknown\s*/i, "").trim() || "Untitled Item";
 };
 
+// --- SHARED COLLECTION VIEW (Public) ---
+const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [ownerName, setOwnerName] = useState("");
+  const [filter, setFilter] = useState(filterParam || "all");
+
+  useEffect(() => {
+    const loadSharedCollection = async () => {
+      try {
+        // Verify share token
+        const shareDocRef = doc(db, "artifacts", appId, "shares", shareId);
+        const shareDoc = await getDoc(shareDocRef);
+        
+        if (!shareDoc.exists()) {
+          setError("This share link is invalid or has expired.");
+          setLoading(false);
+          return;
+        }
+        
+        const shareData = shareDoc.data();
+        if (shareData.token !== shareToken) {
+          setError("Invalid share token.");
+          setLoading(false);
+          return;
+        }
+        
+        if (!shareData.isActive) {
+          setError("This share link has been deactivated.");
+          setLoading(false);
+          return;
+        }
+        
+        setOwnerName(shareData.ownerName || "A collector");
+        
+        // Load items from user's inventory
+        const itemsRef = collection(db, "artifacts", appId, "users", shareData.userId, "inventory");
+        const q = query(itemsRef, orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
+        
+        const loadedItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        setItems(loadedItems);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error loading shared collection:", err);
+        setError("Failed to load collection. Please try again.");
+        setLoading(false);
+      }
+    };
+    
+    loadSharedCollection();
+  }, [shareId, shareToken]);
+
+  const filteredItems = useMemo(() => {
+    if (filter === "all") return items;
+    if (filter === "TBD") return items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe");
+    return items.filter(i => i.status === filter);
+  }, [items, filter]);
+
+  const filterStats = useMemo(() => {
+    return ["all", "keep", "sell", "TBD"].reduce((acc, f) => {
+      const filtered = f === "all" ? items : 
+        f === "TBD" ? items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe") :
+        items.filter(i => i.status === f);
+      acc[f] = {
+        count: filtered.length,
+        low: filtered.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0),
+        high: filtered.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0),
+      };
+      return acc;
+    }, {});
+  }, [items]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-10 h-10 text-stone-400 animate-spin mx-auto mb-4" />
+          <p className="text-stone-600">Loading collection...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <EyeOff className="w-10 h-10 text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold text-stone-800 mb-2">Link Not Available</h1>
+          <p className="text-stone-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FDFBF7] pb-12">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-rose-400" fill="currentColor" />
+              </div>
+              <div>
+                <h1 className="text-lg font-serif font-bold text-stone-900">{ownerName}'s Collection</h1>
+                <p className="text-xs text-stone-500 flex items-center gap-1">
+                  <Globe className="w-3 h-3" /> Shared collection • {items.length} items
+                </p>
+              </div>
+            </div>
+            <a 
+              href="/"
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1"
+            >
+              Create your own <ArrowRight className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+        
+        {/* Filter Tabs */}
+        <div className="px-4 py-2 border-t border-stone-50 bg-stone-50/50 overflow-x-auto">
+          <div className="max-w-6xl mx-auto flex gap-2">
+            {["all", "keep", "sell", "TBD"].map((f) => {
+              const stats = filterStats[f];
+              const isActive = filter === f;
+              const displayName = f === "all" ? "All" : f === "TBD" ? "TBD" : f.charAt(0).toUpperCase() + f.slice(1);
+              
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`flex-shrink-0 transition-all duration-200 ${
+                    isActive
+                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
+                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white"
+                  }`}
+                >
+                  {isActive ? (
+                    <div className="flex flex-col items-start">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-stone-800">{displayName}</span>
+                        <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
+                      </div>
+                      {stats.high > 0 && (
+                        <span className="text-sm font-bold text-emerald-600 mt-0.5">
+                          ${stats.low.toLocaleString()} - ${stats.high.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold whitespace-nowrap">
+                      {displayName} <span className="opacity-60">{stats.count}</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </header>
+
+      {/* Grid */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-stone-500">No items to display</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {filteredItems.map((item) => (
+              <SharedItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </main>
+      
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-xs text-stone-500">
+          <Sparkles className="w-3 h-3 text-rose-400" />
+          <span>Powered by Resale Helper Bot</span>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+// Simplified card for shared view (read-only)
+const SharedItemCard = ({ item }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+  const displayImage = images.length > 0 ? images[0] : null;
+
+  return (
+    <>
+      <div
+        onClick={() => setIsExpanded(true)}
+        className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden cursor-pointer"
+      >
+        <div className="relative aspect-square bg-stone-100">
+          {displayImage ? (
+            <img src={displayImage} alt={item.title || "Item"} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-stone-400">
+              <Camera size={32} />
+            </div>
+          )}
+          
+          {/* Status Badge */}
+          <div className="absolute top-2 right-2">
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+              item.status === "keep" ? "bg-blue-100 text-blue-700" :
+              item.status === "sell" ? "bg-emerald-100 text-emerald-700" :
+              "bg-amber-100 text-amber-700"
+            }`}>
+              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : item.status}
+            </span>
+          </div>
+          
+          {/* Value */}
+          {item.valuation_high > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+              <p className="text-white font-bold text-lg drop-shadow-md">
+                ${item.valuation_low} - ${item.valuation_high}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-3">
+          <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">
+            {getDisplayTitle(item)}
+          </h3>
+          <p className="text-xs text-stone-500 line-clamp-1 mt-0.5">
+            {[item.maker, item.style].filter(v => v && v.toLowerCase() !== "unknown").join(" • ") || item.category || ""}
+          </p>
+        </div>
+      </div>
+      
+      {/* Expanded Detail Modal */}
+      {isExpanded && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsExpanded(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Images */}
+            <div className="relative aspect-square bg-stone-100">
+              {displayImage && (
+                <img src={displayImage} alt="" className="w-full h-full object-contain" />
+              )}
+              <button 
+                onClick={() => setIsExpanded(false)}
+                className="absolute top-3 right-3 bg-black/50 text-white p-2 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Details */}
+            <div className="p-4 space-y-3">
+              <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
+              
+              {item.valuation_high > 0 && (
+                <div className="bg-emerald-50 p-3 rounded-xl">
+                  <p className="text-xs text-emerald-600 font-semibold mb-1">Estimated Value</p>
+                  <p className="text-xl font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</p>
+                </div>
+              )}
+              
+              {item.sales_blurb && (
+                <p className="text-sm text-stone-600">{item.sales_blurb}</p>
+              )}
+              
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {item.maker && item.maker.toLowerCase() !== "unknown" && (
+                  <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
+                )}
+                {item.era && item.era.toLowerCase() !== "unknown" && (
+                  <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
+                )}
+                {item.materials && (
+                  <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
+                )}
+                {item.condition && (
+                  <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// --- SHARE MODAL ---
+const ShareModal = ({ user, items, onClose }) => {
+  const [shareData, setShareData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const loadOrCreateShare = async () => {
+      try {
+        const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
+        const shareDoc = await getDoc(shareDocRef);
+        
+        if (shareDoc.exists()) {
+          setShareData(shareDoc.data());
+        } else {
+          // Create new share token
+          const newShareData = {
+            userId: user.uid,
+            ownerName: user.displayName || "A collector",
+            token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
+            isActive: true,
+            createdAt: new Date().toISOString(),
+          };
+          await setDoc(shareDocRef, newShareData);
+          setShareData(newShareData);
+        }
+      } catch (err) {
+        console.error("Error with share:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadOrCreateShare();
+  }, [user]);
+
+  const getShareUrl = () => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams({
+      share: user.uid,
+      token: shareData?.token || "",
+      ...(selectedFilter !== "all" && { filter: selectedFilter })
+    });
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    playSuccessFeedback();
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleToggleActive = async () => {
+    if (!shareData) return;
+    const newIsActive = !shareData.isActive;
+    const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
+    await updateDoc(shareDocRef, { isActive: newIsActive });
+    setShareData({ ...shareData, isActive: newIsActive });
+  };
+
+  const handleRegenerateToken = async () => {
+    if (!confirm("This will invalidate all existing share links. Continue?")) return;
+    const newToken = Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
+    const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
+    await updateDoc(shareDocRef, { token: newToken });
+    setShareData({ ...shareData, token: newToken });
+  };
+
+  const filterCounts = {
+    all: items.length,
+    sell: items.filter(i => i.status === "sell").length,
+    keep: items.filter(i => i.status === "keep").length,
+    TBD: items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe").length,
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-stone-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
+              <Share2 className="w-5 h-5 text-rose-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-stone-900">Share Collection</h2>
+              <p className="text-xs text-stone-500">Create a public link to your items</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-stone-400 hover:bg-stone-100 rounded-full">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="p-8 flex items-center justify-center">
+            <Loader className="w-6 h-6 animate-spin text-stone-400" />
+          </div>
+        ) : (
+          <div className="p-4 space-y-4">
+            {/* Active Toggle */}
+            <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl">
+              <div className="flex items-center gap-2">
+                {shareData?.isActive ? (
+                  <Eye className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <EyeOff className="w-4 h-4 text-stone-400" />
+                )}
+                <span className="text-sm font-medium text-stone-700">
+                  {shareData?.isActive ? "Sharing enabled" : "Sharing disabled"}
+                </span>
+              </div>
+              <button
+                onClick={handleToggleActive}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  shareData?.isActive ? "bg-emerald-500" : "bg-stone-300"
+                }`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                  shareData?.isActive ? "left-7" : "left-1"
+                }`} />
+              </button>
+            </div>
+            
+            {/* Filter Selection */}
+            <div>
+              <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 block">
+                What to share
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "all", label: "Everything", icon: Grid },
+                  { value: "sell", label: "For Sale", icon: Heart },
+                  { value: "keep", label: "Keepers", icon: Lock },
+                  { value: "TBD", label: "Undecided", icon: HelpCircle },
+                ].map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSelectedFilter(value)}
+                    className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                      selectedFilter === value
+                        ? "border-rose-500 bg-rose-50 text-rose-700"
+                        : "border-stone-200 hover:border-stone-300 text-stone-600"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="ml-auto text-xs opacity-60">{filterCounts[value]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Share Link */}
+            {shareData?.isActive && (
+              <div>
+                <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 block">
+                  Share Link
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getShareUrl()}
+                    className="flex-1 p-3 bg-stone-100 rounded-xl text-sm text-stone-600 font-mono truncate"
+                  />
+                  <button
+                    onClick={handleCopy}
+                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
+                      copied 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-stone-900 text-white hover:bg-stone-800"
+                    }`}
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Security Note */}
+            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
+              <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5" />
+              <p className="text-xs text-amber-800">
+                Anyone with this link can view the selected items. 
+                <button onClick={handleRegenerateToken} className="underline ml-1 hover:text-amber-900">
+                  Generate new link
+                </button> to revoke access.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
@@ -2654,8 +3171,20 @@ export default function App() {
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
+  const [showShareModal, setShowShareModal] = useState(false);
   const singleInputRef = useRef(null);
   const bulkInputRef = useRef(null);
+  
+  // Check for share link in URL
+  const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const shareId = urlParams.get('share');
+  const shareToken = urlParams.get('token');
+  const shareFilter = urlParams.get('filter');
+  
+  // If viewing a shared collection, show the public view
+  if (shareId && shareToken) {
+    return <SharedCollectionView shareId={shareId} shareToken={shareToken} filterParam={shareFilter} />;
+  }
 
   const handleQuickAnalyze = async (item) => {
       try {
@@ -3223,6 +3752,20 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                    
                    {/* Menu Items */}
                    <button
+                     onClick={() => setShowShareModal(true)}
+                     disabled={items.length === 0}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
+                   >
+                     <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
+                       <Share2 className="w-3.5 h-3.5 text-rose-600" />
+                     </div>
+                     <div>
+                       <span className="block">Share Collection</span>
+                       <span className="text-[10px] text-stone-400">Create a public link</span>
+                     </div>
+                   </button>
+                   
+                   <button
                      onClick={handleExportCSV}
                      disabled={items.length === 0}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
@@ -3549,6 +4092,15 @@ ${item.userNotes || "Message for measurements or more details!"}`;
           onClose={() => setSelectedItem(null)}
           onSave={handleUpdateItem}
           onDelete={handleDeleteItem}
+        />
+      )}
+      
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          user={user}
+          items={items}
+          onClose={() => setShowShareModal(false)}
         />
       )}
       
