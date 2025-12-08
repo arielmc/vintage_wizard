@@ -2383,6 +2383,12 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
               ref={addPhotoInputRef}
               onChange={handleAddPhoto}
             />
+          {/* AI Info Note */}
+          {formData.images.length > 0 && (
+            <div className="flex-shrink-0 flex items-center text-[10px] text-stone-400 pl-2 border-l border-stone-200 ml-1">
+              <span>📷 AI uses first 4</span>
+            </div>
+          )}
         </div>
 
         {/* VALUE INPUT - Below photos, prominent */}
@@ -2789,6 +2795,8 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
   const [ownerName, setOwnerName] = useState("");
   const [filter, setFilter] = useState(filterParam || "all");
   const [expandedItemIndex, setExpandedItemIndex] = useState(null); // Index in filteredItems
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("newest"); // newest, oldest, value_high, value_low, alpha
 
   useEffect(() => {
     const loadSharedCollection = async () => {
@@ -2837,10 +2845,50 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
   }, [shareId, shareToken]);
 
   const filteredItems = useMemo(() => {
-    if (filter === "all") return items;
-    if (filter === "TBD") return items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe");
-    return items.filter(i => i.status === filter);
-  }, [items, filter]);
+    let result = items;
+    
+    // Apply filter
+    if (filter !== "all") {
+      if (filter === "TBD") {
+        result = result.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe");
+      } else {
+        result = result.filter(i => i.status === filter);
+      }
+    }
+    
+    // Apply search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(i => 
+        (i.title && i.title.toLowerCase().includes(query)) ||
+        (i.maker && i.maker.toLowerCase().includes(query)) ||
+        (i.category && i.category.toLowerCase().includes(query)) ||
+        (i.style && i.style.toLowerCase().includes(query))
+      );
+    }
+    
+    // Apply sort
+    switch (sortBy) {
+      case "oldest":
+        result = [...result].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        break;
+      case "value_high":
+        result = [...result].sort((a, b) => (Number(b.valuation_high) || 0) - (Number(a.valuation_high) || 0));
+        break;
+      case "value_low":
+        result = [...result].sort((a, b) => (Number(a.valuation_low) || 0) - (Number(b.valuation_low) || 0));
+        break;
+      case "alpha":
+        result = [...result].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        break;
+      case "newest":
+      default:
+        result = [...result].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        break;
+    }
+    
+    return result;
+  }, [items, filter, searchQuery, sortBy]);
 
   const filterStats = useMemo(() => {
     return ["all", "keep", "sell", "TBD"].reduce((acc, f) => {
@@ -2898,12 +2946,49 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
                 </p>
               </div>
             </div>
-            <a 
-              href="/"
-              className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1"
-            >
-              Create your own <ArrowRight className="w-3 h-3" />
-            </a>
+            {/* Search & Sort */}
+            <div className="flex items-center gap-2">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-32 sm:w-40 pl-8 pr-2 py-1.5 text-xs bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none transition-all placeholder:text-stone-400"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Sort Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="text-xs bg-stone-100 border border-transparent focus:border-stone-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer hover:bg-stone-200 transition-colors"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="value_high">Value: High→Low</option>
+                <option value="value_low">Value: Low→High</option>
+                <option value="alpha">A-Z</option>
+              </select>
+              
+              {/* Create Your Own Link */}
+              <a 
+                href="/"
+                className="hidden sm:flex text-xs font-semibold text-rose-600 hover:text-rose-700 items-center gap-1"
+              >
+                Create yours <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
           </div>
         </div>
         
@@ -3670,7 +3755,7 @@ export default function App() {
     if (files.length === 0) return;
     
     if (mode === 'single' && files.length > 4) {
-      alert("Please select a maximum of 4 images for a single item.");
+      alert("Select up to 4 photos to start. You can add more later on the item page!");
       e.target.value = ""; // Reset
       return;
     }
