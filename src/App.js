@@ -1761,26 +1761,26 @@ const LoginScreen = () => {
         <p className="text-stone-500 text-sm mb-6">Info & resale made easier</p>
         
         {/* Feature bullets */}
-        <div className="text-left bg-white/60 rounded-xl p-4 mb-8 space-y-2.5 text-sm border border-stone-100">
+        <div className="text-left bg-white/60 rounded-xl p-4 mb-8 space-y-3 text-sm border border-stone-100">
           <div className="flex items-start gap-2.5">
-            <span className="text-lg leading-none">📸</span>
-            <span className="text-stone-600">Snap a pic → Get instant AI analysis</span>
+            <span className="text-lg leading-none">📷</span>
+            <span className="text-stone-600"><strong>Add pic(s)</strong> + optional details on any item(s) & AI will get to work</span>
           </div>
           <div className="flex items-start gap-2.5">
             <span className="text-lg leading-none">💰</span>
-            <span className="text-stone-600">Know what it's worth (and where to sell it)</span>
+            <span className="text-stone-600"><strong>See what it's worth</strong> — price ranges + links to sold comparables</span>
           </div>
           <div className="flex items-start gap-2.5">
-            <span className="text-lg leading-none">🗃️</span>
-            <span className="text-stone-600">Build your collection database</span>
+            <span className="text-lg leading-none">🗂️</span>
+            <span className="text-stone-600"><strong>Build a visual vault</strong> — catalog everything, with AI categorization, searchable & synced</span>
           </div>
           <div className="flex items-start gap-2.5">
             <span className="text-lg leading-none">✍️</span>
-            <span className="text-stone-600">Auto-write eBay/Poshmark listings</span>
+            <span className="text-stone-600"><strong>Sell smarter</strong> — auto-generated listings ready for eBay, Poshmark, etc.</span>
           </div>
           <div className="flex items-start gap-2.5">
             <span className="text-lg leading-none">🔗</span>
-            <span className="text-stone-600">Share with buyers or appraisers</span>
+            <span className="text-stone-600"><strong>Share with anyone</strong> — buyers, appraisers, insurance, friends & family</span>
           </div>
         </div>
 
