@@ -2131,13 +2131,13 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           >
             <X size={32} />
           </button>
-          <img 
-            src={formData.images[activeImageIdx]} 
+              <img
+                src={formData.images[activeImageIdx]}
             className="max-w-full max-h-full object-contain pointer-events-none select-none"
             alt="Full view"
-          />
-        </div>
-      )}
+              />
+              </div>
+            )}
       
       {/* Main Modal - REDESIGNED Layout */}
       <div 
@@ -2146,30 +2146,47 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* NEW HEADER: Title + Run AI + Close (right side) */}
+        {/* NEW HEADER: Status Buttons + Run AI + Close */}
         <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-2 shrink-0">
-          {/* Title (truncated) - takes most space */}
-          <h2 className="flex-1 text-sm font-bold text-stone-800 truncate min-w-0 pl-1">
-            {formData.title || "Untitled Item"}
-          </h2>
-          
-          {/* Status Badge (compact) */}
-          <select
-            value={formData.status || "TBD"}
-            onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}
-            className={`text-[10px] font-bold px-2 py-1 rounded-md border cursor-pointer shrink-0 ${
-              formData.status === "keep" ? "bg-blue-50 text-blue-700 border-blue-200" :
-              formData.status === "sell" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-              "bg-amber-50 text-amber-700 border-amber-200"
-            }`}
-          >
-            <option value="keep">KEEP</option>
-            <option value="sell">SELL</option>
-            <option value="TBD">TBD</option>
-          </select>
+          {/* Status Buttons - 3 visible options with icons */}
+          <div className="flex-1 flex gap-1">
+              <button
+              onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "keep" 
+                  ? "bg-blue-100 text-blue-700 border-2 border-blue-400 shadow-sm" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
+              }`}
+            >
+              <Lock size={14} />
+              <span className="hidden sm:inline">Keep</span>
+              </button>
+            <button
+              onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "sell" 
+                  ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-400 shadow-sm" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
+              }`}
+            >
+              <Tag size={14} />
+              <span className="hidden sm:inline">Sell</span>
+            </button>
+            <button
+              onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "TBD" || !formData.status
+                  ? "bg-amber-100 text-amber-700 border-2 border-amber-400 shadow-sm" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
+              }`}
+            >
+              <HelpCircle size={14} />
+              <span className="hidden sm:inline">TBD</span>
+            </button>
+          </div>
           
           {/* Run AI Button (prominent, in header) */}
-          <button
+              <button
             onClick={handleAnalyze}
             disabled={isAnalyzing || formData.images.length === 0}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
@@ -2180,7 +2197,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           >
             {isAnalyzing ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{isAnalyzing ? "Analyzing..." : (formData.aiLastRun ? "Re-Run" : "Analyze")}</span>
-          </button>
+              </button>
           
           {/* Close Button (top right) */}
           <button
@@ -2191,8 +2208,8 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           </button>
         </div>
         
-        {/* Compact Thumbnail Strip (tap to expand, drag to reorder) */}
-        <div className="px-3 py-2 bg-stone-100 border-b border-stone-200 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+        {/* Larger Thumbnail Strip (tap to expand, drag to reorder) */}
+        <div className="px-3 py-3 bg-stone-100 border-b border-stone-200 flex gap-3 overflow-x-auto no-scrollbar shrink-0">
           {formData.images.length > 0 ? (
             <>
               {formData.images.map((img, idx) => (
@@ -2204,13 +2221,13 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   onDrop={(e) => handleDrop(e, idx)}
                   onDragEnd={handleDragEnd}
                   onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
-                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                    activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-transparent hover:border-stone-300"
+                  className={`relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden cursor-pointer border-2 transition-all shadow-sm hover:shadow-md ${
+                    activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-white hover:border-stone-300"
                   }`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" draggable={false} />
                   {idx === 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-0.5">
                       HERO
                     </div>
                   )}
@@ -2237,23 +2254,23 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
           )}
           
           {/* Add Photo Button */}
-          <button
-            onClick={() => addPhotoInputRef.current?.click()}
-            className="flex-shrink-0 w-14 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-white hover:bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
-          >
-            <Plus size={16} />
-            <span className="text-[8px] font-bold mt-0.5">ADD</span>
-          </button>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            className="hidden"
-            ref={addPhotoInputRef}
-            onChange={handleAddPhoto}
-          />
+            <button
+              onClick={() => addPhotoInputRef.current?.click()}
+            className="flex-shrink-0 w-24 h-24 rounded-xl border-2 border-dashed border-stone-300 bg-white hover:bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-600 transition-colors shadow-sm"
+            >
+              <Plus size={20} />
+            <span className="text-[10px] font-bold mt-1">ADD</span>
+            </button>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              ref={addPhotoInputRef}
+              onChange={handleAddPhoto}
+            />
         </div>
-        
+
         {/* VALUE INPUT - Below photos, prominent */}
         <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 flex items-center justify-between shrink-0">
           <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
@@ -2274,26 +2291,26 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
               onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
               className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
             />
-          </div>
+            </div>
         </div>
         
         {/* Tab Switcher */}
         <div className="px-3 py-2 bg-white border-b border-stone-100 shrink-0">
           <div className="flex p-1 bg-stone-100 rounded-xl">
-            <button 
+              <button
               onClick={() => setActiveTab("details")}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "details" ? "bg-white text-stone-800 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
             >
               Analysis & Details
-            </button>
-            <button 
+              </button>
+              <button
               onClick={() => setActiveTab("listing")}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === "listing" ? "bg-white text-rose-600 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
-            >
+              >
               <Sparkles className="w-3 h-3" /> Listing Helper
-            </button>
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
@@ -2301,93 +2318,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             <ListingGenerator formData={formData} />
           ) : (
             <div className="flex flex-col gap-3">
-              {/* AI Clarification Questions */}
-              {formData.questions && formData.questions.length > 0 && (
-                <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm mb-4">
-                  <div 
-                    className="bg-rose-100/50 p-4 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors active:bg-rose-200"
-                    onClick={() => setShowQuestions(!showQuestions)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4 text-rose-600" />
-                      <span className="text-sm font-bold text-rose-900">
-                        Refine Valuation
-                      </span>
-                    </div>
-                    <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
-                      {formData.questions.length} Questions
-                    </span>
-                  </div>
-                  
-                  {showQuestions && (
-                    <div className="p-4 space-y-4">
-                      <p className="text-xs text-rose-800/80 italic">
-                        The AI needs a bit more detail to give you an accurate price.
-                      </p>
-                      {formData.questions.map((q, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <label className="block text-xs font-semibold text-rose-800">
-                            {q}
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              inputMode="text"
-                              enterKeyHint="next"
-                              placeholder="Your answer..."
-                              value={formData.clarifications?.[q] || ""}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  clarifications: {
-                                    ...prev.clarifications,
-                                    [q]: e.target.value,
-                                  },
-                                }))
-                              }
-                              className="flex-1 p-3 text-sm bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-sm"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                      <button
-                        onClick={handleAnalyze}
-                        className="w-full mt-3 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md active:scale-95 transition-transform duration-100"
-                      >
-                        <RefreshCw className="w-4 h-4" /> Submit Answers & Re-Appraise
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            {marketLinks.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-2">
-                    <ExternalLink className="w-3 h-3" /> Market Comps
-                  </h4>
-                  <span className="text-[10px] text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full truncate max-w-[150px]">
-                    {formData.search_terms}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {marketLinks.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      referrerPolicy="no-referrer"
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-sm ${link.color}`}
-                    >
-                      <span className="font-semibold text-sm">{link.name}</span>
-                      <ExternalLink className="w-3 h-3 opacity-50" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="space-y-4">
+              {/* TITLE - First and most prominent */}
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider">
@@ -2407,11 +2338,104 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, title: e.target.value }))
                   }
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium resize-none text-sm"
+                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium resize-none text-sm shadow-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+
+              {/* Improve Valuation - collapsible questions */}
+              {formData.questions && formData.questions.length > 0 && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden shadow-sm">
+                  <div 
+                    className="bg-rose-100/50 px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors"
+                    onClick={() => setShowQuestions(!showQuestions)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-rose-600" />
+                      <span className="text-sm font-bold text-rose-900">
+                        Improve Valuation
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
+                      {formData.questions.length} Questions
+                    </span>
+                      <ChevronRight className={`w-4 h-4 text-rose-400 transition-transform ${showQuestions ? 'rotate-90' : ''}`} />
+                    </div>
+                  </div>
+                  
+                  {showQuestions && (
+                    <div className="p-3 space-y-3">
+                      <p className="text-[11px] text-rose-800/70 italic">
+                        Help the AI give you a more accurate price.
+                      </p>
+                      {formData.questions.map((q, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <label className="block text-xs font-semibold text-rose-800">
+                            {q}
+                          </label>
+                            <input
+                              type="text"
+                              inputMode="text"
+                              enterKeyHint="next"
+                              placeholder="Your answer..."
+                              value={formData.clarifications?.[q] || ""}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  clarifications: {
+                                    ...prev.clarifications,
+                                    [q]: e.target.value,
+                                  },
+                                }))
+                              }
+                            className="w-full p-2.5 text-sm bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                            />
+                        </div>
+                      ))}
+                      <button
+                        onClick={handleAnalyze}
+                        className="w-full mt-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-95"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" /> Re-Appraise with Answers
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Market Comps - more compact */}
+            {marketLinks.length > 0 && (
+                <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <ExternalLink className="w-3 h-3" /> Market Comps
+                  </h4>
+                    <span className="text-[10px] text-stone-400 truncate max-w-[120px]">
+                    {formData.search_terms}
+                  </span>
+                </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                  {marketLinks.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      referrerPolicy="no-referrer"
+                        className={`flex items-center justify-between px-2.5 py-2 rounded-lg border transition-all hover:shadow-sm text-xs ${link.color}`}
+                    >
+                        <span className="font-semibold">{link.name}</span>
+                      <ExternalLink className="w-3 h-3 opacity-50" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+              {/* Other form fields */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
                     Maker / Brand
                   </label>
@@ -2423,7 +2447,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                     }
                     className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
                   />
-                </div>
+                    </div>
                 <div>
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
                     Style / Period
@@ -2431,11 +2455,11 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
                   <input
                     type="text"
                     value={formData.style || ""}
-                    onChange={(e) =>
+                  onChange={(e) =>
                       setFormData((p) => ({ ...p, style: e.target.value }))
-                    }
+                  }
                     className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
-                  />
+                />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -2574,8 +2598,8 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
         {/* REDESIGNED Footer: Delete (left) | Save (right) */}
         <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center justify-between gap-3">
           {/* Delete Button (bottom left) */}
-          <button
-            onClick={() => {
+            <button
+              onClick={() => {
               if (confirm("Delete this item permanently? This cannot be undone.")) {
                 onDelete(item.id);
                 onClose();
@@ -2593,9 +2617,9 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
             className="flex-1 sm:flex-none px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <Save className="w-4 h-4" /> Save Changes
-          </button>
+            </button>
+          </div>
         </div>
-      </div>
     </div>
   );
 };
@@ -3939,29 +3963,29 @@ export default function App() {
                 <X className="w-3 h-3" />
               </button>
             )}
-          </div>
+            </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
              {/* Add Item (Single) - with Premium Tooltip */}
              <div className="relative group/tooltip">
-                <button
+            <button
                     onClick={() => singleInputRef.current?.click()}
                     disabled={isUploading}
                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-stone-900 text-white hover:bg-stone-800 hover:shadow-md hover:scale-[1.02] shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                  >
                     <ImagePlus className="w-4 h-4" />
                     <span className="hidden sm:inline">Add</span>
-                </button>
+            </button>
                 {/* Tooltip */}
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
                   Add single item (1-4 photos)
                 </div>
-             </div>
+              </div>
 
              {/* Bulk Upload - with Premium Tooltip */}
              <div className="relative group/tooltip">
-                <button
+              <button
                     onClick={() => bulkInputRef.current?.click()}
                     disabled={isUploading}
                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-white text-stone-700 hover:bg-stone-50 hover:shadow-md hover:scale-[1.02] border border-stone-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
@@ -3998,17 +4022,17 @@ export default function App() {
              {/* Profile Dropdown */}
              <div className="relative group cursor-pointer ml-1 z-50">
                 <div className="transition-all duration-200 hover:scale-105 hover:shadow-md rounded-full">
-                   {user.photoURL ? (
-                     <img
-                       src={user.photoURL}
-                       alt="Profile"
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
                       className="w-8 h-8 rounded-full border-2 border-stone-200 shadow-sm transition-all duration-200 group-hover:border-stone-400"
-                     />
-                   ) : (
+                  />
+                ) : (
                     <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center transition-all duration-200 group-hover:bg-stone-300">
-                       <UserCircle className="w-5 h-5 text-stone-400" />
-                     </div>
-                   )}
+                    <UserCircle className="w-5 h-5 text-stone-400" />
+                  </div>
+                )}
                 </div>
                {/* Dropdown Menu */}
                <div className="absolute right-0 top-full pt-2 hidden group-hover:block z-[100]">
@@ -4033,8 +4057,8 @@ export default function App() {
                      <div>
                        <span className="block">Share Collection</span>
                        <span className="text-[10px] text-stone-400">Create a public link</span>
-                     </div>
-                   </button>
+                </div>
+              </button>
                    
                    <button
                      onClick={handleExportCSV}
@@ -4043,7 +4067,7 @@ export default function App() {
                    >
                      <div className="w-7 h-7 rounded-md bg-stone-100 group-hover/item:bg-stone-200 flex items-center justify-center transition-colors">
                        <Download className="w-3.5 h-3.5" />
-                     </div>
+            </div>
                      <div>
                        <span className="block">Export CSV</span>
                        <span className="text-[10px] text-stone-400">Download your inventory</span>
@@ -4052,7 +4076,7 @@ export default function App() {
                    
                    <div className="h-px bg-stone-100 my-1" />
                    
-                   <button
+            <button
                      onClick={() => signOut(auth)}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
@@ -4060,9 +4084,9 @@ export default function App() {
                        <LogOut className="w-3.5 h-3.5" />
                      </div>
                      <span>Sign Out</span>
-                   </button>
-                 </div>
-               </div>
+            </button>
+          </div>
+        </div>
              </div>
           </div>
         </div>
@@ -4080,9 +4104,9 @@ export default function App() {
               const isActive = filter === f;
               
               return (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
                   className={`flex-shrink-0 transition-all duration-200 ${
                     isActive
                       ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2 scale-[1.02]"
@@ -4099,7 +4123,7 @@ export default function App() {
                       {stats.high > 0 && (
                         <span className="text-sm font-bold text-emerald-600 mt-0.5">
                           ${stats.low.toLocaleString()} <span className="text-stone-300 font-normal">-</span> ${stats.high.toLocaleString()}
-                        </span>
+                </span>
                       )}
                     </div>
                   ) : (
@@ -4161,13 +4185,13 @@ export default function App() {
                        >
                          {opt.label}
                          {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
-                       </button>
-                     ))}
-                   </div>
-                 </div>
-               )}
-            </div>
+              </button>
+            ))}
           </div>
+          </div>
+               )}
+        </div>
+            </div>
         </div>
       </header>
 
