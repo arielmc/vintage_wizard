@@ -3516,10 +3516,11 @@ ${item.userNotes || "Message for measurements or more details!"}`;
         ref={singleInputRef}
         onChange={(e) => handleFileSelect(e, 'single')}
       />
+      {/* Bulk upload - no camera option, file picker only */}
       <input
         type="file"
         multiple
-        accept="image/*"
+        accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
         className="hidden"
         ref={bulkInputRef}
         onChange={(e) => handleFileSelect(e, 'bulk')}
