@@ -1727,8 +1727,9 @@ const LoginScreen = () => {
         </div>
         
         <h1 className="text-4xl font-serif font-bold text-stone-900 mb-3 tracking-tight">
-          Resale Helper Bot
+          Items AI
         </h1>
+        <p className="text-stone-500 text-sm mb-4">Info & resale made easier</p>
         <p className="text-stone-500 mb-10 text-lg font-light leading-relaxed">
           Curate, value, and manage your<br/>collection with AI.
         </p>
@@ -3005,7 +3006,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-xs text-stone-500">
           <Sparkles className="w-3 h-3 text-rose-400" />
-          <span>Powered by Resale Helper Bot</span>
+          <span>Powered by Items AI</span>
         </div>
       </footer>
     </div>
@@ -4053,7 +4054,7 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
-              Resale Helper Bot
+              Items AI
             </h1>
           </div>
           
