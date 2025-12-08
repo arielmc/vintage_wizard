@@ -1756,12 +1756,11 @@ const LoginScreen = () => {
 };
 
 // --- LISTING GENERATOR COMPONENT ---
-const ListingGenerator = ({ formData }) => {
+const ListingGenerator = ({ formData, setFormData }) => {
   // Helper to copy text with feedback
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     playSuccessFeedback();
-    // Show brief toast instead of alert
     const toast = document.createElement('div');
     toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2 rounded-xl shadow-xl text-sm font-medium z-[100] animate-in fade-in slide-in-from-bottom-4';
     toast.textContent = '✓ Copied to clipboard';
@@ -1772,179 +1771,186 @@ const ListingGenerator = ({ formData }) => {
   // Generate Optimized Title (avoid Unknown)
   const generateTitle = () => {
     const parts = [];
-    
-    // Only add maker if it's not "Unknown"
-    if (formData.maker && formData.maker.toLowerCase() !== "unknown") {
-      parts.push(formData.maker);
-    }
-    if (formData.style && formData.style.toLowerCase() !== "unknown") {
-      parts.push(formData.style);
-    }
-    // Add title but clean it
+    if (formData.maker && formData.maker.toLowerCase() !== "unknown") parts.push(formData.maker);
+    if (formData.style && formData.style.toLowerCase() !== "unknown") parts.push(formData.style);
     if (formData.title) {
       const cleanTitle = formData.title.replace(/^Unknown\s*/i, "").trim();
       if (cleanTitle) parts.push(cleanTitle);
     }
-    if (formData.era && formData.era.toLowerCase() !== "unknown") {
-      parts.push(formData.era);
-    }
-    if (formData.materials) {
-      parts.push(formData.materials);
-    }
-    
-    // Dedupe words and join
+    if (formData.era && formData.era.toLowerCase() !== "unknown") parts.push(formData.era);
+    if (formData.materials) parts.push(formData.materials);
     const uniqueParts = [...new Set(parts.join(" ").split(" "))];
-    return uniqueParts.join(" ").substring(0, 80) || "Vintage Item"; // eBay limit 80 chars
+    return uniqueParts.join(" ").substring(0, 80) || "Vintage Item";
   };
 
-  // Generate Description - Use sales_blurb as primary hook (NOT "RARE FIND")
+  // Generate Description - Use sales_blurb as primary hook
   const generateDescription = () => {
-    // Use sales_blurb as the compelling intro if available
     const hook = formData.sales_blurb || "";
-    
-    // Helper to check if a value is meaningful (not empty, unknown, or generic placeholder)
     const isReal = (val) => {
       if (!val) return false;
       const lower = val.toLowerCase().trim();
       return lower !== "unknown" && lower !== "vintage" && lower !== "see photos" && 
              lower !== "contemporary" && lower !== "modern" && lower !== "n/a" && lower.length > 0;
     };
-    
-    // Build details array - only include fields we actually know
     const details = [];
     if (isReal(formData.maker)) details.push(`• Maker/Brand: ${formData.maker}`);
     if (isReal(formData.style)) details.push(`• Style/Period: ${formData.style}`);
     if (isReal(formData.era)) details.push(`• Era: ${formData.era}`);
     if (isReal(formData.materials)) details.push(`• Material: ${formData.materials}`);
     if (formData.markings) details.push(`• Markings: ${formData.markings}`);
-    
-    // Build condition section
     const conditionText = isReal(formData.condition) ? formData.condition : "";
-    
-    // Build the description - only include sections with content
     let desc = hook;
-    
-    if (details.length > 0) {
-      desc += `\n\n🏷️ DETAILS:\n${details.join("\n")}`;
-    }
-    
-    if (conditionText) {
-      desc += `\n\n💎 CONDITION:\n${conditionText}`;
-    }
-    
-    if (formData.userNotes) {
-      desc += `\n\n📏 NOTES:\n${formData.userNotes}`;
-    }
-    
-    // Add standard call-to-action
+    if (details.length > 0) desc += `\n\n🏷️ DETAILS:\n${details.join("\n")}`;
+    if (conditionText) desc += `\n\n💎 CONDITION:\n${conditionText}`;
+    if (formData.userNotes) desc += `\n\n📏 NOTES:\n${formData.userNotes}`;
     desc += "\n\n💬 Message me for measurements, shipping quotes, or more photos!";
-    
     return desc.trim();
   };
 
   // Generate Hashtags (filter out "unknown")
   const generateTags = () => {
     const baseTags = [
-      formData.category,
-      formData.style,
-      formData.era,
-      "vintage",
-      "retro",
-      "preloved",
-      formData.maker
+      formData.category, formData.style, formData.era, "vintage", "retro", "preloved", formData.maker
     ].filter(t => t && t.toLowerCase() !== "unknown");
-    
-    // Add AI search terms if available
     if (formData.search_terms_broad) {
-        baseTags.push(...formData.search_terms_broad.split(" ").filter(t => t.toLowerCase() !== "unknown"));
+      baseTags.push(...formData.search_terms_broad.split(" ").filter(t => t.toLowerCase() !== "unknown"));
     }
-
     return [...new Set(baseTags)].map(t => `#${t.replace(/\s+/g, '')}`).join(" ");
   };
 
-  const generatedTitle = generateTitle();
-  const generatedDesc = generateDescription();
-  const generatedTags = generateTags();
-
+  // Use saved listing overrides if they exist, otherwise generate fresh
+  const currentTitle = formData.listing_title ?? generateTitle();
+  const currentDesc = formData.listing_description ?? generateDescription();
+  const currentTags = formData.listing_tags ?? generateTags();
   const itemSku = formData.id ? formData.id.substring(0, 8).toUpperCase() : "N/A";
+
+  // Update handlers that persist to formData
+  const handleTitleChange = (value) => {
+    setFormData(prev => ({ ...prev, listing_title: value }));
+  };
+  const handleDescChange = (value) => {
+    setFormData(prev => ({ ...prev, listing_description: value }));
+  };
+  const handleTagsChange = (value) => {
+    setFormData(prev => ({ ...prev, listing_tags: value }));
+  };
+
+  // Reset to AI-generated version
+  const handleReset = (field) => {
+    if (field === 'title') setFormData(prev => ({ ...prev, listing_title: null }));
+    if (field === 'description') setFormData(prev => ({ ...prev, listing_description: null }));
+    if (field === 'tags') setFormData(prev => ({ ...prev, listing_tags: null }));
+  };
 
   return (
     <div className="space-y-4 p-1 pb-6">
-      {/* eBay / Poshmark Title */}
+      {/* Editable Title */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Optimized Title ({generatedTitle.length}/80)
-            </label>
-            <button onClick={() => handleCopy(generatedTitle)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-                <Copy className="w-3 h-3" /> Copy
+          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Optimized Title ({currentTitle.length}/80)
+          </label>
+          <div className="flex items-center gap-2">
+            {formData.listing_title && (
+              <button onClick={() => handleReset('title')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> Reset
+              </button>
+            )}
+            <button onClick={() => handleCopy(currentTitle)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+              <Copy className="w-3 h-3" /> Copy
             </button>
+          </div>
         </div>
-        <div className="p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 break-words shadow-sm">
-            {generatedTitle}
-        </div>
-      </div>
-
-      {/* Description Block - Collapsible on mobile */}
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Professional Description
-            </label>
-            <button onClick={() => handleCopy(generatedDesc)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-                <Copy className="w-3 h-3" /> Copy
-            </button>
-        </div>
-        <textarea 
-            readOnly
-            value={generatedDesc}
-            className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-40 md:h-48 focus:outline-none resize-y shadow-sm"
+        <input
+          type="text"
+          value={currentTitle}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          maxLength={80}
+          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+          placeholder="Enter listing title..."
         />
       </div>
 
-      {/* SEO Tags - More prominent */}
+      {/* Editable Description */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="text-blue-500">#</span> SEO Tags
-            </label>
-            <button onClick={() => handleCopy(generatedTags)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-                <Copy className="w-3 h-3" /> Copy
+          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+            Professional Description
+          </label>
+          <div className="flex items-center gap-2">
+            {formData.listing_description && (
+              <button onClick={() => handleReset('description')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> Reset
+              </button>
+            )}
+            <button onClick={() => handleCopy(currentDesc)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+              <Copy className="w-3 h-3" /> Copy
             </button>
+          </div>
         </div>
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 break-words shadow-sm">
-            {generatedTags || "No tags generated"}
+        <textarea 
+          value={currentDesc}
+          onChange={(e) => handleDescChange(e.target.value)}
+          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-40 md:h-48 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y shadow-sm"
+          placeholder="Enter listing description..."
+        />
+      </div>
+
+      {/* Editable SEO Tags */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-blue-500">#</span> SEO Tags
+          </label>
+          <div className="flex items-center gap-2">
+            {formData.listing_tags && (
+              <button onClick={() => handleReset('tags')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> Reset
+              </button>
+            )}
+            <button onClick={() => handleCopy(currentTags)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+              <Copy className="w-3 h-3" /> Copy
+            </button>
+          </div>
         </div>
+        <textarea
+          value={currentTags}
+          onChange={(e) => handleTagsChange(e.target.value)}
+          rows={2}
+          className="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y shadow-sm"
+          placeholder="#vintage #retro #collectible..."
+        />
+        <p className="text-[10px] text-stone-400">
+          Add custom hashtags like #penny #pennies for better search visibility
+        </p>
       </div>
       
-      {/* SKU */}
+      {/* SKU (read-only) */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-              SKU
-            </label>
-            <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-                <Copy className="w-3 h-3" /> Copy
-            </button>
+          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">SKU</label>
+          <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
+            <Copy className="w-3 h-3" /> Copy
+          </button>
         </div>
         <div className="p-2 bg-stone-100 border border-stone-200 rounded-lg text-sm font-mono text-stone-700 inline-block">
-            {itemSku}
+          {itemSku}
         </div>
       </div>
       
       {/* Pro Tip */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl">
         <h4 className="text-blue-800 font-bold text-sm mb-1 flex items-center gap-2">
-          <span>🚀</span> Pro Tip
+          <span>✏️</span> Fully Editable
         </h4>
         <p className="text-blue-700/80 text-xs leading-relaxed">
-            Copy these blocks directly into eBay, Poshmark, or Depop. The title is optimized for search keywords, and the description includes all the details buyers need.
+          Edit any field above to customize for your listing. Your changes are saved automatically. Use "Reset" to restore AI-generated content.
         </p>
       </div>
       
       {/* Copy All Button */}
       <button 
-        onClick={() => handleCopy(`${generatedTitle}\n\n${generatedDesc}\n\n${generatedTags}\n\nSKU: ${itemSku}`)}
+        onClick={() => handleCopy(`${currentTitle}\n\n${currentDesc}\n\n${currentTags}\n\nSKU: ${itemSku}`)}
         className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
       >
         <Copy className="w-4 h-4" /> Copy Everything
@@ -2315,7 +2321,7 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
           {activeTab === "listing" ? (
-            <ListingGenerator formData={formData} />
+            <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
             <div className="flex flex-col gap-3">
               {/* TITLE - First and most prominent */}
