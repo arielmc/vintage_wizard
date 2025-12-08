@@ -2880,24 +2880,49 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
 // Shared Item Card with expanded view, image gallery, and item navigation
 const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPrev, hasNext, hasPrev }) => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState(null); // 'next' | 'prev'
   const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
   const displayImage = images.length > 0 ? images[activeImageIdx] : null;
+
+  // Handle item transition with fade effect
+  const handleItemTransition = (direction) => {
+    if (isTransitioning) return;
+    setTransitionDirection(direction);
+    setIsTransitioning(true);
+    
+    // Brief dip to black, then navigate
+    setTimeout(() => {
+      if (direction === 'next') {
+        onNext?.();
+      } else {
+        onPrev?.();
+      }
+      // Keep black for a moment after navigation
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setTransitionDirection(null);
+      }, 150);
+    }, 200);
+  };
 
   // Handle keyboard navigation
   useEffect(() => {
     if (!isExpandedView) return;
     const handleKeyDown = (e) => {
+      if (isTransitioning) return; // Prevent spam during transition
+      
       if (e.key === "ArrowRight") {
         if (activeImageIdx < images.length - 1) {
           setActiveImageIdx(prev => prev + 1);
         } else if (hasNext) {
-          onNext?.();
+          handleItemTransition('next');
         }
       } else if (e.key === "ArrowLeft") {
         if (activeImageIdx > 0) {
           setActiveImageIdx(prev => prev - 1);
         } else if (hasPrev) {
-          onPrev?.();
+          handleItemTransition('prev');
         }
       } else if (e.key === "Escape") {
         onClose?.();
@@ -2905,7 +2930,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isExpandedView, activeImageIdx, images.length, hasNext, hasPrev, onNext, onPrev, onClose]);
+  }, [isExpandedView, activeImageIdx, images.length, hasNext, hasPrev, isTransitioning]);
 
   // Reset image index when item changes
   useEffect(() => {
@@ -2977,10 +3002,27 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
       className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center"
       onClick={onClose}
     >
+      {/* Transition Overlay - dip to black when changing items */}
+      <div 
+        className={`absolute inset-0 bg-black z-50 pointer-events-none transition-opacity duration-200 flex items-center justify-center ${
+          isTransitioning ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {transitionDirection && (
+          <div className="text-white/50 text-sm font-medium flex items-center gap-2 animate-pulse">
+            {transitionDirection === 'next' ? (
+              <>Next item <ChevronRight size={16} /></>
+            ) : (
+              <><ChevronLeft size={16} /> Previous item</>
+            )}
+          </div>
+        )}
+      </div>
+      
       {/* Prev Item Button */}
-      {hasPrev && (
+      {hasPrev && !isTransitioning && (
         <button 
-          onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+          onClick={(e) => { e.stopPropagation(); handleItemTransition('prev'); }}
           className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-10 transition-all"
         >
           <ChevronLeft size={24} />
@@ -2988,9 +3030,9 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
       )}
       
       {/* Next Item Button */}
-      {hasNext && (
+      {hasNext && !isTransitioning && (
         <button 
-          onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+          onClick={(e) => { e.stopPropagation(); handleItemTransition('next'); }}
           className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-10 transition-all"
         >
           <ChevronRight size={24} />
