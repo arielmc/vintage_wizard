@@ -1459,21 +1459,43 @@ const SkeletonCard = () => (
   </div>
 );
 
-// Global Loading Overlay Component
-const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => (
-  <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
-    <div className="relative mb-6">
-      {/* Spinning ring */}
-      <div className="w-20 h-20 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
-      {/* Center icon */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <Sparkles className="w-8 h-8 text-rose-400 animate-pulse" />
+// Global Loading Overlay Component with fun rotating messages
+const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const funMessages = [
+    "Consulting the AI oracle...",
+    "Teaching robots about antiques...",
+    "Summoning appraisal spirits...",
+    "Crunching vintage data...",
+    "Scanning for treasure...",
+    "Decoding maker's marks...",
+    "Channeling auction wisdom...",
+    "Almost there...",
+  ];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIndex(prev => (prev + 1) % funMessages.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
+      <div className="relative mb-6">
+        {/* Spinning ring */}
+        <div className="w-20 h-20 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
+        {/* Center icon */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-rose-400 animate-pulse" />
+        </div>
       </div>
+      <p className="text-lg font-bold text-stone-800">{message}</p>
+      <p className="text-sm text-stone-500 mt-2 transition-all duration-300">{funMessages[msgIndex]}</p>
+      {subMessage && <p className="text-xs text-stone-400 mt-1">{subMessage}</p>}
     </div>
-    <p className="text-lg font-bold text-stone-800">{message}</p>
-    {subMessage && <p className="text-sm text-stone-500 mt-1">{subMessage}</p>}
-  </div>
-);
+  );
+};
 
 const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   const [mode, setMode] = useState("single"); // Default to single
@@ -2387,7 +2409,7 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
           {formData.images.length > 0 && (
             <div className="flex-shrink-0 flex items-center text-[10px] text-stone-400 pl-2 border-l border-stone-200 ml-1">
               <span>📷 AI uses first 4</span>
-            </div>
+          </div>
           )}
         </div>
 
@@ -2904,12 +2926,38 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
     }, {});
   }, [items]);
 
+  // Fun rotating loading messages
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const funLoadingMessages = [
+    "Loading collection...",
+    "Summoning treasures...",
+    "Dusting off the goods...",
+    "Polishing the vintage...",
+    "Unpacking the goodies...",
+    "Consulting the oracle...",
+    "Waking the artifacts...",
+    "Loading wizard fodder...",
+    "Cataloging curiosities...",
+    "Brewing the inventory...",
+  ];
+  
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIndex(prev => (prev + 1) % funLoadingMessages.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [loading]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
         <div className="text-center">
-          <Loader className="w-10 h-10 text-stone-400 animate-spin mx-auto mb-4" />
-          <p className="text-stone-600">Loading collection...</p>
+          <div className="w-16 h-16 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Sparkles className="w-8 h-8 text-rose-400" />
+          </div>
+          <p className="text-stone-600 font-medium transition-all duration-300">{funLoadingMessages[loadingMsgIndex]}</p>
+          <p className="text-stone-400 text-xs mt-2">This might take a moment for large collections</p>
         </div>
       </div>
     );
@@ -4105,8 +4153,11 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">
-        <Loader className="w-8 h-8 animate-spin text-stone-400" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] gap-4">
+        <div className="w-14 h-14 bg-stone-900 rounded-2xl flex items-center justify-center animate-pulse">
+          <Sparkles className="w-7 h-7 text-rose-400" />
+        </div>
+        <p className="text-stone-500 text-sm">Waking up the AI...</p>
       </div>
     );
   }
