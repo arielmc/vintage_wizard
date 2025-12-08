@@ -2540,9 +2540,9 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
             )}
 
               {/* Other form fields */}
-              <div className="space-y-4">
+            <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+              <div>
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
                     Maker / Brand
                   </label>
@@ -4107,6 +4107,41 @@ export default function App() {
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
                   {isSelectionMode ? "Exit batch mode" : "Select items for batch analysis"}
+                </div>
+             </div>
+
+             {/* Divider - desktop only */}
+             <div className="hidden md:block w-px h-6 bg-stone-200 mx-1" />
+
+             {/* Share Collection - desktop only */}
+             <div className="hidden md:block relative group/tooltip">
+                <button
+                    onClick={() => setShowShareModal(true)}
+              disabled={items.length === 0}
+                    className="p-2 rounded-lg text-stone-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
+            >
+                    <Share2 className="w-4 h-4" />
+            </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  Share collection
+                </div>
+              </div>
+
+             {/* Export CSV - desktop only */}
+             <div className="hidden md:block relative group/tooltip">
+              <button
+                    onClick={handleExportCSV}
+                    disabled={items.length === 0}
+                    className="p-2 rounded-lg text-stone-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
+                 >
+                    <Download className="w-4 h-4" />
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  Export to CSV
                 </div>
              </div>
 
