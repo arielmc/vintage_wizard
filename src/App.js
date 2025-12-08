@@ -1755,13 +1755,34 @@ const LoginScreen = () => {
           <Sparkles className="w-10 h-10 text-rose-600" strokeWidth={1.5} />
         </div>
         
-        <h1 className="text-4xl font-serif font-bold text-stone-900 mb-3 tracking-tight">
+        <h1 className="text-4xl font-serif font-bold text-stone-900 mb-2 tracking-tight">
           Items AI
         </h1>
-        <p className="text-stone-500 text-sm mb-4">Info & resale made easier</p>
-        <p className="text-stone-500 mb-10 text-lg font-light leading-relaxed">
-          Curate, value, and manage your<br/>collection with AI.
-        </p>
+        <p className="text-stone-500 text-sm mb-6">Info & resale made easier</p>
+        
+        {/* Feature bullets */}
+        <div className="text-left bg-white/60 rounded-xl p-4 mb-8 space-y-2.5 text-sm border border-stone-100">
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none">📸</span>
+            <span className="text-stone-600">Snap a pic → Get instant AI analysis</span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none">💰</span>
+            <span className="text-stone-600">Know what it's worth (and where to sell it)</span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none">🗃️</span>
+            <span className="text-stone-600">Build your collection database</span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none">✍️</span>
+            <span className="text-stone-600">Auto-write eBay/Poshmark listings</span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none">🔗</span>
+            <span className="text-stone-600">Share with buyers or appraisers</span>
+          </div>
+        </div>
 
         <button
           onClick={handleGoogleLogin}
