@@ -2882,6 +2882,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState(null); // 'next' | 'prev'
+  const [isFullscreen, setIsFullscreen] = useState(false); // Fullscreen image view
   const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
   const displayImage = images.length > 0 ? images[activeImageIdx] : null;
 
@@ -2910,27 +2911,35 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
   useEffect(() => {
     if (!isExpandedView) return;
     const handleKeyDown = (e) => {
+      // Handle Escape - close fullscreen first, then close modal
+      if (e.key === "Escape") {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else {
+          onClose?.();
+        }
+        return;
+      }
+      
       if (isTransitioning) return; // Prevent spam during transition
       
       if (e.key === "ArrowRight") {
         if (activeImageIdx < images.length - 1) {
           setActiveImageIdx(prev => prev + 1);
-        } else if (hasNext) {
+        } else if (hasNext && !isFullscreen) {
           handleItemTransition('next');
         }
       } else if (e.key === "ArrowLeft") {
         if (activeImageIdx > 0) {
           setActiveImageIdx(prev => prev - 1);
-        } else if (hasPrev) {
+        } else if (hasPrev && !isFullscreen) {
           handleItemTransition('prev');
         }
-      } else if (e.key === "Escape") {
-        onClose?.();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isExpandedView, activeImageIdx, images.length, hasNext, hasPrev, isTransitioning]);
+  }, [isExpandedView, activeImageIdx, images.length, hasNext, hasPrev, isTransitioning, isFullscreen]);
 
   // Reset image index when item changes
   useEffect(() => {
@@ -3043,10 +3052,61 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
         className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto mx-4"
         onClick={e => e.stopPropagation()}
       >
+        {/* Fullscreen Image Modal */}
+        {isFullscreen && displayImage && (
+          <div 
+            className="fixed inset-0 z-[100] bg-black flex items-center justify-center cursor-zoom-out"
+            onClick={() => setIsFullscreen(false)}
+          >
+            <img 
+              src={displayImage} 
+              alt="" 
+              className="max-w-full max-h-full object-contain select-none"
+            />
+            {/* Close hint */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 text-white/70 text-xs px-3 py-1.5 rounded-full">
+              Click anywhere or press Escape to close
+            </div>
+            {/* Close button */}
+            <button 
+              onClick={() => setIsFullscreen(false)}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+            >
+              <X size={24} />
+            </button>
+            {/* Image navigation in fullscreen */}
+            {images.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIdx(prev => prev > 0 ? prev - 1 : images.length - 1); }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveImageIdx(prev => prev < images.length - 1 ? prev + 1 : 0); }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors"
+                >
+                  <ChevronRight size={24} />
+                </button>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm font-bold px-3 py-1.5 rounded-full">
+                  {activeImageIdx + 1} / {images.length}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
         {/* Image Gallery */}
         <div className="relative aspect-square bg-stone-900">
           {displayImage && (
-            <img src={displayImage} alt="" className="w-full h-full object-contain" />
+            <img 
+              src={displayImage} 
+              alt="" 
+              className="w-full h-full object-contain cursor-zoom-in"
+              onDoubleClick={() => setIsFullscreen(true)}
+              title="Double-click to view fullscreen"
+            />
           )}
           
           {/* Close button */}
