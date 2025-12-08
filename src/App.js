@@ -1756,9 +1756,9 @@ const LoginScreen = () => {
         </div>
         
         <h1 className="text-4xl font-serif font-bold text-stone-900 mb-2 tracking-tight">
-          Items AI
+          Stuffboard
         </h1>
-        <p className="text-stone-500 text-sm mb-6">Info & resale made easier</p>
+        <p className="text-stone-500 text-sm mb-6">Your stuff — researched, organized & ready</p>
         
         {/* Feature bullets */}
         <div className="text-left bg-white/60 rounded-xl p-4 mb-8 space-y-3 text-sm border border-stone-100">
@@ -3145,7 +3145,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-xs text-stone-500">
           <Sparkles className="w-3 h-3 text-rose-400" />
-          <span>Powered by Items AI</span>
+          <span>Powered by Stuffboard</span>
         </div>
       </footer>
     </div>
@@ -4196,7 +4196,7 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
-              Items AI
+              Stuffboard
             </h1>
           </div>
           
