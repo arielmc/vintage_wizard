@@ -308,10 +308,17 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
 
     [IF BOOKS]
     - Identify: Title, Author, Publisher, Copyright Year.
-    - Details: Edition (1st?), Printing (1st?), Binding (Cloth/Leather/Boards), Dust Jacket presence.
-    - Markings: ISBN, Library codes, Signatures.
-    - Map "Maker" to Author (and Publisher).
+    - Details: Edition (1st?), Printing (1st?), Binding (Cloth/Leather/Boards), Dust Jacket presence/condition.
+    - ISBN HANDLING (CRITICAL):
+      * Read ISBN digit-by-digit carefully. ISBN-10 has 10 digits, ISBN-13 has 13 digits starting with 978 or 979.
+      * If ANY digit is unclear, blurry, or uncertain, note it as "ISBN: partially visible [digits you can read]".
+      * NEVER guess or assume digits you cannot clearly see.
+      * Include BOTH ISBN-10 and ISBN-13 if both are visible on the book.
+      * The barcode number below the barcode IS the ISBN-13.
+    - Other Markings: Library stamps/codes, Author signatures, Bookplates, Price clippings.
+    - Map "Maker" to Author (and Publisher if notable, e.g., "Stephen King / Viking Press").
     - Map "Style" to Genre/Subject.
+    - For first editions: Look for number line (1 2 3 4 5...) - "1" present = first printing.
 
     [IF VINYL RECORDS]
     - Identify: Artist, Album Title, Label, Year.
@@ -382,7 +389,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - maker: The primary creator (Artist, Author, Brand, Jeweler).
     - style: The artistic movement, genre, or design era (specific!).
     - materials: Detailed materials, binding, or medium.
-    - markings: Transcription of text, ISBNs, catalog numbers, signatures, or hallmarks.
+    - markings: EXACT transcription of visible text, ISBNs (digit-by-digit), catalog numbers, signatures, or hallmarks. If partially visible, note what IS readable and what is unclear.
     - era: Specific year or estimated decade.
     - condition: Professional condition assessment.
     - valuation_low: Conservative estimate (USD number).
