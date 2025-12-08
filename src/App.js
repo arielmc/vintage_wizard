@@ -3797,7 +3797,8 @@ ${item.userNotes || "Message for measurements or more details!"}`;
         </div>
         
         {/* Row 2: Filters with Value + Sort */}
-        <div className="px-4 py-2 flex items-center gap-2 border-t border-stone-50 bg-stone-50/50 overflow-visible">
+        <div className="border-t border-stone-50 bg-stone-50/50 overflow-visible">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2">
            {["all", "keep", "sell", "TBD"].map((f) => {
               const stats = filterStats[f];
               const isActive = filter === f;
@@ -3890,6 +3891,7 @@ ${item.userNotes || "Message for measurements or more details!"}`;
                )}
             </div>
           </div>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-4">
