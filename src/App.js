@@ -1959,7 +1959,7 @@ const ListingGenerator = ({ formData, setFormData }) => {
   );
 };
 
-const EditModal = ({ item, onClose, onSave, onDelete }) => {
+const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev }) => {
   const [formData, setFormData] = useState({
     ...item,
     images: item.images || (item.image ? [item.image] : []),
@@ -1976,8 +1976,55 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   const [showQuestions, setShowQuestions] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState(null);
   const addPhotoInputRef = useRef(null);
   const modalContentRef = useRef(null);
+
+  // Handle item navigation with dip-to-black transition
+  const handleItemTransition = (direction) => {
+    if (isTransitioning) return;
+    
+    // Check for unsaved changes before navigating
+    if (hasUnsavedChanges) {
+      if (!window.confirm("You have unsaved changes. Continue without saving?")) {
+        return;
+      }
+    }
+    
+    setTransitionDirection(direction);
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      if (direction === 'next') {
+        onNext?.();
+      } else {
+        onPrev?.();
+      }
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setTransitionDirection(null);
+      }, 150);
+    }, 200);
+  };
+
+  // Reset form when item changes
+  useEffect(() => {
+    setFormData({
+      ...item,
+      images: item.images || (item.image ? [item.image] : []),
+      clarifications: item.clarifications || {},
+      provenance: item.provenance || {
+        user_story: item.userNotes || "",
+        date_claim: "",
+        is_locked: true,
+      },
+      valuation_context: item.valuation_context || null,
+    });
+    setActiveImageIdx(0);
+    setHasUnsavedChanges(false);
+    setShowQuestions(true);
+  }, [item.id]);
   
   const marketLinks = useMemo(
     () =>
@@ -2004,6 +2051,24 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
     });
     setHasUnsavedChanges(hasChanges);
   }, [formData, item]);
+
+  // Keyboard navigation between items
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't navigate if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (isTransitioning) return;
+      
+      if (e.key === 'ArrowRight' && hasNext) {
+        handleItemTransition('next');
+      } else if (e.key === 'ArrowLeft' && hasPrev) {
+        handleItemTransition('prev');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasNext, hasPrev, isTransitioning, hasUnsavedChanges]);
 
   // Handle backdrop click with save prompt
   const handleBackdropClick = (e) => {
@@ -2101,6 +2166,41 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={handleBackdropClick}
     >
+      {/* Dip-to-black transition overlay */}
+      <div 
+        className={`fixed inset-0 bg-black z-[100] pointer-events-none transition-opacity duration-200 flex items-center justify-center ${
+          isTransitioning ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {transitionDirection && (
+          <div className="text-white/50 text-sm font-medium flex items-center gap-2 animate-pulse">
+            {transitionDirection === 'next' ? (
+              <>Next item <ChevronRight size={16} /></>
+            ) : (
+              <><ChevronLeft size={16} /> Previous item</>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Navigation arrows (outside the modal) */}
+      {hasPrev && !isTransitioning && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleItemTransition('prev'); }}
+          className="hidden sm:flex fixed left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-[60] transition-all"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      )}
+      {hasNext && !isTransitioning && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleItemTransition('next'); }}
+          className="hidden sm:flex fixed right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-sm z-[60] transition-all"
+        >
+          <ChevronRight size={24} />
+        </button>
+      )}
+
       {/* Save Prompt Dialog */}
       {showSavePrompt && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 animate-in fade-in duration-150" onClick={(e) => e.stopPropagation()}>
@@ -2630,27 +2730,33 @@ const EditModal = ({ item, onClose, onSave, onDelete }) => {
   );
 };
 
-// Helper: Play success sound/haptic
+// Helper: Play success sound/haptic (sound only on mobile)
 const playSuccessFeedback = () => {
-  // Haptic feedback (mobile)
+  // Check if mobile/touch device
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  // Haptic feedback (mobile only)
   if (navigator.vibrate) {
     navigator.vibrate(50);
   }
-  // Audio feedback - subtle chime
-  try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.1);
-  } catch (e) {
-    // Audio not supported, fail silently
+  
+  // Audio feedback - only on mobile (desktop beep is annoying)
+  if (isMobile) {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+      // Audio not supported, fail silently
+    }
   }
 };
 
@@ -4401,6 +4507,20 @@ export default function App() {
           onClose={() => setSelectedItem(null)}
           onSave={handleUpdateItem}
           onDelete={handleDeleteItem}
+          onNext={() => {
+            const currentIdx = filteredItems.findIndex(i => i.id === selectedItem.id);
+            if (currentIdx < filteredItems.length - 1) {
+              setSelectedItem(filteredItems[currentIdx + 1]);
+            }
+          }}
+          onPrev={() => {
+            const currentIdx = filteredItems.findIndex(i => i.id === selectedItem.id);
+            if (currentIdx > 0) {
+              setSelectedItem(filteredItems[currentIdx - 1]);
+            }
+          }}
+          hasNext={filteredItems.findIndex(i => i.id === selectedItem.id) < filteredItems.length - 1}
+          hasPrev={filteredItems.findIndex(i => i.id === selectedItem.id) > 0}
         />
       )}
       
