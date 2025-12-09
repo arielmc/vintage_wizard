@@ -24,6 +24,7 @@ import {
   serverTimestamp,
   getDocs,
 } from "firebase/firestore";
+import { getAnalytics, logEvent } from "firebase/analytics";
 import {
   Camera,
   Upload,
@@ -247,6 +248,19 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = "vintage-validator-v1";
+
+// Initialize Analytics (only in browser environment)
+let analytics = null;
+if (typeof window !== "undefined") {
+  analytics = getAnalytics(app);
+}
+
+// Helper function to log analytics events
+const logAnalyticsEvent = (eventName, eventParams = {}) => {
+  if (analytics) {
+    logEvent(analytics, eventName, eventParams);
+  }
+};
 
 // --- GEMINI API CONFIGURATION ---
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
