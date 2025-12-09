@@ -12,6 +12,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
 import {
   getFirestore,
@@ -1810,6 +1811,7 @@ const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
@@ -1845,6 +1847,11 @@ const LoginScreen = () => {
     e.preventDefault();
     setError("");
 
+    if (!name.trim()) {
+      setError("Please enter your name or collection name");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       return;
@@ -1858,6 +1865,10 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Update the user's display name
+      await updateProfile(userCredential.user, {
+        displayName: name.trim()
+      });
       await sendEmailVerification(userCredential.user);
       setVerificationSent(true);
       logAnalyticsEvent('user_registered', { method: 'email' });
@@ -1985,6 +1996,7 @@ const LoginScreen = () => {
                 setMode("signup");
                 setError("");
                 setVerificationSent(false);
+                setName(""); // Reset name when switching tabs
               }}
               className={`flex-1 py-4 text-sm font-semibold transition-all relative ${
                 mode === "signup"
@@ -2085,6 +2097,22 @@ const LoginScreen = () => {
               </form>
             ) : (
               <form onSubmit={mode === "signup" ? handleSignUp : handleSignIn} className="space-y-4">
+                {mode === "signup" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-2">
+                      First Name or Collection Name
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="NiceHuman"
+                      className="w-full px-4 py-3.5 bg-white border-2 border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-sm transition-all"
+                      required
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">
                     Email Address
@@ -5096,7 +5124,7 @@ export default function App() {
               Upload photos of your vintage items to reveal their history, value, and where to sell them.
             </p>
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => singleInputRef.current?.click()}
                className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-stone-200 transition-all active:scale-95 flex items-center gap-3 mx-auto"
             >
                <Camera className="w-5 h-5" />
