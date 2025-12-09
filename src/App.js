@@ -77,6 +77,8 @@ import {
   Globe,
   Eye,
   EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -453,6 +455,64 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     return JSON.parse(cleanedText);
   } catch (error) {
     console.error("Analysis failed:", error);
+    throw error;
+  }
+}
+
+// --- AI Chat Function (Ask about analysis) ---
+async function askGeminiChat(images, itemContext, userQuestion) {
+  try {
+    const systemPrompt = `You are an expert antique and vintage appraiser assistant helping someone understand their item analysis.
+
+ITEM ANALYSIS DATA:
+${JSON.stringify(itemContext, null, 2)}
+
+USER'S QUESTION: "${userQuestion}"
+
+INSTRUCTIONS:
+- Answer the user's question helpfully and concisely (2-4 sentences usually).
+- Reference the item analysis data provided above.
+- If asked "how did you know X?", explain what visual markers, stamps, styles, or patterns indicate that conclusion.
+- If you can see evidence in the images (maker marks, signatures, date codes, etc.), describe where to look.
+- Be friendly, professional, and educational.
+- If you're uncertain about something, say so honestly.
+- Don't repeat the full analysis - just answer their specific question.`;
+
+    const parts = [{ text: systemPrompt }];
+    
+    // Add images if available (limit to 4 to avoid payload issues)
+    if (images && images.length > 0) {
+      images.slice(0, 4).forEach(img => {
+        if (img.startsWith('data:image')) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg", 
+              data: img.split(",")[1]
+            }
+          });
+        }
+      });
+    }
+
+    const payload = {
+      contents: [{ role: "user", parts: parts }],
+      generationConfig: {
+        maxOutputTokens: 400,
+        temperature: 0.7,
+      },
+    };
+
+    const response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error(`Gemini API Error: ${response.statusText}`);
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't process that question. Please try again.";
+  } catch (error) {
+    console.error("AI Chat failed:", error);
     throw error;
   }
 }
@@ -2031,6 +2091,13 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
   const [transitionDirection, setTransitionDirection] = useState(null);
   const addPhotoInputRef = useRef(null);
   const modalContentRef = useRef(null);
+  
+  // Chat about item state
+  const [showChat, setShowChat] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const chatInputRef = useRef(null);
 
   // Handle item navigation with dip-to-black transition
   const handleItemTransition = (direction) => {
@@ -2075,6 +2142,10 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
     setActiveImageIdx(0);
     setHasUnsavedChanges(false);
     setShowQuestions(true);
+    // Reset chat when switching items
+    setChatHistory([]);
+    setChatInput("");
+    setShowChat(false);
   }, [item.id]);
   
   const marketLinks = useMemo(
@@ -2210,6 +2281,44 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
       ...prev,
       images: [...prev.images, ...newImages],
     }));
+  };
+
+  // Chat about item handler
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim() || isChatting) return;
+    
+    const userQuestion = chatInput.trim();
+    setChatInput("");
+    setChatHistory(prev => [...prev, { role: "user", text: userQuestion }]);
+    setIsChatting(true);
+    
+    try {
+      // Build context from current item data
+      const itemContext = {
+        title: formData.title,
+        maker: formData.maker,
+        category: formData.category,
+        style: formData.style,
+        era: formData.era,
+        materials: formData.materials,
+        condition: formData.condition,
+        markings: formData.markings,
+        valuation_low: formData.valuation_low,
+        valuation_high: formData.valuation_high,
+        sales_blurb: formData.sales_blurb,
+        identification_notes: formData.identification_notes,
+      };
+      
+      const response = await askGeminiChat(formData.images, itemContext, userQuestion);
+      setChatHistory(prev => [...prev, { role: "assistant", text: response }]);
+    } catch (err) {
+      setChatHistory(prev => [...prev, { 
+        role: "assistant", 
+        text: "Sorry, I couldn't process that question. Please try again." 
+      }]);
+    } finally {
+      setIsChatting(false);
+    }
   };
 
   return (
@@ -2753,6 +2862,94 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                 />
               </div>
             </div>
+
+              {/* --- Ask About This Item (AI Chat) --- */}
+              <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+                <button 
+                  onClick={() => setShowChat(!showChat)}
+                  className="w-full p-3 bg-gradient-to-r from-rose-50 to-amber-50 border-b border-stone-100 flex items-center justify-between hover:from-rose-100 hover:to-amber-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Bot className="w-4 h-4 text-rose-500" />
+                    <span className="text-sm font-bold text-stone-700 uppercase tracking-wider">Ask About This Item</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-400">Chat with AI</span>
+                    {showChat ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                  </div>
+                </button>
+                
+                {showChat && (
+                  <div className="p-4 space-y-4">
+                    {/* Chat history */}
+                    {chatHistory.length > 0 && (
+                      <div className="flex flex-col gap-3 max-h-60 overflow-y-auto pr-2">
+                        {chatHistory.map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] p-3 rounded-xl text-sm leading-relaxed ${
+                              msg.role === 'user' 
+                                ? 'bg-stone-900 text-white rounded-br-sm' 
+                                : 'bg-stone-100 text-stone-800 rounded-bl-sm'
+                            }`}>
+                              {msg.role === 'assistant' && (
+                                <Bot className="w-3 h-3 text-rose-500 inline mr-1 -mt-0.5" />
+                              )}
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))}
+                        {isChatting && (
+                          <div className="flex justify-start">
+                            <div className="max-w-[85%] p-3 rounded-xl bg-stone-100 text-stone-800 rounded-bl-sm flex items-center gap-2 text-sm">
+                              <Loader className="w-3 h-3 animate-spin text-rose-500" />
+                              <span className="text-stone-500">Thinking...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Empty state / hints */}
+                    {chatHistory.length === 0 && (
+                      <div className="text-center py-3">
+                        <p className="text-sm text-stone-500 mb-3">Ask anything about this item's analysis:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {["How did you identify the maker?", "What makes this valuable?", "How can I tell the age?"].map((hint, i) => (
+                            <button
+                              key={i}
+                              onClick={() => { setChatInput(hint); chatInputRef.current?.focus(); }}
+                              className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full transition-colors"
+                            >
+                              {hint}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Input */}
+                    <div className="flex gap-2">
+                      <input
+                        ref={chatInputRef}
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && chatInput.trim() && !isChatting) handleChatSubmit(); }}
+                        placeholder="e.g., How did you know this was made by...?"
+                        className="flex-1 p-3 text-sm bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder:text-stone-400"
+                        disabled={isChatting}
+                      />
+                      <button
+                        onClick={handleChatSubmit}
+                        disabled={!chatInput.trim() || isChatting}
+                        className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
             </div>
             )}
