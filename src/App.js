@@ -1756,7 +1756,7 @@ const LoginScreen = () => {
         </div>
         
         <h1 className="text-4xl font-serif font-bold text-stone-900 mb-2 tracking-tight">
-          Stuffboard
+          Vintage Wizard
         </h1>
         <p className="text-stone-500 text-sm mb-6">Your stuff — researched, organized & ready</p>
         
@@ -3009,7 +3009,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
                 <Sparkles className="w-5 h-5 text-rose-400" fill="currentColor" />
               </div>
               <div>
-                <h1 className="text-lg font-serif font-bold text-stone-900">{ownerName}'s Collection</h1>
+                <h1 className="text-lg font-serif font-bold text-stone-900">{ownerName?.split(' ')[0] || ownerName}'s Vintage Items</h1>
                 <p className="text-xs text-stone-500 flex items-center gap-1">
                   <Globe className="w-3 h-3" /> Shared collection • {items.length} items
                 </p>
@@ -3145,7 +3145,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-xs text-stone-500">
           <Sparkles className="w-3 h-3 text-rose-400" />
-          <span>Powered by Stuffboard</span>
+          <span>Powered by Vintage Wizard</span>
         </div>
       </footer>
     </div>
@@ -4196,7 +4196,7 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
-              {user.displayName?.split(' ')[0] || "My"}'s Stuffboard
+              {user.displayName?.split(' ')[0] || "My"}'s Vintage Wizard
             </h1>
           </div>
           
