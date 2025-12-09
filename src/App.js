@@ -1929,13 +1929,12 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email, {
-        url: window.location.origin,
-        handleCodeInApp: false,
-      });
-      // Show success message instead of alert
-      setError(""); // Clear any previous errors
-      alert(`Password reset email sent to ${email}!\n\nPlease check your inbox and spam folder. The email may take a few minutes to arrive.`);
+      // Simplest call - relies on Firebase Console template settings
+      await sendPasswordResetEmail(auth, email);
+      
+      // Show success message
+      setError(""); 
+      alert(`Password reset email sent to ${email}!\n\nPlease check your inbox and spam folder.`);
       setMode("login");
     } catch (error) {
       console.error("Password reset error:", error);
