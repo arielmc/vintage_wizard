@@ -1929,17 +1929,25 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
-      alert("Password reset email sent! Check your inbox and spam folder.");
+      await sendPasswordResetEmail(auth, email, {
+        url: window.location.origin,
+        handleCodeInApp: false,
+      });
+      // Show success message instead of alert
+      setError(""); // Clear any previous errors
+      alert(`Password reset email sent to ${email}!\n\nPlease check your inbox and spam folder. The email may take a few minutes to arrive.`);
       setMode("login");
     } catch (error) {
+      console.error("Password reset error:", error);
       let errorMessage = "Failed to send reset email";
       if (error.code === 'auth/user-not-found') {
-        errorMessage = "No account found with this email";
+        errorMessage = "No account found with this email address";
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "Please enter a valid email address";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many requests. Please try again later.";
       } else {
-        errorMessage = error.message;
+        errorMessage = `Failed to send email: ${error.message}`;
       }
       setError(errorMessage);
     } finally {
