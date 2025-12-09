@@ -1869,6 +1869,8 @@ const LoginScreen = () => {
       await updateProfile(userCredential.user, {
         displayName: name.trim()
       });
+      // Reload the user to ensure displayName is updated in the auth state
+      await userCredential.user.reload();
       await sendEmailVerification(userCredential.user);
       setVerificationSent(true);
       logAnalyticsEvent('user_registered', { method: 'email' });
