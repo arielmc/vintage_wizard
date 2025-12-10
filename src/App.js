@@ -2752,16 +2752,6 @@ const ListingGenerator = ({ formData, setFormData }) => {
         </div>
       </div>
       
-      {/* Pro Tip */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-xl">
-        <h4 className="text-blue-800 font-bold text-sm mb-1 flex items-center gap-2">
-          <span>✏️</span> Fully Editable
-        </h4>
-        <p className="text-blue-700/80 text-xs leading-relaxed">
-          Edit any field above to customize for your listing. Your changes are saved automatically. Use "Reset" to restore AI-generated content.
-        </p>
-      </div>
-      
       {/* Copy All Button */}
       <button 
         onClick={() => handleCopy(`${currentTitle}\n\n${currentDesc}\n\n${currentTags}\n\nSKU: ${itemSku}`)}
@@ -3289,7 +3279,7 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
           </div>
           {/* Confidence Reason */}
           {formData.confidence_reason && (
-            <p className="text-[11px] text-emerald-600/80 mt-1 italic truncate" title={formData.confidence_reason}>
+            <p className="text-[11px] text-emerald-600/80 mt-1.5 italic leading-relaxed">
               {formData.confidence_reason}
             </p>
           )}
@@ -4662,6 +4652,9 @@ export default function App() {
   const mobileSearchRef = useRef(null);
   // PDF generation state
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  // Export/Share dropdown state (desktop)
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef(null);
   const singleInputRef = useRef(null);
   const bulkInputRef = useRef(null);
   
@@ -4749,6 +4742,17 @@ export default function App() {
       setAuthLoading(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -5071,7 +5075,57 @@ export default function App() {
     setContextMenu({ item, position });
   };
 
-  // PDF Export for Insurance/Records
+  // Helper: Load image as base64 for PDF
+  const loadImageForPDF = (url) => {
+    return new Promise((resolve) => {
+      if (!url) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxSize = 200;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+          } else {
+            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        } catch (e) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  };
+
+  // Helper: Wrap text to fit width
+  const wrapText = (pdf, text, maxWidth) => {
+    if (!text) return [];
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = pdf.getTextWidth(testLine);
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  };
+
+  // PDF Export for Insurance/Records - Professional Design with Images
   const handleExportPDF = async () => {
     if (items.length === 0) return;
     setIsGeneratingPDF(true);
@@ -5080,134 +5134,309 @@ export default function App() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15;
-      let yPos = margin;
+      const margin = 12;
+      const contentWidth = pageWidth - margin * 2;
       
-      // Header
-      pdf.setFontSize(22);
-      pdf.setTextColor(41, 37, 36); // stone-800
-      pdf.text("Vintage Collection Inventory", margin, yPos);
-      yPos += 8;
+      // === COVER PAGE ===
+      // Background gradient effect (using rectangles)
+      pdf.setFillColor(28, 25, 23); // stone-900
+      pdf.rect(0, 0, pageWidth, 80, 'F');
       
+      // Title
+      pdf.setFontSize(28);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("Vintage Collection", margin, 35);
+      pdf.setFontSize(14);
+      pdf.setTextColor(168, 162, 158);
+      pdf.text("Inventory & Valuation Report", margin, 45);
+      
+      // Owner info
       pdf.setFontSize(10);
-      pdf.setTextColor(120, 113, 108); // stone-500
+      pdf.setTextColor(120, 113, 108);
+      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 60);
       pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', month: 'long', day: 'numeric' 
-      })}`, margin, yPos);
-      yPos += 5;
-      pdf.text(`Owner: ${user?.displayName || user?.email || 'Unknown'}`, margin, yPos);
-      yPos += 10;
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      })}`, margin, 67);
       
-      // Summary Box
+      // Summary stats
       const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
       const totalHigh = items.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
       const sellItems = items.filter(i => i.status === 'sell').length;
       const keepItems = items.filter(i => i.status === 'keep').length;
+      const tbdItems = items.length - sellItems - keepItems;
       
-      pdf.setFillColor(250, 250, 249); // stone-50
-      pdf.roundedRect(margin, yPos, pageWidth - margin * 2, 25, 3, 3, 'F');
+      let yPos = 95;
       
-      pdf.setFontSize(12);
-      pdf.setTextColor(41, 37, 36);
-      pdf.text(`Total Items: ${items.length}`, margin + 5, yPos + 8);
-      pdf.text(`Estimated Value: $${totalLow.toLocaleString()} - $${totalHigh.toLocaleString()}`, margin + 5, yPos + 16);
-      pdf.text(`Keep: ${keepItems}  |  Sell: ${sellItems}`, pageWidth - margin - 60, yPos + 12);
-      yPos += 35;
+      // Stats cards
+      pdf.setFillColor(250, 250, 249);
+      pdf.roundedRect(margin, yPos, contentWidth, 45, 3, 3, 'F');
       
-      // Items
+      pdf.setFontSize(10);
+      pdf.setTextColor(120, 113, 108);
+      pdf.text("TOTAL ITEMS", margin + 10, yPos + 12);
+      pdf.setFontSize(24);
+      pdf.setTextColor(28, 25, 23);
+      pdf.text(`${items.length}`, margin + 10, yPos + 28);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(120, 113, 108);
+      pdf.text("ESTIMATED VALUE RANGE", margin + 60, yPos + 12);
+      pdf.setFontSize(18);
+      pdf.setTextColor(180, 83, 9); // amber
+      pdf.text(`$${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, margin + 60, yPos + 28);
+      
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 113, 108);
+      pdf.text(`Keep: ${keepItems}  •  Sell: ${sellItems}  •  Undecided: ${tbdItems}`, margin + 10, yPos + 40);
+      
+      yPos += 55;
+      
+      // Category breakdown
+      const categories = {};
+      items.forEach(item => {
+        const cat = item.category || 'Other';
+        if (!categories[cat]) categories[cat] = { count: 0, low: 0, high: 0 };
+        categories[cat].count++;
+        categories[cat].low += Number(item.valuation_low) || 0;
+        categories[cat].high += Number(item.valuation_high) || 0;
+      });
+      
+      pdf.setFontSize(11);
+      pdf.setTextColor(28, 25, 23);
+      pdf.text("Category Breakdown", margin, yPos + 8);
+      yPos += 14;
+      
+      Object.entries(categories).sort((a, b) => b[1].count - a[1].count).forEach(([cat, data]) => {
+        if (yPos > pageHeight - 30) return;
+        pdf.setFontSize(9);
+        pdf.setTextColor(87, 83, 78);
+        pdf.text(`${cat}`, margin + 5, yPos);
+        pdf.setTextColor(120, 113, 108);
+        pdf.text(`${data.count} items  •  $${data.low.toLocaleString()} - $${data.high.toLocaleString()}`, margin + 55, yPos);
+        yPos += 6;
+      });
+      
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(168, 162, 158);
+      pdf.text("This report is for insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 15, { align: 'center' });
+      pdf.text("Generated by Vintage Wizard", pageWidth / 2, pageHeight - 10, { align: 'center' });
+      
+      // === ITEM PAGES ===
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        const itemImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
         
-        // Check if we need a new page
-        if (yPos > pageHeight - 80) {
-          pdf.addPage();
-          yPos = margin;
+        // Load images for this item
+        const loadedImages = await Promise.all(
+          itemImages.slice(0, 4).map(url => loadImageForPDF(url))
+        );
+        const validImages = loadedImages.filter(Boolean);
+        
+        // New page for each item (or every 2 items for compact mode)
+        pdf.addPage();
+        yPos = margin;
+        
+        // Item header bar
+        pdf.setFillColor(28, 25, 23);
+        pdf.rect(0, 0, pageWidth, 20, 'F');
+        
+        pdf.setFontSize(10);
+        pdf.setTextColor(168, 162, 158);
+        pdf.text(`Item ${i + 1} of ${items.length}`, margin, 13);
+        
+        // Status badge in header
+        const statusColors = {
+          keep: [16, 185, 129],
+          sell: [245, 158, 11],
+          TBD: [59, 130, 246],
+          draft: [156, 163, 175],
+        };
+        const statusColor = statusColors[item.status] || statusColors.draft;
+        pdf.setFillColor(...statusColor);
+        pdf.roundedRect(pageWidth - margin - 22, 6, 18, 8, 2, 2, 'F');
+        pdf.setFontSize(7);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 13, 11.5, { align: 'center' });
+        
+        yPos = 28;
+        
+        // Images section (left side)
+        const imgSectionWidth = 70;
+        const imgSectionHeight = 70;
+        
+        if (validImages.length > 0) {
+          // Hero image (large)
+          try {
+            pdf.addImage(validImages[0], 'JPEG', margin, yPos, imgSectionWidth, imgSectionHeight - (validImages.length > 1 ? 18 : 0), undefined, 'MEDIUM');
+          } catch (e) {
+            pdf.setFillColor(245, 245, 244);
+            pdf.rect(margin, yPos, imgSectionWidth, imgSectionHeight - 18, 'F');
+          }
+          
+          // Thumbnail strip (up to 3 more)
+          if (validImages.length > 1) {
+            const thumbY = yPos + imgSectionHeight - 16;
+            const thumbSize = 16;
+            const thumbGap = 2;
+            for (let j = 1; j < Math.min(validImages.length, 4); j++) {
+              const thumbX = margin + (j - 1) * (thumbSize + thumbGap);
+              try {
+                pdf.addImage(validImages[j], 'JPEG', thumbX, thumbY, thumbSize, thumbSize, undefined, 'MEDIUM');
+              } catch (e) {}
+            }
+          }
+        } else {
+          pdf.setFillColor(245, 245, 244);
+          pdf.rect(margin, yPos, imgSectionWidth, imgSectionHeight, 'F');
+          pdf.setFontSize(8);
+          pdf.setTextColor(168, 162, 158);
+          pdf.text("No image", margin + imgSectionWidth / 2, yPos + imgSectionHeight / 2, { align: 'center' });
         }
         
-        // Item card background
-        pdf.setFillColor(255, 255, 255);
-        pdf.setDrawColor(231, 229, 228); // stone-200
-        pdf.roundedRect(margin, yPos, pageWidth - margin * 2, 55, 2, 2, 'FD');
-        
-        // Item number
-        pdf.setFontSize(8);
-        pdf.setTextColor(168, 162, 158); // stone-400
-        pdf.text(`#${i + 1}`, margin + 3, yPos + 5);
+        // Details section (right side)
+        const detailsX = margin + imgSectionWidth + 8;
+        const detailsWidth = contentWidth - imgSectionWidth - 8;
+        let detailY = yPos;
         
         // Title
-        pdf.setFontSize(11);
-        pdf.setTextColor(28, 25, 23); // stone-900
-        const title = getDisplayTitle(item).substring(0, 60);
-        pdf.text(title, margin + 5, yPos + 12);
+        pdf.setFontSize(14);
+        pdf.setTextColor(28, 25, 23);
+        const titleLines = wrapText(pdf, getDisplayTitle(item), detailsWidth);
+        titleLines.slice(0, 2).forEach((line, idx) => {
+          pdf.text(line, detailsX, detailY + 5 + idx * 6);
+        });
+        detailY += 5 + Math.min(titleLines.length, 2) * 6 + 4;
         
         // Category & Era
         pdf.setFontSize(9);
         pdf.setTextColor(120, 113, 108);
-        const meta = [item.category, item.era].filter(Boolean).join(' • ');
-        pdf.text(meta || 'Uncategorized', margin + 5, yPos + 19);
+        const metaText = [item.category, item.era].filter(Boolean).join(' • ');
+        pdf.text(metaText || 'Uncategorized', detailsX, detailY);
+        detailY += 8;
         
-        // Details row
-        pdf.setFontSize(8);
-        const details = [];
-        if (item.maker && item.maker.toLowerCase() !== 'unknown') details.push(`Maker: ${item.maker}`);
-        if (item.materials) details.push(`Material: ${item.materials}`);
-        if (details.length > 0) {
-          pdf.text(details.join('  |  ').substring(0, 80), margin + 5, yPos + 26);
-        }
-        
-        // Condition
-        if (item.condition) {
-          pdf.setTextColor(87, 83, 78); // stone-600
-          pdf.text(`Condition: ${item.condition.substring(0, 70)}`, margin + 5, yPos + 33);
-        }
-        
-        // Valuation (right aligned)
+        // Valuation box
         if (item.valuation_high > 0) {
-          pdf.setFontSize(12);
-          pdf.setTextColor(180, 83, 9); // amber-700
-          const valText = `$${item.valuation_low || 0} - $${item.valuation_high}`;
-          pdf.text(valText, pageWidth - margin - 5, yPos + 12, { align: 'right' });
+          pdf.setFillColor(236, 253, 245); // emerald-50
+          pdf.roundedRect(detailsX, detailY, detailsWidth, 18, 2, 2, 'F');
           
-          // Confidence indicator if available
+          pdf.setFontSize(8);
+          pdf.setTextColor(22, 163, 74);
+          pdf.text("ESTIMATED VALUE", detailsX + 4, detailY + 5);
+          
+          pdf.setFontSize(14);
+          pdf.setTextColor(21, 128, 61);
+          pdf.text(`$${item.valuation_low || 0} — $${item.valuation_high}`, detailsX + 4, detailY + 14);
+          
+          // Confidence badge
           if (item.confidence) {
-            pdf.setFontSize(7);
-            const confColors = {
-              high: [22, 163, 74], // green
-              medium: [217, 119, 6], // amber
-              low: [220, 38, 38] // red
-            };
+            const confColors = { high: [22, 163, 74], medium: [217, 119, 6], low: [220, 38, 38] };
             const color = confColors[item.confidence] || confColors.medium;
+            pdf.setFontSize(7);
             pdf.setTextColor(...color);
-            pdf.text(`${item.confidence.toUpperCase()} CONFIDENCE`, pageWidth - margin - 5, yPos + 18, { align: 'right' });
+            pdf.text(`${item.confidence.toUpperCase()} CONFIDENCE`, detailsX + detailsWidth - 4, detailY + 6, { align: 'right' });
           }
+          
+          detailY += 22;
         }
         
-        // Status badge
-        const statusColors = {
-          keep: [16, 185, 129], // emerald
-          sell: [245, 158, 11], // amber
-          TBD: [59, 130, 246], // blue
-          draft: [156, 163, 175], // gray
-        };
-        const statusColor = statusColors[item.status] || statusColors.draft;
-        pdf.setFillColor(...statusColor);
-        pdf.roundedRect(pageWidth - margin - 25, yPos + 42, 20, 8, 2, 2, 'F');
-        pdf.setFontSize(7);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 15, yPos + 47.5, { align: 'center' });
+        // Details grid below images
+        yPos = margin + imgSectionHeight + 10;
         
-        yPos += 60;
+        // Details fields
+        const fields = [
+          { label: 'Maker/Brand', value: item.maker },
+          { label: 'Style/Period', value: item.style },
+          { label: 'Materials', value: item.materials },
+          { label: 'Markings', value: item.markings },
+        ].filter(f => f.value && f.value.toLowerCase() !== 'unknown');
+        
+        if (fields.length > 0 || item.condition) {
+          pdf.setFillColor(250, 250, 249);
+          pdf.roundedRect(margin, yPos, contentWidth, 35 + (item.condition ? 15 : 0), 2, 2, 'F');
+          
+          let fieldY = yPos + 8;
+          const colWidth = contentWidth / 2 - 10;
+          
+          fields.forEach((field, idx) => {
+            const col = idx % 2;
+            const row = Math.floor(idx / 2);
+            const fx = margin + 6 + col * (colWidth + 10);
+            const fy = fieldY + row * 14;
+            
+            pdf.setFontSize(7);
+            pdf.setTextColor(120, 113, 108);
+            pdf.text(field.label.toUpperCase(), fx, fy);
+            
+            pdf.setFontSize(9);
+            pdf.setTextColor(41, 37, 36);
+            const valueLines = wrapText(pdf, field.value, colWidth);
+            pdf.text(valueLines[0] || '', fx, fy + 5);
+          });
+          
+          yPos += 35;
+          
+          // Condition (full width)
+          if (item.condition) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(120, 113, 108);
+            pdf.text("CONDITION", margin + 6, yPos);
+            
+            pdf.setFontSize(9);
+            pdf.setTextColor(41, 37, 36);
+            const condLines = wrapText(pdf, item.condition, contentWidth - 12);
+            condLines.slice(0, 2).forEach((line, idx) => {
+              pdf.text(line, margin + 6, yPos + 5 + idx * 4);
+            });
+            yPos += 15;
+          }
+          
+          yPos += 5;
+        }
+        
+        // Sales blurb / reasoning
+        if (item.sales_blurb || item.reasoning) {
+          yPos += 5;
+          const blurbText = item.sales_blurb || item.reasoning;
+          
+          pdf.setFontSize(8);
+          pdf.setTextColor(120, 113, 108);
+          pdf.text("DESCRIPTION", margin, yPos);
+          yPos += 5;
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(68, 64, 60);
+          const blurbLines = wrapText(pdf, blurbText, contentWidth);
+          blurbLines.slice(0, 5).forEach((line, idx) => {
+            pdf.text(line, margin, yPos + idx * 4.5);
+          });
+          yPos += Math.min(blurbLines.length, 5) * 4.5 + 5;
+        }
+        
+        // User notes
+        if (item.userNotes) {
+          yPos += 3;
+          pdf.setFontSize(8);
+          pdf.setTextColor(120, 113, 108);
+          pdf.text("OWNER NOTES", margin, yPos);
+          yPos += 5;
+          
+          pdf.setFontSize(9);
+          pdf.setTextColor(68, 64, 60);
+          pdf.setFont(undefined, 'italic');
+          const noteLines = wrapText(pdf, item.userNotes, contentWidth);
+          noteLines.slice(0, 3).forEach((line, idx) => {
+            pdf.text(line, margin, yPos + idx * 4.5);
+          });
+          pdf.setFont(undefined, 'normal');
+        }
+        
+        // Page footer
+        pdf.setFontSize(7);
+        pdf.setTextColor(168, 162, 158);
+        pdf.text(`Item ID: ${item.id?.substring(0, 8) || 'N/A'}`, margin, pageHeight - 8);
+        pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
-      
-      // Footer on last page
-      pdf.setFontSize(8);
-      pdf.setTextColor(168, 162, 158);
-      pdf.text(
-        'Generated by Vintage Wizard • For insurance and estate planning purposes',
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
       
       // Save
       pdf.save(`vintage_inventory_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -5433,56 +5662,75 @@ export default function App() {
              {/* Divider - desktop only */}
              <div className="hidden md:block w-px h-6 bg-stone-200 mx-1" />
 
-             {/* Share Collection - desktop only */}
-             <div className="hidden md:block relative group/tooltip">
+             {/* Share & Export Dropdown - desktop only */}
+             <div className="hidden md:block relative" ref={exportMenuRef}>
                 <button
-                    onClick={() => setShowShareModal(true)}
-              disabled={items.length === 0}
-                    className="p-2 rounded-lg text-stone-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
-            >
-                    <Share2 className="w-4 h-4" />
-            </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  Share collection
-                </div>
-              </div>
-
-             {/* Export CSV - desktop only */}
-             <div className="hidden md:block relative group/tooltip">
-              <button
-                    onClick={handleExportCSV}
+                    onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
                     disabled={items.length === 0}
-                    className="p-2 rounded-lg text-stone-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
-                 >
-                    <Download className="w-4 h-4" />
+                    className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
+                      isExportMenuOpen 
+                        ? 'bg-stone-100 text-stone-700' 
+                        : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'
+                    } disabled:opacity-40`}
+                >
+                    <Upload className="w-4 h-4" />
+                    <ChevronDown className={`w-3 h-3 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  Export to CSV
-                </div>
-             </div>
-
-             {/* Export PDF (Insurance Report) - desktop only */}
-             <div className="hidden md:block relative group/tooltip">
-              <button
-                    onClick={handleExportPDF}
-                    disabled={items.length === 0 || isGeneratingPDF}
-                    className="p-2 rounded-lg text-stone-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
-                 >
-                    {isGeneratingPDF ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <FileText className="w-4 h-4" />
-                    )}
-                </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  Export PDF (Insurance)
-                </div>
+                
+                {/* Dropdown Menu */}
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                      Share & Export
+                    </div>
+                    
+                    <button
+                      onClick={() => { setShowShareModal(true); setIsExportMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
+                        <Share2 className="w-3.5 h-3.5 text-rose-600" />
+                      </div>
+                      <div>
+                        <span className="block">Share Collection</span>
+                        <span className="text-[10px] text-stone-400">Create a public link</span>
+                      </div>
+                    </button>
+                    
+                    <div className="h-px bg-stone-100 my-1" />
+                    
+                    <button
+                      onClick={() => { handleExportCSV(); setIsExportMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-emerald-50 group-hover/item:bg-emerald-100 flex items-center justify-center transition-colors">
+                        <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <span className="block">Export CSV</span>
+                        <span className="text-[10px] text-stone-400">Download spreadsheet</span>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => { handleExportPDF(); setIsExportMenuOpen(false); }}
+                      disabled={isGeneratingPDF}
+                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item disabled:opacity-50"
+                    >
+                      <div className="w-7 h-7 rounded-md bg-blue-50 group-hover/item:bg-blue-100 flex items-center justify-center transition-colors">
+                        {isGeneratingPDF ? (
+                          <Loader className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                        )}
+                      </div>
+                      <div>
+                        <span className="block">Export PDF Report</span>
+                        <span className="text-[10px] text-stone-400">For insurance & records</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
              </div>
 
              {/* Profile Dropdown */}
@@ -5531,18 +5779,36 @@ export default function App() {
                      disabled={items.length === 0}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
                    >
-                     <div className="w-7 h-7 rounded-md bg-stone-100 group-hover/item:bg-stone-200 flex items-center justify-center transition-colors">
-                       <Download className="w-3.5 h-3.5" />
-            </div>
+                     <div className="w-7 h-7 rounded-md bg-emerald-50 group-hover/item:bg-emerald-100 flex items-center justify-center transition-colors">
+                       <Download className="w-3.5 h-3.5 text-emerald-600" />
+                     </div>
                      <div>
                        <span className="block">Export CSV</span>
-                       <span className="text-[10px] text-stone-400">Download your inventory</span>
+                       <span className="text-[10px] text-stone-400">Download spreadsheet</span>
+                     </div>
+                   </button>
+                   
+                   <button
+                     onClick={handleExportPDF}
+                     disabled={items.length === 0 || isGeneratingPDF}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
+                   >
+                     <div className="w-7 h-7 rounded-md bg-blue-50 group-hover/item:bg-blue-100 flex items-center justify-center transition-colors">
+                       {isGeneratingPDF ? (
+                         <Loader className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                       ) : (
+                         <FileText className="w-3.5 h-3.5 text-blue-600" />
+                       )}
+                     </div>
+                     <div>
+                       <span className="block">Export PDF Report</span>
+                       <span className="text-[10px] text-stone-400">For insurance & records</span>
                      </div>
                    </button>
                    
                    <div className="h-px bg-stone-100 my-1" />
                    
-            <button
+                   <button
                      onClick={() => signOut(auth)}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
@@ -5550,7 +5816,7 @@ export default function App() {
                        <LogOut className="w-3.5 h-3.5" />
                      </div>
                      <span>Sign Out</span>
-            </button>
+                   </button>
           </div>
         </div>
              </div>
