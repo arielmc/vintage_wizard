@@ -2735,13 +2735,6 @@ ${toneSettings.salesIntensity === 3 ? `LEVEL 3 - BALANCED: Mix of facts and ligh
 ${toneSettings.salesIntensity === 4 ? `LEVEL 4 - PERSUASIVE: Emphasize appeal and desirability. Use compelling language freely.` : ''}
 ${toneSettings.salesIntensity === 5 ? `LEVEL 5 - FULL CHARM: Maximum appeal. Paint a picture. Make them WANT it. Every sentence sells.` : ''}
 
-FORMALITY: ${toneSettings.formality}/5
-${toneSettings.formality === 1 ? `LEVEL 1 - BFF CASUAL: Write like you're texting your best friend about this cool thing you found. Use "you", contractions, casual phrasing. "So I found this amazing book..." or "You're gonna love this one..."` : ''}
-${toneSettings.formality === 2 ? `LEVEL 2 - CASUAL: Friendly and approachable. Conversational but not slangy.` : ''}
-${toneSettings.formality === 3 ? `LEVEL 3 - BALANCED: Professional but warm.` : ''}
-${toneSettings.formality === 4 ? `LEVEL 4 - PROFESSIONAL: Polished, authoritative, marketplace-appropriate.` : ''}
-${toneSettings.formality === 5 ? `LEVEL 5 - ERUDITE/FORMAL: Write like a scholarly estate sale catalog or auction house. Use proper terminology, formal sentence structure, third person. "This volume represents..." "The present example exhibits..."` : ''}
-
 NERD/EXPERTISE LEVEL: ${toneSettings.nerdFactor}/5
 ${toneSettings.nerdFactor === 1 ? `LEVEL 1 - GENERAL AUDIENCE: Assume reader knows nothing. No jargon. Simple descriptions only.` : ''}
 ${toneSettings.nerdFactor === 2 ? `LEVEL 2 - SOME CONTEXT: Brief background. Light context for non-experts.` : ''}
@@ -2769,8 +2762,7 @@ TITLE GUIDELINES:
 - CRITICAL: Never cut off a word mid-way. If a word would push past 70 chars, omit it entirely.
 - The title must make complete sense and be readable - no partial words like "Vint" instead of "Vintage".
 - Sales 1-2: Just facts. Sales 4-5: Can add "Rare", "Stunning", etc.
-- Nerd 4-5: Include specific details collectors care about
-- Formal 5: Proper terminology. Casual 1: Everyday language.
+- Nerd 4-5: Include specific details collectors care about.
 
 DESCRIPTION FORMATTING:
 - Use line breaks (\\n) to separate sections for readability
@@ -2962,7 +2954,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
               {/* Collapsed summary */}
               {!isTunerOpen && (
                 <span className="text-[10px] text-stone-500">
-                  Sales {toneSettings.salesIntensity}/5 · Nerd {toneSettings.nerdFactor}/5 · Formal {toneSettings.formality}/5
+                  Sales {toneSettings.salesIntensity}/5 · Nerd {toneSettings.nerdFactor}/5
                   {toneSettings.includeFunFact && ' · 💡 Tidbit'}
                   {toneSettings.includeDadJoke && ' · 🤓 Joke'}
                 </span>
@@ -3021,14 +3013,6 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 leftLabel="General"
                 rightLabel="Deep cuts"
                 description="Include collector knowledge and obscure details"
-              />
-              
-              <ToneSlider
-                label="Formality"
-                value={toneSettings.formality}
-                onChange={(v) => setToneSettings(prev => ({ ...prev, formality: v }))}
-                leftLabel="Casual"
-                rightLabel="Formal"
               />
             </div>
 
@@ -6427,15 +6411,13 @@ export default function App() {
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-30 overflow-visible">
         {/* Row 1: Logo + Search + Actions */}
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          {/* Logo - visible on all sizes */}
+          {/* Logo + Name - visible on all sizes */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-sm md:text-base font-serif font-bold text-stone-900 tracking-tight">
-              <span className="hidden sm:inline">{user.displayName?.split(' ')[0] || "My"}'s </span>
-              <span className="inline sm:hidden">Vintage</span>
-              <span className="hidden sm:inline">Vintage Wizard</span>
+              {user.displayName?.split(' ')[0] || "My"}'s Collection
             </h1>
           </div>
           
@@ -6657,60 +6639,58 @@ export default function App() {
           </div>
         </div>
         
-        {/* Row 2: Filters with Value + Sort */}
+        {/* Row 2: Filter Tabs + Value/Sort Row */}
         <div className="border-t border-stone-50 bg-stone-50/50 overflow-visible">
-          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2">
-           {[
-              { value: "all", label: "All", icon: Grid },
-              { value: "keep", label: "Keep", icon: Lock },
-              { value: "sell", label: "Sell", icon: Tag },
-              { value: "TBD", label: "TBD", icon: HelpCircle },
-            ].map(({ value: f, label: displayName, icon: Icon }) => {
-              const stats = filterStats[f];
-              const isActive = filter === f;
-              
-              return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                  className={`flex-shrink-0 transition-all duration-200 ${
-                    isActive
-                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2 scale-[1.02]"
-                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white hover:shadow-sm hover:scale-[1.02] active:scale-95"
-                  }`}
-                >
-                  {isActive ? (
-                    <div className="flex flex-col items-start">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-3 h-3 text-stone-600" />
-                        <span className="text-xs font-bold text-stone-800">{displayName}</span>
-                        <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
-                      </div>
-                      {stats.high > 0 && (
-                        <span className="text-sm font-bold text-emerald-600 mt-0.5">
-                          ${stats.low.toLocaleString()} <span className="text-stone-300 font-normal">-</span> ${stats.high.toLocaleString()}
-                </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
-                      <Icon className="w-3 h-3" />
-                      {displayName} <span className="opacity-60">{stats.count}</span>
+          <div className="max-w-7xl mx-auto px-4 py-2">
+            {/* Filter Tabs - Tab style */}
+            <div className="flex items-center border-b border-stone-200 -mx-1">
+              {[
+                { value: "all", label: "All" },
+                { value: "keep", label: "Keep" },
+                { value: "sell", label: "Sell" },
+                { value: "TBD", label: "TBD" },
+              ].map(({ value: f, label: displayName }) => {
+                const stats = filterStats[f];
+                const isActive = filter === f;
+                
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 -mb-px transition-all ${
+                      isActive
+                        ? "border-stone-800 text-stone-900"
+                        : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300"
+                    }`}
+                  >
+                    {displayName}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-stone-200 text-stone-700' : 'bg-stone-100 text-stone-400'}`}>
+                      {stats.count}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
             
-            {/* Sort Dropdown - with Premium Tooltip */}
-            <div className="ml-auto flex-shrink-0 relative group/sort">
-               <button 
-                 onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                 disabled={dataLoading}
-                 className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-700 bg-white/80 hover:bg-white hover:shadow-sm px-2.5 py-1.5 rounded-lg border border-stone-200 hover:border-stone-300 transition-all duration-200 hover:scale-[1.02] active:scale-95"
-               >
-                 <ArrowUpDown className="w-3.5 h-3.5" />
-                 <span className="hidden sm:inline">
+            {/* Value + Sort Row */}
+            <div className="flex items-center justify-between pt-2">
+              {/* Value on left */}
+              {filterStats[filter].high > 0 && (
+                <span className="text-sm font-bold text-emerald-600">
+                  ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
+                </span>
+              )}
+              {!filterStats[filter].high && <span />}
+              
+              {/* Sort on right */}
+              <div className="relative group/sort">
+                <button 
+                  onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                  disabled={dataLoading}
+                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>
                     {{
                       "date-desc": "Newest",
                       "date-asc": "Oldest",
@@ -6720,46 +6700,40 @@ export default function App() {
                       "category-asc": "Category",
                       "status-asc": "Status"
                     }[sortBy]}
-                 </span>
-               </button>
-               {/* Tooltip for Sort */}
-               {!isSortMenuOpen && (
-                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/sort:opacity-100 group-hover/sort:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                   Sort items
-                 </div>
-               )}
-               
-               {/* Sort Menu Dropdown */}
-               {isSortMenuOpen && (
+                  </span>
+                </button>
+                
+                {/* Sort Menu Dropdown */}
+                {isSortMenuOpen && (
                   <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
-               )}
-               {isSortMenuOpen && (
-                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
-                   <div className="p-1.5">
-                     {[
-                       { label: "Newest First", value: "date-desc" },
-                       { label: "Oldest First", value: "date-asc" },
-                       { label: "High → Low $", value: "value-desc" },
-                       { label: "Low → High $", value: "value-asc" },
-                       { label: "A → Z", value: "alpha-asc" },
-                       { label: "By Category", value: "category-asc" },
-                       { label: "By Status", value: "status-asc" },
-                     ].map((opt) => (
-                       <button
-                         key={opt.value}
-                         onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                         className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all duration-150 ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"}`}
-                       >
-                         {opt.label}
-                         {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
-              </button>
-            ))}
-          </div>
-          </div>
-               )}
-        </div>
+                )}
+                {isSortMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-1">
+                      {[
+                        { label: "Newest First", value: "date-desc" },
+                        { label: "Oldest First", value: "date-asc" },
+                        { label: "High → Low $", value: "value-desc" },
+                        { label: "Low → High $", value: "value-asc" },
+                        { label: "A → Z", value: "alpha-asc" },
+                        { label: "By Category", value: "category-asc" },
+                        { label: "By Status", value: "status-asc" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                        >
+                          {opt.label}
+                          {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
         </div>
       </header>
 
@@ -7096,60 +7070,56 @@ export default function App() {
       
       {/* === MOBILE BOTTOM NAVIGATION === */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-40 safe-area-pb">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-14 px-2">
           {/* Search */}
           <button
             onClick={() => setIsMobileSearchOpen(true)}
-            className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all ${
+            className={`p-3 rounded-xl transition-all ${
               isMobileSearchOpen ? 'text-rose-600 bg-rose-50' : 'text-stone-500'
             }`}
           >
-            <Search className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Search</span>
+            <Search className="w-6 h-6" />
           </button>
           
           {/* Add */}
           <button
             onClick={() => setIsAddMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+            className="p-1 text-stone-500"
           >
-            <div className="w-10 h-10 -mt-5 bg-stone-900 rounded-full flex items-center justify-center shadow-lg">
-              <Plus className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 -mt-6 bg-stone-900 rounded-full flex items-center justify-center shadow-lg">
+              <Plus className="w-6 h-6 text-white" />
             </div>
-            <span className="text-[10px] font-medium mt-0.5">Add</span>
           </button>
           
           {/* Profile */}
           <button
             onClick={() => setShowProfilePage(true)}
-            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+            className="p-3 rounded-xl text-stone-500"
           >
-            <User className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Profile</span>
+            <User className="w-6 h-6" />
           </button>
           
           {/* Export */}
           <button
             onClick={() => setMobileExportOpen(true)}
-            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+            className="p-3 rounded-xl text-stone-500"
           >
-            <Upload className="w-5 h-5" />
-            <span className="text-[10px] font-medium">Export</span>
+            <Upload className="w-6 h-6" />
           </button>
         </div>
       </nav>
       
-      {/* Mobile Search Modal */}
+      {/* Mobile Search Overlay - Semi-transparent, can see items behind */}
       {isMobileSearchOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom duration-200">
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-4">
-              <button
-                onClick={() => setIsMobileSearchOpen(false)}
-                className="p-2 -ml-2 text-stone-600"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+        <div 
+          className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setIsMobileSearchOpen(false)}
+        >
+          <div 
+            className="mx-4 mt-20 mb-20 bg-white rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
                 <input
@@ -7159,7 +7129,7 @@ export default function App() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
-                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full pl-10 pr-10 py-3 text-sm bg-stone-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
                 {searchQuery && (
                   <button 
@@ -7334,11 +7304,18 @@ export default function App() {
               for (const itemDoc of itemsSnap.docs) {
                 await deleteDoc(itemDoc.ref);
               }
-              // Delete user auth
+              // Delete user auth account
               await user.delete();
+              // User will automatically be signed out when deleted
+              // State will update via onAuthStateChanged and show login screen
+              setShowProfilePage(false);
             } catch (err) {
               console.error("Failed to delete account:", err);
-              alert("Failed to delete account. Please try again.");
+              if (err.code === 'auth/requires-recent-login') {
+                alert("For security, please sign out and sign back in, then try again.");
+              } else {
+                alert("Failed to delete account. Please try again.");
+              }
             }
           }}
         />
