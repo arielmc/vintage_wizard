@@ -6466,10 +6466,11 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- Batch Action Bar (Sticky Top - Below Header) --- */}
+      {/* --- Batch Action Bar (Fixed Top - Below Header) --- */}
       {isSelectionMode && (
-         <div className="sticky top-0 z-40 bg-gradient-to-b from-stone-100 to-transparent pb-4 pt-2 px-4 -mx-4 sm:-mx-6 lg:-mx-8 animate-in slide-in-from-top-4 fade-in duration-300">
-            <div className="bg-white rounded-xl shadow-lg shadow-stone-200/50 border border-stone-200 overflow-hidden">
+         <div className="fixed top-16 left-0 right-0 z-40 px-4 sm:px-6 lg:px-8 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="max-w-7xl mx-auto">
+              <div className="bg-white rounded-xl shadow-lg shadow-stone-300/50 border border-stone-200 overflow-hidden">
                {/* Single row: All controls */}
                <div className="flex items-center justify-between p-2.5 sm:p-3 gap-3">
                   {/* Left: Selection count + Select All */}
@@ -6547,6 +6548,7 @@ export default function App() {
                      </button>
                   </div>
                </div>
+              </div>
             </div>
          </div>
       )}
