@@ -5689,11 +5689,14 @@ export default function App() {
         pdf.text(metaText || 'Uncategorized', detailsX, detailY);
         detailY += 7;
         
-        // Valuation box
+        // Valuation box (includes confidence reasoning)
         if (item.valuation_high > 0) {
+          const hasReason = item.confidence_reason;
+          const boxHeight = hasReason ? 30 : 22;
+          
           pdf.setFillColor(236, 253, 245); // emerald-50
           pdf.setDrawColor(167, 243, 208); // emerald-200
-          pdf.roundedRect(detailsX, detailY, detailsWidth, 22, 2, 2, 'FD');
+          pdf.roundedRect(detailsX, detailY, detailsWidth, boxHeight, 2, 2, 'FD');
           
           pdf.setFontSize(8);
           pdf.setTextColor(22, 163, 74);
@@ -5712,7 +5715,18 @@ export default function App() {
             pdf.text(`${item.confidence.toUpperCase()} CONF.`, detailsX + detailsWidth - 4, detailY + 6, { align: 'right' });
           }
           
-          detailY += 26;
+          // Confidence reasoning (inside the valuation box)
+          if (hasReason) {
+            pdf.setFontSize(7);
+            const confColors = { high: [22, 163, 74], medium: [180, 83, 9], low: [220, 38, 38] };
+            const confColor = confColors[item.confidence] || [87, 83, 78];
+            pdf.setTextColor(...confColor);
+            const reasonLines = wrapText(pdf, item.confidence_reason, detailsWidth - 8);
+            pdf.text(reasonLines[0] || '', detailsX + 4, detailY + 21);
+            if (reasonLines[1]) pdf.text(reasonLines[1], detailsX + 4, detailY + 25);
+          }
+          
+          detailY += boxHeight + 4;
         }
         
         // Details grid below images
@@ -5767,25 +5781,6 @@ export default function App() {
           }
           
           yPos += 4;
-        }
-        
-        // Confidence Reason (NEW)
-        if (item.confidence_reason) {
-          yPos += 3;
-          pdf.setFontSize(7);
-          pdf.setTextColor(120, 113, 108);
-          pdf.text("CONFIDENCE REASONING", margin, yPos);
-          yPos += 4;
-          
-          pdf.setFontSize(8);
-          const confColors = { high: [22, 163, 74], medium: [180, 83, 9], low: [220, 38, 38] };
-          const confColor = confColors[item.confidence] || [87, 83, 78];
-          pdf.setTextColor(...confColor);
-          const reasonLines = wrapText(pdf, item.confidence_reason, contentWidth);
-          reasonLines.slice(0, 2).forEach((line, idx) => {
-            pdf.text(line, margin, yPos + idx * 3.5);
-          });
-          yPos += Math.min(reasonLines.length, 2) * 3.5 + 4;
         }
         
         // Sales blurb / reasoning
