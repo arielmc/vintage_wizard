@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -31,6 +31,7 @@ import {
 } from "firebase/firestore";
 import { getAnalytics, logEvent } from "firebase/analytics";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { jsPDF } from "jspdf";
 import {
   Camera,
   Upload,
@@ -89,6 +90,9 @@ import {
   TrendingUp,
   FileText,
   Database,
+  Package,
+  DollarSign,
+  Gauge,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -430,6 +434,8 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - condition: Professional condition assessment.
     - valuation_low: Conservative estimate (USD number).
     - valuation_high: Optimistic estimate (USD number).
+    - confidence: One of "high", "medium", or "low" indicating confidence in valuation. Use "high" if clear maker's marks, known brand, or exact comparables found. Use "medium" if general style/era identified but specifics unclear. Use "low" if guessing based on visual style alone without identifying marks.
+    - confidence_reason: Brief explanation (10-20 words) of why confidence level was assigned (e.g., "Clear sterling hallmark and maker's mark visible" or "No visible markings, estimate based on style only").
     - reasoning: Explanation of value (rarity, demand, comparables).
     - search_terms: Specific keywords to find EXACT comparables.
     - search_terms_broad: A simplified query (2-4 words MAX).
@@ -1785,11 +1791,85 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
   );
 };
 
-const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, onAnalyze }) => {
+// --- Quick Action Menu (Context Menu for Items) ---
+const QuickActionMenu = ({ position, item, onClose, onStatusChange, onDelete }) => {
+  const menuRef = useRef(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Adjust position to stay within viewport
+  const adjustedStyle = {
+    position: 'fixed',
+    top: Math.min(position.y, window.innerHeight - 220),
+    left: Math.min(position.x, window.innerWidth - 160),
+    zIndex: 100,
+  };
+
+  const statusOptions = [
+    { value: 'keep', label: 'Mark as Keep', icon: Heart, color: 'text-emerald-600' },
+    { value: 'sell', label: 'Mark as Sell', icon: DollarSign, color: 'text-amber-600' },
+    { value: 'TBD', label: 'Mark as TBD', icon: HelpCircle, color: 'text-blue-600' },
+  ];
+
+  return (
+    <div 
+      ref={menuRef}
+      style={adjustedStyle}
+      className="bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden animate-in zoom-in-95 fade-in duration-150 min-w-[160px]"
+    >
+      <div className="p-1.5">
+        <div className="px-2 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+          Quick Actions
+        </div>
+        {statusOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => { onStatusChange(item.id, opt.value); onClose(); }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+              item.status === opt.value 
+                ? 'bg-stone-100 text-stone-900' 
+                : 'text-stone-700 hover:bg-stone-50'
+            }`}
+          >
+            <opt.icon className={`w-4 h-4 ${opt.color}`} />
+            {opt.label}
+            {item.status === opt.value && <Check className="w-3.5 h-3.5 ml-auto text-stone-500" />}
+          </button>
+        ))}
+        <div className="h-px bg-stone-100 my-1.5" />
+        <button
+          onClick={() => { onDelete(item.id); onClose(); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Item
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, onAnalyze, onQuickAction }) => {
   // Ensure images array exists, fallback to single image or empty
   const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Long-press handling for mobile
+  const longPressTimer = useRef(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
 
   // Reset index if images change (rare but good practice)
   useEffect(() => { setActiveImgIdx(0); }, [item.id]);
@@ -1815,6 +1895,10 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
   };
 
   const handleClick = (e) => {
+    if (isLongPressing) {
+      setIsLongPressing(false);
+      return;
+    }
     if (isSelectionMode) {
       e.stopPropagation();
       onToggleSelect(item.id);
@@ -1831,10 +1915,52 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
      setIsAnalyzing(false);
   };
 
+  // Right-click context menu (desktop)
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isSelectionMode && onQuickAction) {
+      onQuickAction(item, { x: e.clientX, y: e.clientY });
+    }
+  };
+
+  // Long-press handlers (mobile)
+  const handleTouchStart = (e) => {
+    if (isSelectionMode) return;
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPressing(true);
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(50);
+      const touch = e.touches[0];
+      if (onQuickAction) {
+        onQuickAction(item, { x: touch.clientX, y: touch.clientY });
+      }
+    }, 500); // 500ms long-press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    // Cancel long-press if user moves finger
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   return (
     <div
       onClick={handleClick}
-      className={`group bg-white rounded-xl shadow-sm transition-all duration-200 border overflow-hidden cursor-pointer flex flex-col h-full relative ${
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      className={`group bg-white rounded-xl shadow-sm transition-all duration-200 border overflow-hidden cursor-pointer flex flex-col h-full relative select-none ${
         isSelected ? "border-[3px] border-rose-500" : "border-stone-100 hover:shadow-md border"
       }`}
     >
@@ -1902,6 +2028,19 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
             <p className="text-white font-extrabold text-lg drop-shadow-md">
               ${item.valuation_low} - ${item.valuation_high}
             </p>
+            {/* Confidence Indicator */}
+            {item.confidence && (
+              <div className={`flex items-center gap-1 mt-0.5 ${
+                item.confidence === 'high' ? 'text-emerald-300' :
+                item.confidence === 'medium' ? 'text-amber-300' :
+                'text-red-300'
+              }`}>
+                <Gauge className="w-2.5 h-2.5" />
+                <span className="text-[10px] font-medium uppercase tracking-wide">
+                  {item.confidence}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -3108,26 +3247,52 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         </div>
 
         {/* VALUE INPUT - Below photos, prominent */}
-        <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 flex items-center justify-between shrink-0">
-          <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
-          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
-            <span className="text-emerald-600 text-sm font-bold">$</span>
-            <input
-              type="number"
-              placeholder="Min"
-              value={formData.valuation_low || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
-              className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-            />
-            <span className="text-emerald-300 font-bold">—</span>
-            <input
-              type="number"
-              placeholder="Max"
-              value={formData.valuation_high || ""}
-              onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
-              className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-            />
+        <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
+              {/* Confidence Badge */}
+              {formData.confidence && (
+                <div 
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-help ${
+                    formData.confidence === 'high' 
+                      ? 'bg-emerald-200 text-emerald-800' 
+                      : formData.confidence === 'medium' 
+                        ? 'bg-amber-200 text-amber-800' 
+                        : 'bg-red-200 text-red-800'
+                  }`}
+                  title={formData.confidence_reason || 'AI confidence level'}
+                >
+                  <Gauge className="w-3 h-3" />
+                  {formData.confidence}
+                </div>
+              )}
             </div>
+            <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
+              <span className="text-emerald-600 text-sm font-bold">$</span>
+              <input
+                type="number"
+                placeholder="Min"
+                value={formData.valuation_low || ""}
+                onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+                className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+              />
+              <span className="text-emerald-300 font-bold">—</span>
+              <input
+                type="number"
+                placeholder="Max"
+                value={formData.valuation_high || ""}
+                onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+                className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+              />
+            </div>
+          </div>
+          {/* Confidence Reason */}
+          {formData.confidence_reason && (
+            <p className="text-[11px] text-emerald-600/80 mt-1 italic truncate" title={formData.confidence_reason}>
+              {formData.confidence_reason}
+            </p>
+          )}
         </div>
         
         {/* Tab Switcher */}
@@ -4215,8 +4380,27 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
           
           {item.valuation_high > 0 && (
             <div className="bg-emerald-50 p-3 rounded-xl">
-              <p className="text-xs text-emerald-600 font-semibold mb-1">Estimated Value</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-emerald-600 font-semibold">Estimated Value</p>
+                {/* Confidence Badge */}
+                {item.confidence && (
+                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                    item.confidence === 'high' 
+                      ? 'bg-emerald-100 text-emerald-700' 
+                      : item.confidence === 'medium' 
+                        ? 'bg-amber-100 text-amber-700' 
+                        : 'bg-red-100 text-red-700'
+                  }`}>
+                    <Gauge className="w-3 h-3" />
+                    {item.confidence}
+                  </div>
+                )}
+              </div>
               <p className="text-xl font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</p>
+              {/* Confidence Reason */}
+              {item.confidence_reason && (
+                <p className="text-xs text-emerald-600/80 mt-1 italic">{item.confidence_reason}</p>
+              )}
             </div>
           )}
           
@@ -4471,6 +4655,13 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
   const [showShareModal, setShowShareModal] = useState(false);
+  // Quick Action Menu state
+  const [contextMenu, setContextMenu] = useState(null); // { item, position: { x, y } }
+  // Mobile search expand state
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const mobileSearchRef = useRef(null);
+  // PDF generation state
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const singleInputRef = useRef(null);
   const bulkInputRef = useRef(null);
   
@@ -4861,6 +5052,175 @@ export default function App() {
     document.body.removeChild(link);
   };
 
+  // Quick status change handler (for context menu)
+  const handleQuickStatusChange = async (itemId, newStatus) => {
+    if (!user) return;
+    try {
+      await updateDoc(
+        doc(db, "artifacts", appId, "users", user.uid, "inventory", itemId),
+        { status: newStatus }
+      );
+      playSuccessFeedback();
+    } catch (error) {
+      console.error("Failed to update status:", error);
+    }
+  };
+
+  // Context menu handler
+  const handleOpenContextMenu = (item, position) => {
+    setContextMenu({ item, position });
+  };
+
+  // PDF Export for Insurance/Records
+  const handleExportPDF = async () => {
+    if (items.length === 0) return;
+    setIsGeneratingPDF(true);
+    
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      let yPos = margin;
+      
+      // Header
+      pdf.setFontSize(22);
+      pdf.setTextColor(41, 37, 36); // stone-800
+      pdf.text("Vintage Collection Inventory", margin, yPos);
+      yPos += 8;
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(120, 113, 108); // stone-500
+      pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric' 
+      })}`, margin, yPos);
+      yPos += 5;
+      pdf.text(`Owner: ${user?.displayName || user?.email || 'Unknown'}`, margin, yPos);
+      yPos += 10;
+      
+      // Summary Box
+      const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
+      const totalHigh = items.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
+      const sellItems = items.filter(i => i.status === 'sell').length;
+      const keepItems = items.filter(i => i.status === 'keep').length;
+      
+      pdf.setFillColor(250, 250, 249); // stone-50
+      pdf.roundedRect(margin, yPos, pageWidth - margin * 2, 25, 3, 3, 'F');
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(41, 37, 36);
+      pdf.text(`Total Items: ${items.length}`, margin + 5, yPos + 8);
+      pdf.text(`Estimated Value: $${totalLow.toLocaleString()} - $${totalHigh.toLocaleString()}`, margin + 5, yPos + 16);
+      pdf.text(`Keep: ${keepItems}  |  Sell: ${sellItems}`, pageWidth - margin - 60, yPos + 12);
+      yPos += 35;
+      
+      // Items
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Check if we need a new page
+        if (yPos > pageHeight - 80) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        
+        // Item card background
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(231, 229, 228); // stone-200
+        pdf.roundedRect(margin, yPos, pageWidth - margin * 2, 55, 2, 2, 'FD');
+        
+        // Item number
+        pdf.setFontSize(8);
+        pdf.setTextColor(168, 162, 158); // stone-400
+        pdf.text(`#${i + 1}`, margin + 3, yPos + 5);
+        
+        // Title
+        pdf.setFontSize(11);
+        pdf.setTextColor(28, 25, 23); // stone-900
+        const title = getDisplayTitle(item).substring(0, 60);
+        pdf.text(title, margin + 5, yPos + 12);
+        
+        // Category & Era
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 113, 108);
+        const meta = [item.category, item.era].filter(Boolean).join(' • ');
+        pdf.text(meta || 'Uncategorized', margin + 5, yPos + 19);
+        
+        // Details row
+        pdf.setFontSize(8);
+        const details = [];
+        if (item.maker && item.maker.toLowerCase() !== 'unknown') details.push(`Maker: ${item.maker}`);
+        if (item.materials) details.push(`Material: ${item.materials}`);
+        if (details.length > 0) {
+          pdf.text(details.join('  |  ').substring(0, 80), margin + 5, yPos + 26);
+        }
+        
+        // Condition
+        if (item.condition) {
+          pdf.setTextColor(87, 83, 78); // stone-600
+          pdf.text(`Condition: ${item.condition.substring(0, 70)}`, margin + 5, yPos + 33);
+        }
+        
+        // Valuation (right aligned)
+        if (item.valuation_high > 0) {
+          pdf.setFontSize(12);
+          pdf.setTextColor(180, 83, 9); // amber-700
+          const valText = `$${item.valuation_low || 0} - $${item.valuation_high}`;
+          pdf.text(valText, pageWidth - margin - 5, yPos + 12, { align: 'right' });
+          
+          // Confidence indicator if available
+          if (item.confidence) {
+            pdf.setFontSize(7);
+            const confColors = {
+              high: [22, 163, 74], // green
+              medium: [217, 119, 6], // amber
+              low: [220, 38, 38] // red
+            };
+            const color = confColors[item.confidence] || confColors.medium;
+            pdf.setTextColor(...color);
+            pdf.text(`${item.confidence.toUpperCase()} CONFIDENCE`, pageWidth - margin - 5, yPos + 18, { align: 'right' });
+          }
+        }
+        
+        // Status badge
+        const statusColors = {
+          keep: [16, 185, 129], // emerald
+          sell: [245, 158, 11], // amber
+          TBD: [59, 130, 246], // blue
+          draft: [156, 163, 175], // gray
+        };
+        const statusColor = statusColors[item.status] || statusColors.draft;
+        pdf.setFillColor(...statusColor);
+        pdf.roundedRect(pageWidth - margin - 25, yPos + 42, 20, 8, 2, 2, 'F');
+        pdf.setFontSize(7);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 15, yPos + 47.5, { align: 'center' });
+        
+        yPos += 60;
+      }
+      
+      // Footer on last page
+      pdf.setFontSize(8);
+      pdf.setTextColor(168, 162, 158);
+      pdf.text(
+        'Generated by Vintage Wizard • For insurance and estate planning purposes',
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+      
+      // Save
+      pdf.save(`vintage_inventory_${new Date().toISOString().split('T')[0]}.pdf`);
+      playSuccessFeedback();
+      
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const filteredItems = useMemo(
     () => {
       let result = items;
@@ -4976,25 +5336,45 @@ export default function App() {
             </h1>
           </div>
           
-          {/* Search Bar - Hidden on mobile for cleaner UI */}
-          <div className="hidden md:block flex-1 max-w-xs relative">
+          {/* Mobile Search Toggle */}
+          <button
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            className={`md:hidden p-2 rounded-lg transition-all ${
+              isMobileSearchOpen || searchQuery 
+                ? 'bg-rose-100 text-rose-600' 
+                : 'text-stone-500 hover:bg-stone-100'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            {searchQuery && !isMobileSearchOpen && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full" />
+            )}
+          </button>
+
+          {/* Search Bar - Hidden on mobile unless expanded */}
+          <div className={`${isMobileSearchOpen ? 'flex' : 'hidden'} md:flex flex-1 max-w-xs relative`}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
             <input
+              ref={mobileSearchRef}
               type="text"
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-200 transition-all placeholder:text-stone-400"
+              className="w-full pl-9 pr-8 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-200 transition-all placeholder:text-stone-400"
+              autoFocus={isMobileSearchOpen}
             />
-            {searchQuery && (
+            {(searchQuery || isMobileSearchOpen) && (
               <button 
-                onClick={() => setSearchQuery("")}
+                onClick={() => { 
+                  setSearchQuery(""); 
+                  if (isMobileSearchOpen && !searchQuery) setIsMobileSearchOpen(false);
+                }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
-            </div>
+          </div>
           
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
              {/* Add Item (Single) - with Premium Tooltip */}
@@ -5082,6 +5462,26 @@ export default function App() {
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
                   Export to CSV
+                </div>
+             </div>
+
+             {/* Export PDF (Insurance Report) - desktop only */}
+             <div className="hidden md:block relative group/tooltip">
+              <button
+                    onClick={handleExportPDF}
+                    disabled={items.length === 0 || isGeneratingPDF}
+                    className="p-2 rounded-lg text-stone-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-stone-500"
+                 >
+                    {isGeneratingPDF ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
+                  Export PDF (Insurance)
                 </div>
              </div>
 
@@ -5323,6 +5723,7 @@ export default function App() {
                   isSelectionMode={isSelectionMode}
                   onToggleSelect={handleToggleSelect}
                   onAnalyze={handleQuickAnalyze}
+                  onQuickAction={handleOpenContextMenu}
                />
              ))
           )}
@@ -5477,6 +5878,34 @@ export default function App() {
           message={`Analyzing ${selectedIds.size} items...`} 
           subMessage="This may take a moment"
         />
+      )}
+
+      {/* Quick Action Context Menu */}
+      {contextMenu && (
+        <QuickActionMenu
+          position={contextMenu.position}
+          item={contextMenu.item}
+          onClose={() => setContextMenu(null)}
+          onStatusChange={handleQuickStatusChange}
+          onDelete={handleDeleteItem}
+        />
+      )}
+
+      {/* PDF Generation Overlay */}
+      {isGeneratingPDF && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center max-w-sm mx-auto text-center shadow-2xl">
+            <div className="w-16 h-16 mb-4 relative">
+              <div className="absolute inset-0 border-4 border-stone-100 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+              <FileText className="absolute inset-0 m-auto w-6 h-6 text-blue-500" />
+            </div>
+            <h3 className="text-xl font-bold text-stone-800 mb-2">Generating PDF...</h3>
+            <p className="text-stone-500 text-sm">
+              Creating your inventory report for insurance records
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
