@@ -4962,14 +4962,52 @@ export default function App() {
     setSelectedIds(newSelected);
   };
 
+  // Batch processing state
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, message: '' });
+  
+  // Fun messages for batch processing
+  const batchMessages = [
+    "Teaching AI about vintage treasures...",
+    "Consulting the antique oracles...",
+    "Dusting off the appraisal guides...",
+    "Channeling grandma's estate wisdom...",
+    "Decoding maker's marks...",
+    "Cross-referencing auction archives...",
+    "Summoning the ghost of Antiques Roadshow...",
+    "Polishing up the valuations...",
+    "Asking the vintage gods...",
+    "Running through the time machine...",
+  ];
+
   const handleBatchAnalyze = async () => {
     if (selectedIds.size === 0) return;
     setIsBatchProcessing(true);
     
     const itemsToProcess = items.filter(item => selectedIds.has(item.id));
+    const eligibleItems = itemsToProcess.filter(item => 
+      item.images && item.images.length > 0
+    );
     
-    for (const item of itemsToProcess) {
-      if ((item.valuation_low > 0) || !item.images || item.images.length === 0) continue;
+    if (eligibleItems.length === 0) {
+      setIsBatchProcessing(false);
+      alert("No items with images to analyze. Add photos first!");
+      return;
+    }
+    
+    setBatchProgress({ current: 0, total: eligibleItems.length, message: batchMessages[0] });
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < eligibleItems.length; i++) {
+      const item = eligibleItems[i];
+      // Rotate through fun messages
+      setBatchProgress({ 
+        current: i + 1, 
+        total: eligibleItems.length, 
+        message: batchMessages[i % batchMessages.length] 
+      });
+      
       try {
         const analysis = await analyzeImagesWithGemini(
           item.images,
@@ -4980,15 +5018,28 @@ export default function App() {
           doc(db, "artifacts", appId, "users", user.uid, "inventory", item.id),
           { ...analysis, aiLastRun: new Date().toISOString() }
         );
+        successCount++;
       } catch (err) {
         console.error(`Failed to analyze item ${item.id}`, err);
+        failCount++;
       }
     }
     
     setIsBatchProcessing(false);
+    setBatchProgress({ current: 0, total: 0, message: '' });
     setSelectedIds(new Set());
     setIsSelectionMode(false);
-    alert("Batch analysis complete!");
+    playSuccessFeedback();
+    
+    // Show result toast
+    const resultMsg = failCount > 0 
+      ? `✨ Analyzed ${successCount} items (${failCount} failed)`
+      : `✨ Successfully analyzed ${successCount} items!`;
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2 rounded-xl shadow-xl text-sm font-medium z-[100] animate-in fade-in slide-in-from-bottom-4';
+    toast.textContent = resultMsg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   };
 
   const handleBatchDelete = async () => {
@@ -5000,6 +5051,32 @@ export default function App() {
     }
     setSelectedIds(new Set());
     setIsSelectionMode(false);
+    playSuccessFeedback();
+  };
+
+  // Batch status change handler
+  const handleBatchStatusChange = async (newStatus) => {
+    if (selectedIds.size === 0) return;
+    
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await updateDoc(
+        doc(db, "artifacts", appId, "users", user.uid, "inventory", id),
+        { status: newStatus }
+      );
+    }
+    
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+    playSuccessFeedback();
+    
+    // Show toast
+    const statusLabels = { keep: 'Keep', sell: 'Sell', TBD: 'TBD' };
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-4 py-2 rounded-xl shadow-xl text-sm font-medium z-[100] animate-in fade-in slide-in-from-bottom-4';
+    toast.textContent = `✓ ${ids.length} items marked as ${statusLabels[newStatus] || newStatus}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
   };
 
   useEffect(() => {
@@ -6387,47 +6464,85 @@ export default function App() {
 
       {/* --- Batch Action Bar (Fixed Bottom) --- */}
       {isSelectionMode && (
-         <div className="fixed bottom-6 md:bottom-12 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
-            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl shadow-stone-900/50 p-4 border border-stone-700/50 flex items-center justify-between gap-4 backdrop-blur-md">
-               <div className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2">
-                  <div className="bg-stone-700 px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold shadow-inner">
-                     {selectedIds.size}/{filteredItems.length}
+         <div className="fixed bottom-4 md:bottom-8 left-2 right-2 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-2xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
+            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl shadow-stone-900/50 p-3 sm:p-4 border border-stone-700/50 backdrop-blur-md">
+               {/* Top row: Selection info */}
+               <div className="flex items-center justify-between mb-3 pb-3 border-b border-stone-700/50">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                     <div className="bg-stone-700 px-2.5 py-1 rounded-lg text-xs font-bold shadow-inner">
+                        {selectedIds.size} selected
+                     </div>
+                     <button 
+                        onClick={() => {
+                          if (selectedIds.size === filteredItems.length) {
+                            setSelectedIds(new Set());
+                          } else {
+                            setSelectedIds(new Set(filteredItems.map(i => i.id)));
+                          }
+                        }}
+                        className="text-stone-400 hover:text-white text-xs font-medium transition-colors"
+                     >
+                        {selectedIds.size === filteredItems.length ? "Deselect All" : "Select All"}
+                     </button>
                   </div>
-                  {/* Select All / Deselect All */}
                   <button 
-                     onClick={() => {
-                       if (selectedIds.size === filteredItems.length) {
-                         setSelectedIds(new Set());
-                       } else {
-                         setSelectedIds(new Set(filteredItems.map(i => i.id)));
-                       }
-                     }}
-                     className="text-stone-300 hover:text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+                     onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
+                     className="text-stone-500 hover:text-white text-xs font-medium transition-colors flex items-center gap-1"
                   >
-                     {selectedIds.size === filteredItems.length ? "Deselect All" : "Select All"}
-                  </button>
-                  <button onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} className="text-stone-500 hover:text-stone-300 text-xs sm:text-sm font-medium transition-colors">
-                     Cancel
+                     <X className="w-3.5 h-3.5" /> Cancel
                   </button>
                </div>
-               <div className="flex items-center gap-2 sm:gap-3">
-                  <button 
-                     onClick={handleBatchDelete}
-                     disabled={selectedIds.size === 0}
-                     className="p-2 sm:p-2.5 rounded-xl hover:bg-stone-800 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                     title="Delete Selected"
-                  >
-                     <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                  <button 
-                     onClick={handleBatchAnalyze}
-                     disabled={isBatchProcessing || selectedIds.size === 0}
-                     className="bg-rose-500 hover:bg-rose-600 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all active:scale-95 border-t border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                     {isBatchProcessing ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white" />}
-                     <span className="hidden sm:inline">Analyze</span>
-                     <span className="sm:hidden">AI</span>
-                  </button>
+               
+               {/* Bottom row: Actions */}
+               <div className="flex items-center justify-between gap-2">
+                  {/* Status buttons */}
+                  <div className="flex items-center gap-1.5">
+                     <button 
+                        onClick={() => handleBatchStatusChange('keep')}
+                        disabled={selectedIds.size === 0}
+                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 disabled:opacity-40"
+                     >
+                        <span className="hidden sm:inline">Mark </span>Keep
+                     </button>
+                     <button 
+                        onClick={() => handleBatchStatusChange('sell')}
+                        disabled={selectedIds.size === 0}
+                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 border border-amber-500/30 disabled:opacity-40"
+                     >
+                        <span className="hidden sm:inline">Mark </span>Sell
+                     </button>
+                     <button 
+                        onClick={() => handleBatchStatusChange('TBD')}
+                        disabled={selectedIds.size === 0}
+                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 disabled:opacity-40"
+                     >
+                        TBD
+                     </button>
+                  </div>
+                  
+                  {/* Divider */}
+                  <div className="w-px h-6 bg-stone-700 hidden sm:block" />
+                  
+                  {/* Delete & AI */}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                     <button 
+                        onClick={handleBatchDelete}
+                        disabled={selectedIds.size === 0}
+                        className="p-2 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-red-500/30 disabled:opacity-40"
+                        title="Delete Selected"
+                     >
+                        <Trash2 className="w-4 h-4" />
+                     </button>
+                     <button 
+                        onClick={handleBatchAnalyze}
+                        disabled={isBatchProcessing || selectedIds.size === 0}
+                        className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-rose-900/30 transition-all active:scale-95 disabled:opacity-50"
+                     >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">AI Analyze</span>
+                        <span className="sm:hidden">AI</span>
+                     </button>
+                  </div>
                </div>
             </div>
          </div>
@@ -6527,12 +6642,45 @@ export default function App() {
         />
       )}
       
-      {/* Batch Processing Overlay */}
+      {/* Batch Processing Overlay with Progress */}
       {isBatchProcessing && (
-        <LoadingOverlay 
-          message={`Analyzing ${selectedIds.size} items...`} 
-          subMessage="This may take a moment"
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center max-w-sm mx-auto text-center shadow-2xl animate-in zoom-in-95">
+            {/* Animated icon */}
+            <div className="w-20 h-20 mb-5 relative">
+              <div className="absolute inset-0 border-4 border-stone-100 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-rose-500 rounded-full border-t-transparent animate-spin"></div>
+              <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-rose-500 animate-pulse" />
+            </div>
+            
+            {/* Progress */}
+            <div className="w-full mb-4">
+              <div className="flex justify-between text-xs text-stone-500 mb-1">
+                <span>Processing...</span>
+                <span>{batchProgress.current} of {batchProgress.total}</span>
+              </div>
+              <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-300"
+                  style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* Fun message */}
+            <h3 className="text-lg font-bold text-stone-800 mb-2">
+              AI at Work ✨
+            </h3>
+            <p className="text-stone-500 text-sm min-h-[40px] flex items-center">
+              {batchProgress.message || "Analyzing your vintage treasures..."}
+            </p>
+            
+            {/* Don't close warning */}
+            <p className="text-[10px] text-stone-400 mt-4">
+              Please don't close this window
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Quick Action Context Menu */}
