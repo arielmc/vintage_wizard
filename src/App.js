@@ -5524,9 +5524,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (newUser) => {
+      setUser(newUser);
       setAuthLoading(false);
+      // Reset to grid view on any auth state change (login/logout)
+      setShowProfilePage(false);
+      setSelectedItem(null);
     });
     return () => unsubscribe();
   }, []);
