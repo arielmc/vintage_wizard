@@ -2173,6 +2173,13 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
             </div>
           </div>
         )}
+        
+        {/* Status color line at bottom of image */}
+        <div className={`absolute bottom-0 left-0 right-0 h-[3px] ${
+          item.status === 'keep' ? 'bg-blue-500' :
+          item.status === 'sell' ? 'bg-emerald-500' :
+          'bg-amber-500'
+        }`} />
       </div>
       <div className="p-2 md:p-3 flex-1 flex flex-col">
         <h3 className="font-semibold text-stone-800 line-clamp-2 text-sm md:text-base mb-1">
