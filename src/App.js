@@ -362,18 +362,52 @@ async function ensureBase64(img) {
     console.log("ensureBase64: No image provided");
     return null;
   }
-  // Already base64
+  
+  // Already base64 data URL
   if (typeof img === 'string' && img.startsWith('data:image')) {
     console.log("ensureBase64: Already base64");
     return img;
   }
-  // URL - convert to base64
+  
+  // Blob object - convert to base64
+  if (img instanceof Blob) {
+    console.log("ensureBase64: Converting Blob to base64");
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(img);
+    });
+  }
+  
+  // Blob URL (blob:http://...) - fetch and convert
+  if (typeof img === 'string' && img.startsWith('blob:')) {
+    console.log("ensureBase64: Converting blob URL to base64");
+    try {
+      const response = await fetch(img);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("Failed to convert blob URL:", err);
+      return null;
+    }
+  }
+  
+  // Firebase Storage URL - will likely fail due to CORS but try anyway
   if (typeof img === 'string' && img.startsWith('http')) {
-    console.log("ensureBase64: Converting URL to base64:", img.substring(0, 50) + "...");
+    console.log("ensureBase64: Firebase URL detected - CORS may block this:", img.substring(0, 50) + "...");
     const result = await urlToBase64(img);
-    console.log("ensureBase64: Conversion result:", result ? "Success" : "Failed");
+    if (!result) {
+      console.error("CORS blocked URL conversion. Item needs images_base64 stored.");
+    }
     return result;
   }
+  
   console.log("ensureBase64: Unknown image format:", typeof img, img?.toString?.()?.substring(0, 50));
   return null;
 }
@@ -3531,27 +3565,56 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
     if (formData.images.length === 0) return;
     setIsAnalyzing(true);
     try {
-      // Use stored base64 images if available (avoids CORS issues)
-      // Fall back to regular images if base64 not stored
-      const imagesToAnalyze = formData.images_base64?.length > 0 
-        ? formData.images_base64 
-        : formData.images;
+      let imagesToAnalyze;
       
-      console.log(`Analyzing item with ${imagesToAnalyze.length} images (base64: ${!!formData.images_base64?.length})`);
+      // Priority 1: Use stored base64 images (most reliable)
+      if (formData.images_base64?.length > 0) {
+        console.log("Using stored images_base64");
+        imagesToAnalyze = formData.images_base64;
+      } 
+      // Priority 2: Check if images are already base64 or blobs (from recent adds)
+      else if (formData.images.length > 0) {
+        const firstImg = formData.images[0];
+        const isBase64 = typeof firstImg === 'string' && firstImg.startsWith('data:');
+        const isBlob = firstImg instanceof Blob;
+        const isBlobUrl = typeof firstImg === 'string' && firstImg.startsWith('blob:');
+        
+        if (isBase64 || isBlob || isBlobUrl) {
+          console.log("Images are local (base64/blob) - converting if needed");
+          imagesToAnalyze = formData.images;
+        } else {
+          // Images are Firebase URLs - CORS will block
+          console.error("Images are Firebase URLs without stored base64 - CORS will block");
+          alert("This item was uploaded before AI analysis was fixed. Please delete and re-upload the photos to enable AI analysis.");
+          setIsAnalyzing(false);
+          return;
+        }
+      }
+      
+      console.log(`Analyzing item with ${imagesToAnalyze?.length || 0} images`);
       
       const analysis = await analyzeImagesWithGemini(
         imagesToAnalyze,
         formData.userNotes || "",
         formData
       );
+      
+      // Also save base64 images if we generated them
+      const base64ToStore = [];
+      for (const img of imagesToAnalyze.slice(0, 4)) {
+        const b64 = await ensureBase64(img);
+        if (b64) base64ToStore.push(b64);
+      }
+      
       setFormData((prev) => ({
         ...prev,
         ...analysis,
+        images_base64: base64ToStore.length > 0 ? base64ToStore : prev.images_base64,
         aiLastRun: new Date().toISOString(),
       }));
     } catch (err) {
       console.error("Analysis failed:", err);
-      alert("Analysis failed. Please try re-uploading this item.");
+      alert("Analysis failed. Please try deleting and re-adding the photos.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -5741,13 +5804,30 @@ export default function App() {
       });
       
       try {
-        // Use stored base64 images if available (avoids CORS issues)
-        // Fall back to URL conversion if base64 not stored
-        const imagesToAnalyze = item.images_base64?.length > 0 
-          ? item.images_base64 
-          : item.images;
+        let imagesToAnalyze;
         
-        console.log(`Analyzing item ${item.id} with ${imagesToAnalyze?.length || 0} images (base64: ${!!item.images_base64?.length})`);
+        // Priority 1: Use stored base64 images (most reliable)
+        if (item.images_base64?.length > 0) {
+          imagesToAnalyze = item.images_base64;
+        } 
+        // Priority 2: Check if images are local (not Firebase URLs)
+        else if (item.images?.length > 0) {
+          const firstImg = item.images[0];
+          const isFirebaseUrl = typeof firstImg === 'string' && firstImg.includes('firebasestorage.googleapis.com');
+          
+          if (isFirebaseUrl) {
+            console.error(`Item ${item.id} has Firebase URLs without stored base64 - skipping`);
+            failCount++;
+            continue; // Skip this item
+          }
+          imagesToAnalyze = item.images;
+        } else {
+          console.error(`Item ${item.id} has no images`);
+          failCount++;
+          continue;
+        }
+        
+        console.log(`Analyzing item ${item.id} with ${imagesToAnalyze?.length || 0} images`);
         const analysis = await analyzeImagesWithGemini(
           imagesToAnalyze,
           item.userNotes || "",
