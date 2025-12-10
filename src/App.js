@@ -2580,6 +2580,7 @@ const ListingGenerator = ({ formData, setFormData }) => {
     nerdFactor: formData.tone_nerd ?? 3,
     formality: formData.tone_formality ?? 3,
     includeFunFact: formData.tone_funfact ?? false,
+    includeDadJoke: formData.tone_dadjoke ?? false,
     emojiStyle: formData.tone_emoji ?? 'minimal', // 'none' | 'minimal' | 'full'
   });
   const [isTunerOpen, setIsTunerOpen] = useState(false);
@@ -2587,15 +2588,15 @@ const ListingGenerator = ({ formData, setFormData }) => {
 
   // Category presets
   const categoryPresets = {
-    'Books': { salesIntensity: 2, nerdFactor: 5, formality: 4, includeFunFact: true, emojiStyle: 'none' },
-    'Jewelry & Watches': { salesIntensity: 4, nerdFactor: 2, formality: 3, includeFunFact: false, emojiStyle: 'minimal' },
-    'Fashion': { salesIntensity: 5, nerdFactor: 1, formality: 2, includeFunFact: false, emojiStyle: 'full' },
-    'Electronics': { salesIntensity: 2, nerdFactor: 4, formality: 3, includeFunFact: true, emojiStyle: 'none' },
-    'Collectibles': { salesIntensity: 3, nerdFactor: 5, formality: 3, includeFunFact: true, emojiStyle: 'minimal' },
-    'Art': { salesIntensity: 3, nerdFactor: 4, formality: 5, includeFunFact: true, emojiStyle: 'none' },
-    'Vinyl & Music': { salesIntensity: 3, nerdFactor: 5, formality: 2, includeFunFact: true, emojiStyle: 'minimal' },
-    'Furniture': { salesIntensity: 3, nerdFactor: 3, formality: 4, includeFunFact: false, emojiStyle: 'minimal' },
-    'Ceramics & Glass': { salesIntensity: 3, nerdFactor: 4, formality: 3, includeFunFact: true, emojiStyle: 'minimal' },
+    'Books': { salesIntensity: 2, nerdFactor: 5, formality: 4, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
+    'Jewelry & Watches': { salesIntensity: 4, nerdFactor: 2, formality: 3, includeFunFact: false, includeDadJoke: false, emojiStyle: 'minimal' },
+    'Fashion': { salesIntensity: 5, nerdFactor: 1, formality: 2, includeFunFact: false, includeDadJoke: false, emojiStyle: 'full' },
+    'Electronics': { salesIntensity: 2, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
+    'Collectibles': { salesIntensity: 3, nerdFactor: 5, formality: 3, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' },
+    'Art': { salesIntensity: 3, nerdFactor: 4, formality: 5, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
+    'Vinyl & Music': { salesIntensity: 3, nerdFactor: 5, formality: 2, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' },
+    'Furniture': { salesIntensity: 3, nerdFactor: 3, formality: 4, includeFunFact: false, includeDadJoke: false, emojiStyle: 'minimal' },
+    'Ceramics & Glass': { salesIntensity: 3, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: false, emojiStyle: 'minimal' },
   };
 
   // Get preset for current category
@@ -2642,6 +2643,7 @@ TONE SETTINGS (follow these precisely):
 - Formality: ${toneSettings.formality}/5 (${formalityLabels[toneSettings.formality - 1]})
 - ${emojiInstructions[toneSettings.emojiStyle]}
 ${toneSettings.includeFunFact ? '- IMPORTANT: Include a "Did you know?" or collector trivia fact about this specific item, maker, era, or category. Make it genuinely interesting and obscure.' : '- Do NOT include trivia or fun facts.'}
+${toneSettings.includeDadJoke ? `- IMPORTANT: Include a short, groan-worthy dad joke related to this item at the end. Style the joke based on the tone: ${toneSettings.nerdFactor >= 4 ? 'make it nerdy/geeky with insider collector humor' : toneSettings.salesIntensity >= 4 ? 'make it cheesy and sales-pun focused' : 'keep it classic dad-joke style'}. Format as "😏 Dad joke: [joke]"` : ''}
 
 ITEM DETAILS:
 - Current Title: ${formData.title || 'Vintage Item'}
@@ -2697,6 +2699,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
             tone_nerd: toneSettings.nerdFactor,
             tone_formality: toneSettings.formality,
             tone_funfact: toneSettings.includeFunFact,
+            tone_dadjoke: toneSettings.includeDadJoke,
             tone_emoji: toneSettings.emojiStyle,
           }));
           playSuccessFeedback();
@@ -2709,6 +2712,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
             tone_nerd: toneSettings.nerdFactor,
             tone_formality: toneSettings.formality,
             tone_funfact: toneSettings.includeFunFact,
+            tone_dadjoke: toneSettings.includeDadJoke,
             tone_emoji: toneSettings.emojiStyle,
           }));
           playSuccessFeedback();
@@ -2912,8 +2916,22 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 }`}
               >
                 <span className="text-base">💡</span>
-                <span>Include Fun Fact</span>
+                <span>Fun Fact</span>
                 {toneSettings.includeFunFact && <Check className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* Dad Joke Toggle */}
+              <button
+                onClick={() => setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke }))}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                  toneSettings.includeDadJoke
+                    ? 'bg-purple-50 border-purple-300 text-purple-700'
+                    : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
+                }`}
+              >
+                <span className="text-base">🤓</span>
+                <span>Dad Joke</span>
+                {toneSettings.includeDadJoke && <Check className="w-3.5 h-3.5" />}
               </button>
 
               {/* Emoji Style */}
@@ -5927,6 +5945,12 @@ export default function App() {
             return (a.title || "").localeCompare(b.title || "");
           case "category-asc":
             return (a.category || "").localeCompare(b.category || "");
+          case "status-asc":
+            // Order: keep (1), sell (2), TBD/draft/other (3)
+            const statusOrder = { keep: 1, sell: 2, TBD: 3, draft: 3, unprocessed: 3, maybe: 3 };
+            const aOrder = statusOrder[a.status] || 3;
+            const bOrder = statusOrder[b.status] || 3;
+            return aOrder - bOrder;
           default:
             return 0;
         }
@@ -6317,7 +6341,8 @@ export default function App() {
                       "value-desc": "High $",
                       "value-asc": "Low $",
                       "alpha-asc": "A-Z",
-                      "category-asc": "Category"
+                      "category-asc": "Category",
+                      "status-asc": "Status"
                     }[sortBy]}
                  </span>
                </button>
@@ -6343,6 +6368,7 @@ export default function App() {
                        { label: "Low → High $", value: "value-asc" },
                        { label: "A → Z", value: "alpha-asc" },
                        { label: "By Category", value: "category-asc" },
+                       { label: "By Status", value: "status-asc" },
                      ].map((opt) => (
                        <button
                          key={opt.value}
