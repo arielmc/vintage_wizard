@@ -440,10 +440,16 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - reasoning: Explanation of value (rarity, demand, comparables).
     - search_terms: Specific keywords to find EXACT comparables.
     - search_terms_broad: A simplified query (2-4 words MAX).
-    - sales_blurb: A comprehensive sales description (3-4 sentences) tailored to the item type (e.g. mentioning binding for books, cut for gems). Write in a confident but understated tone - avoid exclamation points entirely.
+    - sales_blurb: A detailed description (4-6 sentences) that serves multiple purposes:
+      1. IDENTIFICATION: What this item is, its origin, maker, and period
+      2. CONTEXT: Historical significance, cultural context, or interesting background
+      3. DETAILS: Notable features, materials, craftsmanship, or unique characteristics
+      4. TRANSLATIONS: If there is text in another language (Hebrew, French, Japanese, etc.), provide a translation or explain what it says
+      5. SALES APPEAL: Why a collector or buyer would want this item
+      Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points.
     - questions: Array of strings (max 3) for critical missing info.
     
-    WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response.
+    WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response. When you see text in non-English languages, translate or explain it.
   `;
 
   const imageParts = imagesToAnalyze.map((img) => ({
@@ -2751,7 +2757,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
     return uniqueParts.join(" ").substring(0, 80) || "Vintage Item";
   };
 
-  // Generate Description - Use sales_blurb as primary hook
+  // Generate Description - Use detailed description as primary hook
   const generateDescription = () => {
     const hook = formData.sales_blurb || "";
     const isReal = (val) => {
@@ -3862,15 +3868,15 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
               </div>
               <div>
                 <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-                  Sales Blurb
+                  Detailed Description
                 </label>
                 <textarea
-                  rows={4}
+                  rows={5}
                   value={formData.sales_blurb || ""}
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, sales_blurb: e.target.value }))
                   }
-                  placeholder="AI generated sales text will appear here..."
+                  placeholder="AI will generate a detailed description including context, translations, and sales appeal..."
                   className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
                 />
               </div>
