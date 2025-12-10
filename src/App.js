@@ -4760,10 +4760,12 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
         
         <div className="p-2.5">
           <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">
-            {getDisplayTitle(item)}
+            {isForSaleMode ? (item.listing_title || item.title || "Vintage Item") : getDisplayTitle(item)}
           </h3>
           <p className="text-xs text-stone-500 line-clamp-1 mt-0.5">
-            {[item.maker, item.style].filter(v => v && v.toLowerCase() !== "unknown").join(" • ") || item.category || ""}
+            {isForSaleMode 
+              ? (item.category || "Vintage")
+              : ([item.maker, item.style].filter(v => v && v.toLowerCase() !== "unknown").join(" • ") || item.category || "")}
           </p>
         </div>
       </div>
@@ -4925,49 +4927,83 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
           )}
         </div>
         
-        {/* Details */}
+        {/* Details - Different content for For Sale mode vs Library mode */}
         <div className="p-4 space-y-3">
-          <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
-          
-          {/* Value - show listing price in For Sale mode, range otherwise */}
-          {(isForSaleMode ? (item.listing_price || item.valuation_high > 0) : item.valuation_high > 0) && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base font-bold text-emerald-700">
-                {isForSaleMode 
-                  ? `$${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6)}` 
-                  : `$${item.valuation_low} - $${item.valuation_high}`}
-              </span>
-              {!isForSaleMode && item.confidence && (
-                <span className={`text-[10px] font-medium uppercase ${
-                  item.confidence === 'high' ? 'text-emerald-600' :
-                  item.confidence === 'medium' ? 'text-amber-600' :
-                  'text-red-600'
-                }`}>
-                  {item.confidence} conf.
+          {isForSaleMode ? (
+            // FOR SALE MODE: Show listing content
+            <>
+              <h2 className="text-lg font-bold text-stone-900">
+                {item.listing_title || item.title || "Vintage Item"}
+              </h2>
+              
+              {/* Listing Price */}
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold text-emerald-700">
+                  ${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6) || 'Contact for price'}
                 </span>
+              </div>
+              
+              {/* Listing Description */}
+              {(item.listing_description || item.sales_blurb) && (
+                <div className="pt-2 border-t border-stone-100">
+                  <p className="text-sm text-stone-700 whitespace-pre-line leading-relaxed">
+                    {item.listing_description || item.sales_blurb}
+                  </p>
+                </div>
               )}
-            </div>
-          )}
-          
-          {/* Details grid */}
-          <div className="grid grid-cols-2 gap-1.5 text-sm">
-            {item.maker && item.maker.toLowerCase() !== "unknown" && (
-              <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
-            )}
-            {item.era && item.era.toLowerCase() !== "unknown" && (
-              <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
-            )}
-            {item.materials && (
-              <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
-            )}
-            {item.condition && (
-              <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
-            )}
-          </div>
-          
-          {/* Listing description */}
-          {item.sales_blurb && (
-            <p className="text-sm text-stone-600 pt-2 border-t border-stone-100">{item.sales_blurb}</p>
+              
+              {/* Tags */}
+              {item.listing_tags && (
+                <p className="text-xs text-blue-600">{item.listing_tags}</p>
+              )}
+              
+              {/* SKU */}
+              <p className="text-[10px] text-stone-400">SKU: {item.id?.substring(0, 8).toUpperCase()}</p>
+            </>
+          ) : (
+            // LIBRARY MODE: Show full item details
+            <>
+              <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
+              
+              {/* Value range with confidence */}
+              {item.valuation_high > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-base font-bold text-emerald-700">
+                    ${item.valuation_low} - ${item.valuation_high}
+                  </span>
+                  {item.confidence && (
+                    <span className={`text-[10px] font-medium uppercase ${
+                      item.confidence === 'high' ? 'text-emerald-600' :
+                      item.confidence === 'medium' ? 'text-amber-600' :
+                      'text-red-600'
+                    }`}>
+                      {item.confidence} conf.
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {/* Details grid */}
+              <div className="grid grid-cols-2 gap-1.5 text-sm">
+                {item.maker && item.maker.toLowerCase() !== "unknown" && (
+                  <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
+                )}
+                {item.era && item.era.toLowerCase() !== "unknown" && (
+                  <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
+                )}
+                {item.materials && (
+                  <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
+                )}
+                {item.condition && (
+                  <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
+                )}
+              </div>
+              
+              {/* Description */}
+              {item.sales_blurb && (
+                <p className="text-sm text-stone-600 pt-2 border-t border-stone-100">{item.sales_blurb}</p>
+              )}
+            </>
           )}
         </div>
       </div>
