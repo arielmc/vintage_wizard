@@ -2631,9 +2631,6 @@ const ListingGenerator = ({ formData, setFormData }) => {
   const handleRegenerate = async () => {
     setIsRegenerating(true);
     
-    const salesLabels = ['just the facts', 'mostly factual', 'balanced', 'persuasive', 'full sales charm'];
-    const nerdLabels = ['general audience', 'some context', 'moderate depth', 'collector-focused', 'deep expertise with trivia'];
-    const formalityLabels = ['very casual', 'casual', 'balanced', 'professional', 'formal/academic'];
     const emojiInstructions = {
       'none': 'Do NOT use any emojis in the title or description.',
       'minimal': 'Use emojis sparingly in description only (like 🏷️ DETAILS:). No emojis in title.',
@@ -2642,19 +2639,36 @@ const ListingGenerator = ({ formData, setFormData }) => {
 
     const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
 
-CRITICAL STYLE RULE: Do NOT use exclamation points anywhere. Write in a confident but calm, understated tone.
+CRITICAL STYLE RULE: Do NOT use exclamation points anywhere.
 
-TONE SETTINGS (follow these precisely):
-- Sales Intensity: ${toneSettings.salesIntensity}/5 (${salesLabels[toneSettings.salesIntensity - 1]})
-- Expertise/Nerd Level: ${toneSettings.nerdFactor}/5 (${nerdLabels[toneSettings.nerdFactor - 1]})
-- Formality: ${toneSettings.formality}/5 (${formalityLabels[toneSettings.formality - 1]})
+=== TONE SETTINGS (FOLLOW THESE EXACTLY - the differences should be DRAMATIC) ===
+
+SALES INTENSITY: ${toneSettings.salesIntensity}/5
+${toneSettings.salesIntensity === 1 ? `LEVEL 1 - JUST THE FACTS: Write like an inventory list. NO adjectives except factual ones (condition: "good", "fair"). NO persuasive language. NO words like "charming", "lovely", "beautiful", "stunning", "rare". Just state what it IS.
+Example: "1980s hardcover edition. Illustrated boards. Shows wear. Publisher: Modern Promotions."` : ''}
+${toneSettings.salesIntensity === 2 ? `LEVEL 2 - MOSTLY FACTUAL: Minimal flourish. One or two mild descriptors allowed. Focus on facts.
+Example: "A nice 1980s hardcover edition with illustrated boards. Good condition with gentle wear."` : ''}
+${toneSettings.salesIntensity === 3 ? `LEVEL 3 - BALANCED: Mix of facts and light sales appeal. Moderate use of appealing language.` : ''}
+${toneSettings.salesIntensity === 4 ? `LEVEL 4 - PERSUASIVE: Emphasize appeal and desirability. Use compelling language freely.` : ''}
+${toneSettings.salesIntensity === 5 ? `LEVEL 5 - FULL CHARM: Maximum appeal. Paint a picture. Make them WANT it. Every sentence sells.` : ''}
+
+FORMALITY: ${toneSettings.formality}/5
+${toneSettings.formality === 1 ? `LEVEL 1 - BFF CASUAL: Write like you're texting your best friend about this cool thing you found. Use "you", contractions, casual phrasing. "So I found this amazing book..." or "You're gonna love this one..."` : ''}
+${toneSettings.formality === 2 ? `LEVEL 2 - CASUAL: Friendly and approachable. Conversational but not slangy.` : ''}
+${toneSettings.formality === 3 ? `LEVEL 3 - BALANCED: Professional but warm.` : ''}
+${toneSettings.formality === 4 ? `LEVEL 4 - PROFESSIONAL: Polished, authoritative, marketplace-appropriate.` : ''}
+${toneSettings.formality === 5 ? `LEVEL 5 - ERUDITE/FORMAL: Write like a scholarly estate sale catalog or auction house. Use proper terminology, formal sentence structure, third person. "This volume represents..." "The present example exhibits..."` : ''}
+
+NERD/EXPERTISE LEVEL: ${toneSettings.nerdFactor}/5
+${toneSettings.nerdFactor === 1 ? `LEVEL 1 - GENERAL AUDIENCE: Assume reader knows nothing. No jargon. Simple descriptions only.` : ''}
+${toneSettings.nerdFactor === 2 ? `LEVEL 2 - SOME CONTEXT: Brief background. Light context for non-experts.` : ''}
+${toneSettings.nerdFactor === 3 ? `LEVEL 3 - MODERATE: Include relevant context that adds value.` : ''}
+${toneSettings.nerdFactor === 4 ? `LEVEL 4 - COLLECTOR-FOCUSED: Include details collectors care about: edition points, variations, provenance clues, market context.` : ''}
+${toneSettings.nerdFactor === 5 ? `LEVEL 5 - DEEP EXPERTISE: Full geek mode. Reference specific variations, printings, maker histories, obscure details. Assume reader is a fellow expert who appreciates deep knowledge.` : ''}
+
 - ${emojiInstructions[toneSettings.emojiStyle]}
-${toneSettings.includeFunFact ? '- IMPORTANT: Include a "Did you know?" or collector trivia fact about this specific item, maker, era, or category. Make it genuinely interesting and obscure.' : '- Do NOT include trivia or fun facts.'}
-${toneSettings.includeDadJoke ? `- IMPORTANT: End with a hilarious, brilliant, and/or groan-worthy dad joke related to this specific item, category, or era. The jokes you generate are so funny to human readers that they will want to read all our listings. Use any unique features or specifics from the photos or item info that will add delight and humor when possible.
-  ${toneSettings.nerdFactor >= 4 ? '• For high nerd factor: make it a clever insider pun that collectors will appreciate' : ''}
-  ${toneSettings.salesIntensity >= 4 ? '• For high sales energy: make it charming and memorable' : ''}
-  The best dad jokes reference something SPECIFIC about THIS item - the maker name, a visual detail, the era, or a quirky feature. Generic category jokes are boring.
-  Format as: "🤓 [your dad joke]" at the very end.` : ''}
+${toneSettings.includeFunFact ? '- Include a "💡 Tidbit:" with a genuinely interesting/obscure fact about this specific item, maker, era, or category.' : '- Do NOT include trivia or fun facts.'}
+${toneSettings.includeDadJoke ? `- End with a hilarious dad joke related to this specific item. Use unique features or specifics that add delight. The best jokes reference something SPECIFIC - the maker name, a visual detail, the era, or a quirky feature. Generic jokes are boring. Format as: "🤓 [your dad joke]" at the very end.` : ''}
 
 ITEM DETAILS:
 - Current Title: ${formData.title || 'Vintage Item'}
@@ -2667,17 +2681,16 @@ ITEM DETAILS:
 - Markings: ${formData.markings || 'None visible'}
 - Original AI Description: ${formData.sales_blurb || ''}
 
-TITLE GUIDELINES (based on tone settings):
-- For high sales intensity: Add compelling words like "Rare", "Stunning", "Collector's"
-- For high nerd factor: Include specific details collectors care about (maker marks, period names, variations)
-- For formal: Use proper terminology; for casual: use everyday language
-- Keep title under 80 characters for marketplace compatibility
-- Include: [Condition word if notable] [Era/Age] [Maker if known] [Style] [Item type] [Notable feature]
+TITLE GUIDELINES:
+- Keep title under 70 characters (shorter is better for marketplaces)
+- Sales 1-2: Just facts. Sales 4-5: Can add "Rare", "Stunning", etc.
+- Nerd 4-5: Include specific details collectors care about
+- Formal 5: Proper terminology. Casual 1: Everyday language.
 
-Generate a JSON response with this exact format:
+OUTPUT FORMAT - Generate a JSON response:
 {
-  "title": "Your optimized marketplace title here",
-  "description": "Your marketplace description here (150-250 words, with hook, bullets, condition, ${toneSettings.includeFunFact ? 'fun fact, ' : ''}and call to action)"
+  "title": "Your title here (under 70 chars)",
+  "description": "Your description here (120-200 words max, NO call to action at the end)"
 }
 
 Return ONLY valid JSON, no markdown or extra text.`;
@@ -2989,7 +3002,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Optimized Title ({currentTitle.length}/80)
+            Optimized Title <span className={currentTitle.length > 70 ? 'text-amber-600' : 'text-stone-400'}>({currentTitle.length}/70)</span>
           </label>
           <div className="flex items-center gap-2">
             {formData.listing_title && (
@@ -3002,12 +3015,12 @@ Return ONLY valid JSON, no markdown or extra text.`;
             </button>
           </div>
         </div>
-        <input
-          type="text"
+        <textarea
           value={currentTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
           maxLength={80}
-          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+          rows={2}
+          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-[13px] font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
           placeholder="Enter listing title..."
         />
       </div>
