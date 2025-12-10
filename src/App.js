@@ -6469,10 +6469,10 @@ export default function App() {
             <div className="max-w-7xl mx-auto">
               <div className="bg-white rounded-xl shadow-lg shadow-stone-300/50 border border-stone-200 overflow-hidden">
                {/* Single row: All controls */}
-               <div className="flex items-center justify-between p-2.5 sm:p-3 gap-3">
+               <div className="flex items-center p-2.5 sm:p-3 gap-2 sm:gap-3">
                   {/* Left: Selection count + Select All */}
-                  <div className="flex items-center gap-2 sm:gap-3">
-                     <div className="flex items-center gap-2 bg-violet-50 px-2.5 py-1.5 rounded-lg border border-violet-100">
+                  <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-1.5 bg-violet-50 px-2 py-1 rounded-lg border border-violet-100">
                         <ListChecks className="w-3.5 h-3.5 text-violet-600" />
                         <span className="text-xs font-bold text-violet-700">{selectedIds.size}</span>
                      </div>
@@ -6484,66 +6484,78 @@ export default function App() {
                             setSelectedIds(new Set(filteredItems.map(i => i.id)));
                           }
                         }}
-                        className="text-stone-500 hover:text-stone-800 text-xs font-medium transition-colors hidden sm:block"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200"
                      >
-                        {selectedIds.size === filteredItems.length ? "Deselect" : "All"}
+                        {selectedIds.size === filteredItems.length ? "Deselect" : "Select All"}
                      </button>
                   </div>
                   
-                  {/* Center: Mark as buttons with label */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                     <span className="text-[10px] font-medium text-stone-400 uppercase tracking-wide hidden md:block">Mark:</span>
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-stone-200" />
+                  
+                  {/* Mark options - segmented control style */}
+                  <div className="flex items-center bg-stone-100 rounded-lg p-0.5 border border-stone-200">
                      <button 
                         onClick={() => handleBatchStatusChange('keep')}
                         disabled={selectedIds.size === 0}
-                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all hover:bg-white hover:shadow-sm text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
                         Keep
                      </button>
                      <button 
                         onClick={() => handleBatchStatusChange('sell')}
                         disabled={selectedIds.size === 0}
-                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all hover:bg-white hover:shadow-sm text-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
                         Sell
                      </button>
                      <button 
                         onClick={() => handleBatchStatusChange('TBD')}
                         disabled={selectedIds.size === 0}
-                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-2.5 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all hover:bg-white hover:shadow-sm text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
                         TBD
                      </button>
                   </div>
                   
-                  {/* Right: Delete, AI, Cancel */}
-                  <div className="flex items-center gap-1 sm:gap-2">
-                     <button 
-                        onClick={handleBatchDelete}
-                        disabled={selectedIds.size === 0}
-                        className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors border border-transparent hover:border-red-200 disabled:opacity-40"
-                        title="Delete Selected"
-                     >
-                        <Trash2 className="w-4 h-4" />
-                     </button>
-                     <button 
-                        onClick={handleBatchAnalyze}
-                        disabled={isBatchProcessing || selectedIds.size === 0}
-                        className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 disabled:opacity-50"
-                     >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">AI</span>
-                     </button>
-                     
-                     {/* Cancel/Done button */}
-                     <button 
-                        onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
-                        className="p-2 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
-                        title="Exit multi-select"
-                     >
-                        <X className="w-4 h-4" />
-                     </button>
-                  </div>
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-stone-200" />
+                  
+                  {/* Run Analysis button */}
+                  <button 
+                     onClick={handleBatchAnalyze}
+                     disabled={isBatchProcessing || selectedIds.size === 0}
+                     className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 disabled:opacity-50"
+                  >
+                     <Sparkles className="w-3.5 h-3.5" />
+                     <span className="hidden sm:inline">Run Analysis</span>
+                     <span className="sm:hidden">Analyze</span>
+                  </button>
+                  
+                  {/* Spacer */}
+                  <div className="flex-1" />
+                  
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-stone-200" />
+                  
+                  {/* Delete button */}
+                  <button 
+                     onClick={handleBatchDelete}
+                     disabled={selectedIds.size === 0}
+                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors border border-transparent hover:border-red-200 disabled:opacity-40"
+                  >
+                     <Trash2 className="w-3.5 h-3.5" />
+                     <span>Delete</span>
+                  </button>
+                  
+                  {/* Close button */}
+                  <button 
+                     onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
+                     className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                     title="Exit multi-select"
+                  >
+                     <X className="w-4 h-4" />
+                  </button>
                </div>
               </div>
             </div>
