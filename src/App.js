@@ -2105,10 +2105,10 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
         
         {/* Status text - UPPER RIGHT - desktop only */}
         <div className="absolute top-2 right-2 hidden md:block">
-          <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-            item.status === 'keep' ? 'bg-blue-500/80 text-white' :
-            item.status === 'sell' ? 'bg-emerald-500/80 text-white' :
-            'bg-amber-500/80 text-white'
+          <span className={`text-[10px] font-bold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${
+            item.status === 'keep' ? 'text-blue-400' :
+            item.status === 'sell' ? 'text-emerald-400' :
+            'text-amber-400'
           }`}>
             {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
           </span>
