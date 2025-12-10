@@ -4976,8 +4976,8 @@ export default function App() {
             </h1>
           </div>
           
-          {/* Search Bar */}
-          <div className="flex-1 max-w-xs relative">
+          {/* Search Bar - Hidden on mobile for cleaner UI */}
+          <div className="hidden md:block flex-1 max-w-xs relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
             <input
               type="text"
@@ -5377,31 +5377,7 @@ export default function App() {
          </div>
       )}
 
-      {/* --- Mobile FAB (Floating Action Button) - Hidden during selection --- */}
-      {!isSelectionMode && (
-      <div className="fixed bottom-6 right-6 z-30 md:hidden flex flex-col gap-3">
-         <button
-            onClick={() => bulkInputRef.current?.click()}
-            disabled={isUploading}
-            className="h-12 w-12 rounded-full shadow-lg shadow-stone-900/10 flex items-center justify-center transition-all active:scale-90 bg-white text-stone-700 border border-stone-200"
-         >
-            <Layers className="w-5 h-5" />
-         </button>
-         <button
-            onClick={() => singleInputRef.current?.click()}
-            disabled={isUploading}
-            className={`h-16 w-16 rounded-full shadow-xl shadow-rose-900/20 flex items-center justify-center transition-all active:scale-90 border-2 border-white ${
-               isUploading ? "bg-stone-100 cursor-wait" : "bg-stone-900 text-white"
-            }`}
-         >
-            {isUploading ? (
-               <Loader className="w-8 h-8 animate-spin text-stone-400" />
-            ) : (
-               <Plus className="w-8 h-8" strokeWidth={2.5} />
-            )}
-         </button>
-      </div>
-      )}
+      {/* --- Mobile FAB removed for cleaner mobile UI --- */}
 
       {/* Processing Spinner Overlay */}
       {isProcessing && (
