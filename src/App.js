@@ -439,8 +439,10 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - reasoning: Explanation of value (rarity, demand, comparables).
     - search_terms: Specific keywords to find EXACT comparables.
     - search_terms_broad: A simplified query (2-4 words MAX).
-    - sales_blurb: A comprehensive sales description (3-4 sentences) tailored to the item type (e.g. mentioning binding for books, cut for gems).
+    - sales_blurb: A comprehensive sales description (3-4 sentences) tailored to the item type (e.g. mentioning binding for books, cut for gems). Write in a confident but understated tone - avoid exclamation points entirely.
     - questions: Array of strings (max 3) for critical missing info.
+    
+    WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response.
   `;
 
   const imageParts = imagesToAnalyze.map((img) => ({
@@ -516,7 +518,8 @@ INSTRUCTIONS:
 - If you can see evidence in the images (maker marks, signatures, date codes, etc.), describe where to look.
 - Be friendly, professional, and educational.
 - If you're uncertain about something, say so honestly.
-- Don't repeat the full analysis - just answer their specific question.`;
+- Don't repeat the full analysis - just answer their specific question.
+- Write in a calm, confident tone. Do NOT use exclamation points.`;
 
     const parts = [{ text: systemPrompt }];
     
@@ -2630,6 +2633,8 @@ const ListingGenerator = ({ formData, setFormData }) => {
     };
 
     const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
+
+CRITICAL STYLE RULE: Do NOT use exclamation points anywhere. Write in a confident but calm, understated tone.
 
 TONE SETTINGS (follow these precisely):
 - Sales Intensity: ${toneSettings.salesIntensity}/5 (${salesLabels[toneSettings.salesIntensity - 1]})
