@@ -1152,11 +1152,24 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   // Expanded Stack Modal (Refine & Reorder)
   const ExpandedStackModal = ({ stackIndex }) => {
      const stack = stacks[stackIndex];
-     if (!stack) return null;
-     
-     // Reuse ThumbnailItem for reordering logic
-     // We need local drag state for this modal
      const [localDragIdx, setLocalDragIdx] = useState(null);
+     
+     // Cache object URLs to prevent re-creation on every render
+     const [cachedUrls, setCachedUrls] = useState([]);
+     
+     useEffect(() => {
+       if (!stack) return;
+       // Create URLs once when stack changes
+       const urls = stack.files.map(file => URL.createObjectURL(file));
+       setCachedUrls(urls);
+       
+       // Cleanup URLs when modal closes or stack changes
+       return () => {
+         urls.forEach(url => URL.revokeObjectURL(url));
+       };
+     }, [stack?.files?.length, stackIndex]); // Only recreate when files change
+     
+     if (!stack) return null;
 
      return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1174,6 +1187,11 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
               </div>
               
               <div className="p-6 overflow-y-auto bg-stone-100 min-h-[200px]">
+                 {cachedUrls.length === 0 ? (
+                   <div className="flex items-center justify-center h-32">
+                     <Loader className="w-6 h-6 text-stone-400 animate-spin" />
+                   </div>
+                 ) : (
                  <div className="flex flex-wrap gap-4 justify-center">
                     {stack.files.map((file, i) => (
                        <div key={i} className="relative group">
@@ -1199,9 +1217,10 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                             }`}
                           >
                             <img 
-                              src={URL.createObjectURL(file)} 
+                              src={cachedUrls[i] || ''} 
                               className="w-full h-full object-cover pointer-events-none" 
                               alt={`Photo ${i + 1}`} 
+                              loading="eager"
                             />
                           </div>
                           {/* Ungroup Button - moves back to main grid */}
@@ -1222,6 +1241,7 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                        </div>
                     ))}
                  </div>
+                 )}
                  <p className="text-center text-xs text-stone-400 mt-4">
                    Click <Undo2 size={10} className="inline mx-1" /> to remove a photo from this stack (returns to grid)
                  </p>
