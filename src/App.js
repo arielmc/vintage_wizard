@@ -2650,14 +2650,10 @@ TONE SETTINGS (follow these precisely):
 - Formality: ${toneSettings.formality}/5 (${formalityLabels[toneSettings.formality - 1]})
 - ${emojiInstructions[toneSettings.emojiStyle]}
 ${toneSettings.includeFunFact ? '- IMPORTANT: Include a "Did you know?" or collector trivia fact about this specific item, maker, era, or category. Make it genuinely interesting and obscure.' : '- Do NOT include trivia or fun facts.'}
-${toneSettings.includeDadJoke ? `- IMPORTANT: End with a groan-worthy dad joke related to this specific item, category, or era. The best dad jokes are so bad they're good. Style based on tone:
-  ${toneSettings.nerdFactor >= 4 ? '• Make it a nerdy/geeky pun that collectors will appreciate' : ''}
-  ${toneSettings.salesIntensity >= 4 ? '• Make it a cheesy sales-related pun' : ''}
-  Examples of good dad jokes:
-  - For a clock: "This clock is timeless. Get it? ...I'll see myself out."
-  - For a book: "This first edition really has a lot of spine."
-  - For jewelry: "This ring is 24 karats of awesome. No bunny jokes, I promise."
-  - For vinyl: "This record is in great condition. It really grooves."
+${toneSettings.includeDadJoke ? `- IMPORTANT: End with a hilarious, brilliant, and/or groan-worthy dad joke related to this specific item, category, or era. The jokes you generate are so funny to human readers that they will want to read all our listings. Use any unique features or specifics from the photos or item info that will add delight and humor when possible.
+  ${toneSettings.nerdFactor >= 4 ? '• For high nerd factor: make it a clever insider pun that collectors will appreciate' : ''}
+  ${toneSettings.salesIntensity >= 4 ? '• For high sales energy: make it charming and memorable' : ''}
+  The best dad jokes reference something SPECIFIC about THIS item - the maker name, a visual detail, the era, or a quirky feature. Generic category jokes are boring.
   Format as: "🤓 [your dad joke]" at the very end.` : ''}
 
 ITEM DETAILS:
