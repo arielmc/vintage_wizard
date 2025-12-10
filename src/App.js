@@ -3977,13 +3977,13 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-                    Markings / Signatures
+                    Materials
                   </label>
                   <input
                     type="text"
-                    value={formData.markings || ""}
+                    value={formData.materials || ""}
                     onChange={(e) =>
-                      setFormData((p) => ({ ...p, markings: e.target.value }))
+                      setFormData((p) => ({ ...p, materials: e.target.value }))
                     }
                     className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
                   />
@@ -4004,15 +4004,16 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
               </div>
               <div>
                 <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-                  Materials
+                  Markings / Signatures
                 </label>
                 <textarea
-                  rows={3}
-                  value={formData.materials || ""}
+                  rows={2}
+                  value={formData.markings || ""}
                   onChange={(e) =>
-                    setFormData((p) => ({ ...p, materials: e.target.value }))
+                    setFormData((p) => ({ ...p, markings: e.target.value }))
                   }
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
+                  placeholder="Hallmarks, serial numbers, signatures, inscriptions..."
+                  className="w-full p-2.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y"
                 />
               </div>
               <div>
