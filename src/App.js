@@ -30,6 +30,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { getAnalytics, logEvent } from "firebase/analytics";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   Camera,
   Upload,
@@ -255,6 +256,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const appId = "vintage-validator-v1";
 
 // Initialize Analytics (only in browser environment)
@@ -550,7 +552,8 @@ INSTRUCTIONS:
 }
 
 // --- Image Helper ---
-const compressImage = (file) => {
+// Compress image and return as base64 (for AI analysis) or Blob (for Storage)
+const compressImage = (file, returnBlob = false) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -561,7 +564,7 @@ const compressImage = (file) => {
         const canvas = document.createElement("canvas");
         let width = img.width;
         let height = img.height;
-        const maxDim = 800;
+        const maxDim = 1200; // Increased for better quality
         if (width > height) {
           if (width > maxDim) {
             height *= maxDim / width;
@@ -577,12 +580,48 @@ const compressImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
+        
+        if (returnBlob) {
+          // Return Blob for Firebase Storage upload
+          canvas.toBlob(
+            (blob) => resolve(blob),
+            "image/jpeg",
+            0.85 // Higher quality for storage
+          );
+        } else {
+          // Return base64 for AI analysis (slightly lower quality to reduce API payload)
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        }
       };
       img.onerror = (err) => reject(err);
     };
     reader.onerror = (err) => reject(err);
   });
+};
+
+// Upload image to Firebase Storage and return download URL
+const uploadImageToStorage = async (file, userId, itemId, imageIndex) => {
+  try {
+    // Compress the image first
+    const compressedBlob = await compressImage(file, true);
+    
+    // Create a unique path for the image
+    const timestamp = Date.now();
+    const path = `users/${userId}/items/${itemId}/${timestamp}_${imageIndex}.jpg`;
+    const storageRef = ref(storage, path);
+    
+    // Upload the blob
+    await uploadBytes(storageRef, compressedBlob, {
+      contentType: 'image/jpeg',
+    });
+    
+    // Get the download URL
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error("Error uploading image to storage:", error);
+    throw error;
+  }
 };
 
 // --- Link Helper ---
@@ -841,6 +880,7 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   
   // Loading & Feedback States
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading your photos...");
   const [isAutoGrouping, setIsAutoGrouping] = useState(false);
   const [groupingFeedback, setGroupingFeedback] = useState(null);
   
@@ -850,18 +890,44 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   // Track total photos across all stacks
   const totalPhotos = stacks.reduce((sum, s) => sum + s.files.length, 0);
 
+  // Fun loading messages
+  const loadingMessages = [
+    "Loading your photos...",
+    "So many pixels... 📸",
+    "Teaching AI to see vintage things...",
+    "Unpacking your treasures...",
+    "Arranging the gallery...",
+    "Almost there... just admiring your collection!",
+  ];
+
   useEffect(() => {
     // Initialize: Every file is a stack of 1
     setIsLoading(true);
+    setLoadingMessage(loadingMessages[0]);
+    
+    // Rotate through fun messages for larger uploads
+    let messageIdx = 0;
+    const messageInterval = files.length > 5 ? setInterval(() => {
+      messageIdx = (messageIdx + 1) % loadingMessages.length;
+      setLoadingMessage(loadingMessages[messageIdx]);
+    }, 1500) : null;
+    
     const initStacks = files.map((f) => ({
       id: Math.random().toString(36).substr(2, 9),
       files: [f],
     }));
-    // Simulate a small delay for image processing visual feedback
+    
+    // Longer delay for more photos to show fun messages
+    const delay = Math.min(300 + files.length * 50, 2000);
     setTimeout(() => {
       setStacks(initStacks);
       setIsLoading(false);
-    }, 300);
+      if (messageInterval) clearInterval(messageInterval);
+    }, delay);
+    
+    return () => {
+      if (messageInterval) clearInterval(messageInterval);
+    };
   }, [files]);
   
   // Handle adding more photos
@@ -899,10 +965,11 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
         return;
       }
       
-      // IMPROVED Heuristic: 3 Minute Threshold (180s) to catch "bursts"
+      // IMPROVED Heuristic: 30 second threshold + max 4 photos per group
       const sorted = [...currentFiles].sort((a, b) => a.lastModified - b.lastModified);
       const newStacks = [];
       let currentStack = [];
+      const MAX_GROUP_SIZE = 4; // Don't group more than 4 photos together
 
       for (let i = 0; i < sorted.length; i++) {
         const file = sorted[i];
@@ -911,8 +978,8 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
         } else {
           const prevFile = currentStack[currentStack.length - 1];
           const timeDiff = (file.lastModified - prevFile.lastModified) / 1000; // seconds
-          // Increased from 60s to 180s (3 mins)
-          if (timeDiff < 180) {
+          // Reduced to 30 seconds AND max 4 photos per group
+          if (timeDiff < 30 && currentStack.length < MAX_GROUP_SIZE) {
             currentStack.push(file);
           } else {
             newStacks.push({ id: Math.random().toString(36).substr(2, 9), files: currentStack });
@@ -1048,6 +1115,29 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     
     setStacks(newStacks);
   };
+  
+  // NEW: Explode/Ungroup ALL photos in a stack back to individual items
+  const handleExplodeStack = (stackIndex) => {
+    const newStacks = [...stacks];
+    const stack = newStacks[stackIndex];
+    
+    if (!stack || stack.files.length <= 1) return;
+    
+    // Remove the original stack
+    newStacks.splice(stackIndex, 1);
+    
+    // Create individual stacks for each photo
+    const individualStacks = stack.files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      files: [file]
+    }));
+    
+    // Add them back to the list
+    setStacks([...newStacks, ...individualStacks]);
+    setExpandedStackIdx(null); // Close the modal
+    setGroupingFeedback(`💥 Ungrouped ${stack.files.length} photos!`);
+    setTimeout(() => setGroupingFeedback(null), 3000);
+  };
 
   // Handle reordering photos INSIDE a stack (Hero selection)
   const handleReorderStack = (stackIndex, fromIdx, toIdx) => {
@@ -1137,7 +1227,18 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                  </p>
               </div>
               
-              <div className="p-4 border-t border-stone-100 flex justify-end">
+              <div className="p-4 border-t border-stone-100 flex justify-between items-center">
+                 {/* Ungroup All Button */}
+                 {stack.files.length > 1 && (
+                   <button 
+                      onClick={() => handleExplodeStack(stackIndex)}
+                      className="text-rose-600 hover:text-rose-700 text-sm font-medium flex items-center gap-1.5 px-3 py-2 hover:bg-rose-50 rounded-lg transition-colors"
+                   >
+                      <Undo2 size={14} />
+                      Ungroup All ({stack.files.length})
+                   </button>
+                 )}
+                 {stack.files.length <= 1 && <div />}
                  <button 
                     onClick={() => setExpandedStackIdx(null)}
                     className="bg-stone-900 text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:bg-stone-800"
@@ -1422,9 +1523,15 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
       {/* Grid or Loading */}
       <div className="flex-1 overflow-y-auto p-4">
          {isLoading ? (
-           <div className="flex flex-col items-center justify-center h-full gap-4">
-             <Loader className="w-8 h-8 text-stone-400 animate-spin" />
-             <p className="text-stone-500 text-sm">Processing {files.length} photos...</p>
+           <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
+             <div className="relative">
+               <div className="w-16 h-16 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
+               <Camera className="w-6 h-6 text-stone-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+             </div>
+             <div className="text-center">
+               <p className="text-stone-700 font-medium mb-1">{loadingMessage}</p>
+               <p className="text-stone-400 text-sm">{files.length} photos to organize</p>
+             </div>
            </div>
          ) : (
            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 p-4">
@@ -4505,63 +4612,78 @@ export default function App() {
     try {
       // Process each group as an Item
       for (const groupFiles of groupsToProcess) {
-      const compressedImages = [];
-          for (const file of groupFiles) {
-        compressedImages.push(await compressImage(file));
-      }
-          
-          let analysisResult = {};
-          // Only run AI for single item immediate mode
-          if (shouldAutoAnalyze) {
-             try {
-               // Wait for analysis to complete strictly before continuing
-               analysisResult = await analyzeImagesWithGemini(compressedImages, "");
-             } catch (aiError) {
-               console.error("Auto-analysis failed:", aiError);
-               alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
-             }
+        // Step 1: Create a placeholder document first to get the ID
+        const docRef = await addDoc(
+          collection(db, "artifacts", appId, "users", user.uid, "inventory"),
+          {
+            images: [],
+            image: "",
+            status: "TBD",
+            title: "Uploading...",
+            category: "",
+            materials: "",
+            maker: "",
+            style: "",
+            markings: "",
+            condition: "",
+            userNotes: "",
+            timestamp: serverTimestamp(),
+            valuation_low: 0,
+            valuation_high: 0,
           }
+        );
 
-          const docRef = await addDoc(
-        collection(db, "artifacts", appId, "users", user.uid, "inventory"),
-        {
-          images: compressedImages,
-          image: compressedImages[0],
-              status: "TBD",
-          title: "",
-          category: "",
-          materials: "",
-          maker: "",
-          style: "",
-          markings: "",
-          condition: "",
-          userNotes: "",
-          timestamp: serverTimestamp(),
-          valuation_low: 0,
-          valuation_high: 0,
-              ...analysisResult,
-              aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
+        // Step 2: Upload images to Firebase Storage and get URLs
+        const imageUrls = [];
+        for (let i = 0; i < groupFiles.length; i++) {
+          const file = groupFiles[i];
+          const url = await uploadImageToStorage(file, user.uid, docRef.id, i);
+          imageUrls.push(url);
+        }
+
+        // Step 3: Generate base64 for AI analysis if needed (lower quality)
+        let analysisResult = {};
+        if (shouldAutoAnalyze) {
+          try {
+            // Create base64 versions for AI analysis only
+            const base64Images = [];
+            for (const file of groupFiles) {
+              base64Images.push(await compressImage(file, false)); // false = return base64
             }
-          );
-
-          if (uploadMode === "single" && actionType === "edit_first") {
-             setSelectedItem({
-                id: docRef.id,
-                images: compressedImages,
-                image: compressedImages[0],
-                status: "TBD",
-                title: "",
-                category: "",
-                materials: "",
-                maker: "",
-                style: "",
-                markings: "",
-                condition: "",
-                userNotes: "",
-                valuation_low: 0,
-                valuation_high: 0,
-             });
+            analysisResult = await analyzeImagesWithGemini(base64Images, "");
+          } catch (aiError) {
+            console.error("Auto-analysis failed:", aiError);
+            alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
           }
+        }
+
+        // Step 4: Update the document with Storage URLs and analysis
+        await updateDoc(docRef, {
+          images: imageUrls,
+          image: imageUrls[0] || "",
+          title: analysisResult.title || "",
+          ...analysisResult,
+          aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
+        });
+
+        if (uploadMode === "single" && actionType === "edit_first") {
+          setSelectedItem({
+            id: docRef.id,
+            images: imageUrls,
+            image: imageUrls[0] || "",
+            status: "TBD",
+            title: "",
+            category: "",
+            materials: "",
+            maker: "",
+            style: "",
+            markings: "",
+            condition: "",
+            userNotes: "",
+            valuation_low: 0,
+            valuation_high: 0,
+          });
+        }
       }
     } catch (error) {
       console.error(error);
