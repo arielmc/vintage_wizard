@@ -5443,7 +5443,7 @@ export default function App() {
   const mobileSearchRef = useRef(null);
   // PDF generation state
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  // Export/Share dropdown state (desktop)
+  // Share dropdown state (desktop) - includes share links, PDF, CSV
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef(null);
   const singleInputRef = useRef(null);
@@ -6620,8 +6620,8 @@ export default function App() {
                      : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                  } disabled:opacity-40`}
                >
-                 <Upload className="w-4 h-4" />
-                 <span>Export</span>
+                 <Share2 className="w-4 h-4" />
+                 <span>Share</span>
                  <ChevronDown className={`w-3 h-3 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
                </button>
                 
