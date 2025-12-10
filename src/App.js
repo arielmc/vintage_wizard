@@ -438,8 +438,10 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - confidence: One of "high", "medium", or "low" indicating confidence in valuation. Use "high" if clear maker's marks, known brand, or exact comparables found. Use "medium" if general style/era identified but specifics unclear. Use "low" if guessing based on visual style alone without identifying marks.
     - confidence_reason: Brief explanation (10-20 words) of why confidence level was assigned (e.g., "Clear sterling hallmark and maker's mark visible" or "No visible markings, estimate based on style only").
     - reasoning: Explanation of value (rarity, demand, comparables).
-    - search_terms: Specific keywords to find EXACT comparables.
-    - search_terms_broad: A simplified query (2-4 words MAX).
+    - search_terms: Specific keywords for eBay (brand + item + era + details). Example: "Olatunji Drums of Passion vinyl Columbia CL 1412"
+    - search_terms_broad: A simplified 2-4 word query for most sites. Example: "Olatunji Drums Passion"
+    - search_terms_discogs: FOR MUSIC ONLY - Artist name + Album/Title ONLY, no format/year/label. Example: "Olatunji Drums of Passion" (NOT "Olatunji Drums of Passion vinyl 1960 Columbia")
+    - search_terms_auction: For auction sites - Maker/Artist + Object type + era. Example: "Columbia Records 1960s vinyl" or "Tiffany Art Nouveau lamp"
     - sales_blurb: A detailed description (4-6 sentences) that serves multiple purposes:
       1. IDENTIFICATION: What this item is, its origin, maker, and period
       2. CONTEXT: Historical significance, cultural context, or interesting background
@@ -641,24 +643,62 @@ const uploadImageToStorage = async (file, userId, itemId, imageIndex) => {
 };
 
 // --- Link Helper ---
-const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
+// Site-specific query strategies:
+// - eBay: Handles detailed queries well (brand + item + era + details)
+// - Discogs: Needs ONLY artist + title (no format, year, label, or catalog numbers)
+// - Reverb: Good with broad instrument/gear terms
+// - Auction sites: Maker + object type + era
+// - Most retail sites: Broad 2-4 word queries work best
+const getMarketplaceLinks = (category, searchTerms, broadTerms, discogsTerms, auctionTerms) => {
   if (!searchTerms) return [];
-  const query = encodeURIComponent(searchTerms);
-  const derivedBroadTerms = searchTerms.split(" ").slice(0, 3).join(" ");
-  const broadQuery = encodeURIComponent(broadTerms || derivedBroadTerms);
+  
+  // eBay gets the full detailed query
+  const ebayQuery = encodeURIComponent(searchTerms);
+  
+  // Derive broad terms if not provided (first 3-4 meaningful words)
+  const derivedBroadTerms = searchTerms
+    .replace(/\b(vinyl|record|lp|cd|book|vintage|antique|circa|c\.|ca\.)\b/gi, '')
+    .replace(/\b\d{4}\b/g, '') // Remove years
+    .replace(/\b[A-Z]{2,3}\s*\d+\b/g, '') // Remove catalog numbers like "CL 1412"
+    .trim()
+    .split(" ")
+    .filter(w => w.length > 2)
+    .slice(0, 4)
+    .join(" ");
+  const broadQuery = encodeURIComponent(broadTerms || derivedBroadTerms || searchTerms.split(" ").slice(0, 3).join(" "));
+  
+  // Discogs needs very clean queries - artist + album only
+  const cleanDiscogsQuery = discogsTerms 
+    ? encodeURIComponent(discogsTerms)
+    : encodeURIComponent(
+        searchTerms
+          .replace(/\b(vinyl|record|lp|cd|album|12"|7"|45|33|rpm|mono|stereo|reissue|repress|original|pressing)\b/gi, '')
+          .replace(/\b\d{4}\b/g, '') // Remove years
+          .replace(/\b[A-Z]{2,}\s*[-]?\s*\d+\b/g, '') // Remove catalog numbers
+          .replace(/\b(Columbia|Atlantic|Motown|Capitol|RCA|Decca|Mercury|Verve|Blue Note|Impulse|Prestige)\b/gi, '') // Remove common labels
+          .replace(/\s+/g, ' ')
+          .trim()
+          .split(" ")
+          .slice(0, 5)
+          .join(" ")
+      );
+  
+  // Auction sites get maker/artist + type + era
+  const auctionQuery = encodeURIComponent(auctionTerms || broadTerms || derivedBroadTerms);
+  
   const cat = (category || "").toLowerCase();
 
   const links = [
     {
       name: "eBay Sold",
       domain: "ebay.com",
-      url: `https://www.ebay.com/sch/i.html?_nkw=${query}&_sacat=0&LH_Sold=1&LH_Complete=1`,
+      url: `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=0&LH_Sold=1&LH_Complete=1`,
       color: "text-blue-700 bg-blue-50 border-blue-200",
     },
     {
       name: "Google Images",
       domain: "google.com",
-      url: `https://www.google.com/search?q=${query}&tbm=isch`,
+      url: `https://www.google.com/search?q=${broadQuery}&tbm=isch`,
       color: "text-stone-700 bg-stone-50 border-stone-200",
     },
   ];
@@ -747,11 +787,11 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
       url: `https://www.1stdibs.com/search/?q=${broadQuery}`,
       color: "text-amber-700 bg-amber-50 border-amber-200",
     });
-      links.push({
-        name: "LiveAuctioneers",
-        url: `https://www.liveauctioneers.com/search/?keyword=${broadQuery}&sort=relevance&status=archive`,
-        color: "text-stone-800 bg-stone-100 border-stone-300",
-      });
+    links.push({
+      name: "LiveAuctioneers",
+      url: `https://www.liveauctioneers.com/search/?keyword=${auctionQuery}&sort=relevance&status=archive`,
+      color: "text-stone-800 bg-stone-100 border-stone-300",
+    });
     links.push({
       name: "Artsy",
       url: `https://www.artsy.net/search?term=${broadQuery}`,
@@ -786,10 +826,10 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms) => {
   } else if (isMusic) {
     links.push({
       name: "Discogs",
-      url: `https://www.discogs.com/search/?q=${query}&type=all`,
+      url: `https://www.discogs.com/search/?q=${cleanDiscogsQuery}&type=all`,
       color: "text-stone-800 bg-yellow-50 border-yellow-200",
     });
-     links.push({
+    links.push({
       name: "Reverb",
       url: `https://reverb.com/marketplace?query=${broadQuery}`,
       color: "text-orange-600 bg-orange-50 border-orange-200",
@@ -3227,9 +3267,11 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
       getMarketplaceLinks(
         formData.category,
         formData.search_terms,
-        formData.search_terms_broad
+        formData.search_terms_broad,
+        formData.search_terms_discogs,
+        formData.search_terms_auction
       ),
-    [formData.category, formData.search_terms, formData.search_terms_broad]
+    [formData.category, formData.search_terms, formData.search_terms_broad, formData.search_terms_discogs, formData.search_terms_auction]
   );
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
