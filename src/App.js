@@ -2848,12 +2848,18 @@ ITEM DETAILS:
 - Markings: ${formData.markings || 'None visible'}
 - Original AI Description: ${formData.sales_blurb || ''}
 
-TITLE GUIDELINES:
-- STRICTLY LIMIT to 70 characters maximum. Count every character.
-- CRITICAL: Never cut off a word mid-way. If a word would push past 70 chars, omit it entirely.
-- The title must make complete sense and be readable - no partial words like "Vint" instead of "Vintage".
-- Sales 1-2: Just facts. Sales 4-5: Can add "Rare", "Stunning", etc.
-- Nerd 4-5: Include specific details collectors care about.
+TITLE GUIDELINES (CRITICAL - FOLLOW EXACTLY):
+- ABSOLUTE MAXIMUM: 70 characters. Count every character including spaces.
+- NEVER cut off a word mid-way. If adding a word would exceed 70 chars, OMIT it entirely.
+- The title MUST make complete sense and be fully readable - no partial words.
+- Apply the SAME tone settings to the title:
+  * Sales 1-2: Factual title (maker, item type, era). No adjectives like "stunning" or "beautiful".
+  * Sales 3: Balanced title with light appeal.
+  * Sales 4-5: Compelling title with "Rare", "Stunning", "Exquisite", etc.
+  * Nerd 4-5: Include collector-relevant details (edition, variation, specific model).
+- Example good titles at different levels:
+  * Sales 1: "Pyrex Spring Blossom Casserole Dish 1970s"
+  * Sales 5: "Stunning Rare Pyrex Spring Blossom Casserole Mint Condition 1970s"
 
 DESCRIPTION FORMATTING:
 - Use line breaks (\\n) to separate sections for readability
@@ -2889,9 +2895,15 @@ Return ONLY valid JSON, no markdown or extra text.`;
         const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         try {
           const parsed = JSON.parse(cleanedResponse);
+          // Enforce 70 char limit on title (in case AI didn't follow instructions)
+          let newTitle = parsed.title || prev.listing_title;
+          if (newTitle && newTitle.length > 70) {
+            // Truncate at word boundary before 70 chars
+            newTitle = newTitle.substring(0, 70).replace(/\s+\S*$/, '').trim();
+          }
           setFormData(prev => ({ 
             ...prev,
-            title: parsed.title || prev.title,
+            listing_title: newTitle,
             listing_description: parsed.description?.trim() || prev.listing_description,
             tone_sales: toneSettings.salesIntensity,
             tone_nerd: toneSettings.nerdFactor,
@@ -3236,6 +3248,9 @@ Return ONLY valid JSON, no markdown or extra text.`;
             Title
           </label>
           <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-mono ${currentTitle.length > 70 ? 'text-red-500 font-bold' : currentTitle.length > 60 ? 'text-amber-500' : 'text-stone-400'}`}>
+              {currentTitle.length}/70
+            </span>
             {formData.listing_title && (
               <button onClick={() => handleReset('title')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
                 <RefreshCw className="w-3 h-3" /> Reset
@@ -3250,7 +3265,8 @@ Return ONLY valid JSON, no markdown or extra text.`;
           type="text"
           value={currentTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
-          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+          maxLength={80}
+          className={`w-full p-3 bg-white border rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent ${currentTitle.length > 70 ? 'border-red-300 bg-red-50' : 'border-stone-200'}`}
           placeholder="Enter listing title..."
         />
       </div>
