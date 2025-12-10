@@ -299,10 +299,45 @@ const logAnalyticsEvent = (eventName, eventParams = {}) => {
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+// --- Helper: Convert URL to base64 ---
+async function urlToBase64(url) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    console.error("Failed to convert URL to base64:", err);
+    return null;
+  }
+}
+
+// --- Helper: Ensure image is base64 ---
+async function ensureBase64(img) {
+  if (!img) return null;
+  // Already base64
+  if (img.startsWith('data:image')) {
+    return img;
+  }
+  // URL - convert to base64
+  if (img.startsWith('http')) {
+    return await urlToBase64(img);
+  }
+  return null;
+}
+
 // --- AI Logic ---
 async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
   // Limit to 4 images max to avoid payload limits
-  const imagesToAnalyze = images.slice(0, 4);
+  const rawImages = images.slice(0, 4);
+  
+  // Convert all images to base64
+  const imagesToAnalyze = await Promise.all(rawImages.map(img => ensureBase64(img)));
+  const validImages = imagesToAnalyze.filter(img => img !== null);
 
   const knownDetails = [];
   if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
@@ -462,7 +497,11 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response. When you see text in non-English languages, translate or explain it.
   `;
 
-  const imageParts = imagesToAnalyze.map((img) => ({
+  if (validImages.length === 0) {
+    throw new Error("No valid images to analyze. Please add photos first.");
+  }
+
+  const imageParts = validImages.map((img) => ({
     inlineData: {
       mimeType: "image/jpeg",
       data: img.split(",")[1],
@@ -938,8 +977,8 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
   const [expandedStackIdx, setExpandedStackIdx] = useState(null); // For refining stacks
   
-  // NEW: Selection Mode State
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  // Selection Mode State - Default ON (no drag-drop, simpler UX)
+  const [isSelectionMode, setIsSelectionMode] = useState(true);
   const [selectedStackIds, setSelectedStackIds] = useState(new Set());
   
   // Loading & Feedback States
@@ -1361,9 +1400,13 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     }, [stack.files]);
 
     const handleClick = () => {
-        if (isSelectionMode) {
-            onSelect(stack.id);
-        } else if (isMulti) {
+        // Always toggle selection on tap
+        onSelect(stack.id);
+    };
+    
+    // Double-tap to open stack (if multi-photo)
+    const handleDoubleClick = () => {
+        if (isMulti) {
             setExpandedStackIdx(index);
         }
     };
@@ -1438,29 +1481,12 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     return (
       <div
         ref={cardRef}
-        draggable={!isSelectionMode}
-        onDragStart={onDragStartHandler}
-        onDragOver={onDragOverHandler}
-        onDragLeave={onDragLeaveHandler}
-        onDrop={onDropHandler}
-        onDragEnd={onDragEndHandler}
         onClick={handleClick}
-        className={`relative aspect-square group transition-all duration-200 select-none ${
-            isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
-        } ${isSelected ? "scale-90" : ""} ${
-            isBeingDragged ? "opacity-40 scale-95 grayscale" : "opacity-100 hover:scale-[1.02]"
+        onDoubleClick={handleDoubleClick}
+        className={`relative aspect-square group transition-all duration-200 select-none cursor-pointer ${
+          isSelected ? "scale-95" : "hover:scale-[1.02]"
         }`}
-        style={{ touchAction: 'none' }}
       >
-        {/* Active Drop Target Highlight - More prominent */}
-        {isActiveDropTarget && (
-          <div className="absolute -inset-4 rounded-2xl border-4 border-emerald-400 bg-emerald-50/80 z-0 transition-all duration-150" />
-        )}
-        
-        {/* Potential Drop Target Indicator */}
-        {isDropTarget && !isActiveDropTarget && (
-          <div className="absolute -inset-2 rounded-2xl border-2 border-dashed border-stone-300/60 z-0" />
-        )}
 
         {/* Stack Effect (Underneath layers) */}
         {isMulti && (
@@ -1493,17 +1519,8 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
              />
            )}
            
-           {/* Drop Indicator Overlay - More visible */}
-           {isActiveDropTarget && (
-             <div className="absolute inset-0 bg-emerald-500/30 flex items-center justify-center backdrop-blur-[2px]">
-               <div className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl flex items-center gap-2">
-                 <Plus size={16} /> Merge Photos
-               </div>
-             </div>
-           )}
-           
            {/* Selection Checkmark Overlay */}
-           {isSelectionMode && (
+           {(
                <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors shadow-sm ${
                    isSelected ? "bg-rose-500 border-rose-500" : "bg-white/90 border-stone-300"
                }`}>
@@ -1511,32 +1528,25 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                </div>
            )}
 
-           {/* Delete Button (Only visible in normal mode, not dragging) */}
-           {!isSelectionMode && !isBeingDragged && (
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 if (confirm("Delete this photo/stack permanently?")) {
-                   onRemove(index);
-                 }
-               }}
-               className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-md hover:bg-red-600 z-20"
-               title="Delete permanently"
-             >
-               <Trash2 size={12} strokeWidth={3} />
-             </button>
-           )}
 
            {/* Badge */}
            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
               {stack.files.length} {stack.files.length === 1 ? 'photo' : 'photos'}
            </div>
            
-           {/* Stack indicator for multi-photo stacks */}
+           {/* Stack indicator + Open button for multi-photo stacks */}
            {isMulti && (
-             <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 pointer-events-none shadow-sm">
-               <Layers size={10} /> {stack.files.length}
-             </div>
+             <>
+               <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 pointer-events-none shadow-sm">
+                 <Layers size={10} /> {stack.files.length}
+               </div>
+               <button
+                 onClick={(e) => { e.stopPropagation(); setExpandedStackIdx(index); }}
+                 className="absolute bottom-2 left-2 bg-white/90 hover:bg-white text-stone-700 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+               >
+                 <Eye size={10} /> Open
+               </button>
+             </>
            )}
         </div>
       </div>
@@ -1557,42 +1567,79 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   return (
     <div className="fixed inset-0 z-50 bg-[#FDFBF7] flex flex-col">
       {/* Header - Simplified */}
-      <div className="bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
-         <div className="flex items-center gap-3">
-            <button 
-               onClick={onCancel}
-               disabled={isProcessingBatch}
-               className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors"
-               title="Cancel"
-            >
-               <X className="w-5 h-5" />
-            </button>
-            <div>
-               <h2 className="text-lg font-serif font-bold text-stone-900">Organize Photos</h2>
-               <p className="text-xs text-stone-500">
-                 {isLoading ? "Loading photos..." : "Drag photos together to group them as single items."}
-               </p>
-            </div>
+      <div className="bg-white border-b border-stone-200 px-4 py-3 shadow-sm z-10">
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <button 
+                 onClick={onCancel}
+                 disabled={isProcessingBatch}
+                 className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors"
+                 title="Cancel"
+              >
+                 <X className="w-5 h-5" />
+              </button>
+              <div>
+                 <h2 className="text-lg font-serif font-bold text-stone-900">Organize Photos</h2>
+                 <p className="text-xs text-stone-500">
+                   {isLoading ? "Loading photos..." : "Tap photos to select, then combine or delete"}
+                 </p>
+              </div>
+           </div>
+           <button 
+              onClick={handleAutoGroup}
+              disabled={isAutoGrouping || isLoading}
+              className={`text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                isAutoGrouping 
+                  ? "bg-amber-100 text-amber-700 animate-pulse" 
+                  : "text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200"
+              }`}
+           >
+              {isAutoGrouping ? (
+                <>
+                  <Loader className="w-3 h-3 animate-spin" /> Grouping...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-3 h-3" /> Auto-Group
+                </>
+              )}
+           </button>
          </div>
-         <button 
-            onClick={handleAutoGroup}
-            disabled={isAutoGrouping || isLoading}
-            className={`text-xs font-bold px-3 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              isAutoGrouping 
-                ? "bg-amber-100 text-amber-700 animate-pulse" 
-                : "text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200"
-            }`}
-         >
-            {isAutoGrouping ? (
-              <>
-                <Loader className="w-3 h-3 animate-spin" /> Grouping...
-              </>
-            ) : (
-              <>
-                <Wand2 className="w-3 h-3" /> Auto-Group
-              </>
-            )}
-         </button>
+         
+         {/* Action Bar - shows when items selected */}
+         {selectedStackIds.size > 0 && (
+           <div className="mt-3 pt-3 border-t border-stone-100 flex items-center gap-2">
+             <span className="text-xs text-stone-500 font-medium">{selectedStackIds.size} selected</span>
+             <div className="flex-1" />
+             {selectedStackIds.size >= 2 && (
+               <button 
+                 onClick={handleStackSelected}
+                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold hover:bg-emerald-200 transition-colors"
+               >
+                 <Layers className="w-3.5 h-3.5" /> Combine ({selectedStackIds.size})
+               </button>
+             )}
+             <button 
+               onClick={() => {
+                 if (confirm(`Delete ${selectedStackIds.size} photo(s)?`)) {
+                   const newStacks = stacks.filter(s => !selectedStackIds.has(s.id));
+                   setStacks(newStacks);
+                   setSelectedStackIds(new Set());
+                   if (newStacks.length === 0) onCancel();
+                 }
+               }}
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-bold hover:bg-red-200 transition-colors"
+             >
+               <Trash2 className="w-3.5 h-3.5" /> Delete
+             </button>
+             <button 
+               onClick={() => setSelectedStackIds(new Set())}
+               className="px-2 py-1.5 text-stone-500 hover:text-stone-700 text-xs"
+             >
+               Clear
+             </button>
+           </div>
+         )}
       </div>
       
       {/* Auto-Group Feedback Toast */}
@@ -1609,12 +1656,17 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
          {isLoading ? (
            <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
              <div className="relative">
-               <div className="w-16 h-16 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
-               <Camera className="w-6 h-6 text-stone-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+               <div className="w-20 h-20 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
+               <Camera className="w-8 h-8 text-stone-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
              </div>
-             <div className="text-center">
-               <p className="text-stone-700 font-medium mb-1">{loadingMessage}</p>
-               <p className="text-stone-400 text-sm">{files.length} photos to organize</p>
+             <div className="text-center max-w-xs">
+               <p className="text-stone-700 font-medium mb-1 text-lg">{loadingMessage}</p>
+               <p className="text-stone-500 text-sm mb-3">{files.length} photos to organize</p>
+               {files.length > 5 && (
+                 <p className="text-amber-600 text-xs bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                   ⏳ AI is fast, but loading lots of images can be slow. Thanks for your patience!
+                 </p>
+               )}
              </div>
            </div>
          ) : (
@@ -2096,23 +2148,6 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
         )}
 
 
-        {/* Mobile: Status color line at bottom of image */}
-        <div className={`md:hidden absolute bottom-0 left-0 right-0 h-1 ${
-          item.status === 'keep' ? 'bg-blue-500' :
-          item.status === 'sell' ? 'bg-emerald-500' :
-          'bg-amber-500'
-        }`} />
-        
-        {/* Status text - UPPER RIGHT - desktop only */}
-        <div className="absolute top-2 right-2 hidden md:block">
-          <span className={`text-[10px] font-bold uppercase tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${
-            item.status === 'keep' ? 'text-blue-400' :
-            item.status === 'sell' ? 'text-emerald-400' :
-            'text-amber-400'
-          }`}>
-            {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
-          </span>
-        </div>
 
         {item.valuation_high > 0 && (
           <div className="absolute bottom-1 md:bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
@@ -6816,8 +6851,7 @@ export default function App() {
                       "value-desc": "High $",
                       "value-asc": "Low $",
                       "alpha-asc": "A-Z",
-                      "category-asc": "Category",
-                      "status-asc": "Status"
+                      "category-asc": "Category"
                     }[sortBy]}
                   </span>
                 </button>
@@ -6836,7 +6870,6 @@ export default function App() {
                         { label: "Low → High $", value: "value-asc" },
                         { label: "A → Z", value: "alpha-asc" },
                         { label: "By Category", value: "category-asc" },
-                        { label: "By Status", value: "status-asc" },
                       ].map((opt) => (
                         <button
                           key={opt.value}
