@@ -5026,41 +5026,104 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
               
               {/* Value range with confidence */}
               {item.valuation_high > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-base font-bold text-emerald-700">
-                    ${item.valuation_low} - ${item.valuation_high}
-                  </span>
-                  {item.confidence && (
-                    <span className={`text-[10px] font-medium uppercase ${
-                      item.confidence === 'high' ? 'text-emerald-600' :
-                      item.confidence === 'medium' ? 'text-amber-600' :
-                      'text-red-600'
-                    }`}>
-                      {item.confidence} conf.
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-lg font-bold text-emerald-700">
+                      ${item.valuation_low?.toLocaleString()} - ${item.valuation_high?.toLocaleString()}
                     </span>
+                    {item.confidence && (
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        item.confidence === 'high' ? 'bg-emerald-200 text-emerald-800' :
+                        item.confidence === 'medium' ? 'bg-amber-200 text-amber-800' :
+                        'bg-red-200 text-red-800'
+                      }`}>
+                        {item.confidence}
+                      </span>
+                    )}
+                  </div>
+                  {item.confidence_reason && (
+                    <p className="text-xs text-emerald-600 italic">{item.confidence_reason}</p>
                   )}
                 </div>
               )}
               
               {/* Details grid */}
-              <div className="grid grid-cols-2 gap-1.5 text-sm">
-                {item.maker && item.maker.toLowerCase() !== "unknown" && (
-                  <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
-                )}
-                {item.era && item.era.toLowerCase() !== "unknown" && (
-                  <div><span className="text-stone-400">Era:</span> <span className="font-medium">{item.era}</span></div>
-                )}
-                {item.materials && (
-                  <div><span className="text-stone-400">Materials:</span> <span className="font-medium">{item.materials}</span></div>
-                )}
-                {item.condition && (
-                  <div className="col-span-2"><span className="text-stone-400">Condition:</span> <span className="font-medium">{item.condition}</span></div>
-                )}
+              <div className="bg-stone-50 rounded-xl p-3 space-y-2">
+                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider">Details</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {item.maker && item.maker.toLowerCase() !== "unknown" && (
+                    <div>
+                      <span className="text-stone-400 text-xs block">Maker/Brand</span>
+                      <span className="font-medium text-stone-800">{item.maker}</span>
+                    </div>
+                  )}
+                  {item.style && item.style.toLowerCase() !== "unknown" && (
+                    <div>
+                      <span className="text-stone-400 text-xs block">Style/Period</span>
+                      <span className="font-medium text-stone-800">{item.style}</span>
+                    </div>
+                  )}
+                  {item.era && item.era.toLowerCase() !== "unknown" && (
+                    <div>
+                      <span className="text-stone-400 text-xs block">Era</span>
+                      <span className="font-medium text-stone-800">{item.era}</span>
+                    </div>
+                  )}
+                  {item.materials && (
+                    <div>
+                      <span className="text-stone-400 text-xs block">Materials</span>
+                      <span className="font-medium text-stone-800">{item.materials}</span>
+                    </div>
+                  )}
+                  {item.condition && (
+                    <div className="col-span-2">
+                      <span className="text-stone-400 text-xs block">Condition</span>
+                      <span className="font-medium text-stone-800">{item.condition}</span>
+                    </div>
+                  )}
+                  {item.markings && (
+                    <div className="col-span-2">
+                      <span className="text-stone-400 text-xs block">Markings/Signatures</span>
+                      <span className="font-medium text-stone-800">{item.markings}</span>
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* Description */}
               {item.sales_blurb && (
-                <p className="text-sm text-stone-600 pt-2 border-t border-stone-100">{item.sales_blurb}</p>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider">Description</h4>
+                  <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{item.sales_blurb}</p>
+                </div>
+              )}
+              
+              {/* AI Reasoning */}
+              {item.reasoning && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 space-y-1">
+                  <h4 className="text-xs font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> AI Reasoning
+                  </h4>
+                  <p className="text-xs text-rose-700 leading-relaxed">{item.reasoning}</p>
+                </div>
+              )}
+              
+              {/* User Notes */}
+              {(item.userNotes || item.provenance?.user_story) && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 space-y-1">
+                  <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+                    <MessageCircle className="w-3 h-3" /> Owner Notes
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">{item.provenance?.user_story || item.userNotes}</p>
+                </div>
+              )}
+              
+              {/* Category */}
+              {item.category && (
+                <div className="flex items-center gap-2 text-xs text-stone-500 pt-2 border-t border-stone-100">
+                  <Tag className="w-3 h-3" />
+                  <span>{item.category}</span>
+                </div>
               )}
             </>
           )}
