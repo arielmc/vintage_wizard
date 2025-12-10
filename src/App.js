@@ -7108,13 +7108,14 @@ export default function App() {
                       <span>AI</span>
                    </button>
                    
-                   {/* Delete button - icon only on mobile */}
+                   {/* Delete button */}
                    <button 
                       onClick={handleBatchDelete}
                       disabled={selectedIds.size === 0}
-                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-30"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-30"
                    >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-xs font-bold">Delete</span>
                    </button>
                 </div>
               </div>
