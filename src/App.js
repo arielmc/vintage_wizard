@@ -2644,7 +2644,16 @@ TONE SETTINGS (follow these precisely):
 - Formality: ${toneSettings.formality}/5 (${formalityLabels[toneSettings.formality - 1]})
 - ${emojiInstructions[toneSettings.emojiStyle]}
 ${toneSettings.includeFunFact ? '- IMPORTANT: Include a "Did you know?" or collector trivia fact about this specific item, maker, era, or category. Make it genuinely interesting and obscure.' : '- Do NOT include trivia or fun facts.'}
-${toneSettings.includeDadJoke ? `- IMPORTANT: Include a short, groan-worthy dad joke related to this item at the end. Style the joke based on the tone: ${toneSettings.nerdFactor >= 4 ? 'make it nerdy/geeky with insider collector humor' : toneSettings.salesIntensity >= 4 ? 'make it cheesy and sales-pun focused' : 'keep it classic dad-joke style'}. Format as "😏 Dad joke: [joke]"` : ''}
+${toneSettings.includeDadJoke ? `- IMPORTANT: End with a witty one-liner that makes readers smile and want to keep reading your listings. This should feel clever and memorable, NOT a cheesy dad joke. Style based on context:
+  ${toneSettings.nerdFactor >= 4 ? '• Go for dry wit with insider knowledge - the kind of quip that makes collectors nod appreciatively' : ''}
+  ${toneSettings.salesIntensity >= 4 ? '• Make it charming and persuasive - a closer that seals the deal with personality' : ''}
+  ${toneSettings.formality <= 2 ? '• Keep it casual and relatable - like chatting with a friend who happens to know their stuff' : ''}
+  Examples of good one-liners:
+  - "This piece has survived longer than most marriages. Just saying."
+  - "Your grandma would approve. Your wallet might need a moment."
+  - "Not to be dramatic, but this might be the one."
+  - "Found it so you don't have to dig through estate sales for the next decade."
+  Format as: "✨ [your witty one-liner]" at the very end.` : ''}
 
 ITEM DETAILS:
 - Current Title: ${formData.title || 'Vintage Item'}
@@ -2921,17 +2930,17 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 {toneSettings.includeFunFact && <Check className="w-3.5 h-3.5" />}
               </button>
 
-              {/* Dad Joke Toggle */}
+              {/* Witty One-Liner Toggle */}
               <button
                 onClick={() => setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke }))}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
                   toneSettings.includeDadJoke
-                    ? 'bg-purple-50 border-purple-300 text-purple-700'
+                    ? 'bg-fuchsia-50 border-fuchsia-300 text-fuchsia-700'
                     : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
                 }`}
               >
-                <span className="text-base">🤓</span>
-                <span>Dad Joke</span>
+                <span className="text-base">😏</span>
+                <span>Witty Closer</span>
                 {toneSettings.includeDadJoke && <Check className="w-3.5 h-3.5" />}
               </button>
 
