@@ -94,6 +94,13 @@ import {
   DollarSign,
   Gauge,
   ListChecks,
+  Home,
+  User,
+  Mail,
+  Settings,
+  ArrowLeft,
+  Calendar,
+  StickyNote,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -2088,16 +2095,23 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
         )}
 
 
+        {/* Mobile: Status color line at bottom of image */}
+        <div className={`md:hidden absolute bottom-0 left-0 right-0 h-1 ${
+          item.status === 'keep' ? 'bg-blue-500' :
+          item.status === 'sell' ? 'bg-emerald-500' :
+          'bg-amber-500'
+        }`} />
+
         {item.valuation_high > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
+          <div className="absolute bottom-1 md:bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-white font-bold text-sm drop-shadow-md">
                   ${item.valuation_low} - ${item.valuation_high}
                 </p>
-                {/* Confidence Indicator */}
+                {/* Confidence Indicator - Hidden on mobile */}
                 {item.confidence && (
-                  <div className={`flex items-center gap-1 mt-0.5 ${
+                  <div className={`hidden md:flex items-center gap-1 mt-0.5 ${
                     item.confidence === 'high' ? 'text-emerald-300' :
                     item.confidence === 'medium' ? 'text-amber-300' :
                     'text-red-300'
@@ -2109,8 +2123,8 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
                   </div>
                 )}
               </div>
-              {/* Status text - bottom right, no pill */}
-              <span className={`text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
+              {/* Status text - desktop only */}
+              <span className={`hidden md:inline text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
                 item.status === 'keep' ? 'text-blue-300' :
                 item.status === 'sell' ? 'text-green-300' :
                 'text-amber-300'
@@ -2121,9 +2135,9 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           </div>
         )}
         
-        {/* Status for items without value - show at bottom right */}
+        {/* Status for items without value - desktop only */}
         {!item.valuation_high && (
-          <div className="absolute bottom-2 right-2">
+          <div className="absolute bottom-2 right-2 hidden md:block">
             <span className={`text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
               item.status === 'keep' ? 'text-blue-600' :
               item.status === 'sell' ? 'text-green-600' :
@@ -2134,27 +2148,28 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           </div>
         )}
       </div>
-      <div className="p-3 flex-1 flex flex-col">
-        <h3 className="font-semibold text-stone-800 line-clamp-1 mb-1">
+      <div className="p-2 md:p-3 flex-1 flex flex-col">
+        <h3 className="font-semibold text-stone-800 line-clamp-2 text-sm md:text-base mb-1">
           {getDisplayTitle(item)}
         </h3>
-        <p className="text-xs text-stone-500 line-clamp-2 mb-2 flex-1">
+        {/* Desktop: Full details */}
+        <p className="hidden md:block text-xs text-stone-500 line-clamp-2 mb-2 flex-1">
           {[
             item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null,
             item.style && item.style.toLowerCase() !== "unknown" ? item.style : null,
             item.materials
           ].filter(Boolean).join(" • ") || item.userNotes || "No details yet"}
         </p>
-        <div className="flex items-center justify-between text-xs text-stone-400 mt-auto pt-2 border-t border-stone-50">
-          <span>{item.category || "Unsorted"}</span>
+        <div className="flex items-center justify-between text-[10px] md:text-xs text-stone-400 mt-auto pt-1.5 md:pt-2 border-t border-stone-50">
+          <span className="truncate">{item.category || "Unsorted"}</span>
           {/* AI Timestamp */}
           {item.aiLastRun ? (
             <span className="flex items-center gap-1 text-emerald-600" title={`AI analyzed ${new Date(item.aiLastRun).toLocaleString()}`}>
               <Sparkles className="w-2.5 h-2.5" />
-              {formatTimeAgo(item.aiLastRun)}
+              <span className="hidden md:inline">{formatTimeAgo(item.aiLastRun)}</span>
             </span>
           ) : (
-            item.era && item.era.toLowerCase() !== "unknown" && <span>{item.era}</span>
+            item.era && item.era.toLowerCase() !== "unknown" && <span className="hidden md:inline">{item.era}</span>
           )}
         </div>
       </div>
@@ -2934,11 +2949,14 @@ Return ONLY valid JSON, no markdown or extra text.`;
     </div>
   );
 
+  // Emoji style labels
+  const emojiLabels = { none: 'No emoji', minimal: 'Minimal', full: 'Full emoji' };
+
   return (
     <div className="space-y-4 p-1 pb-6">
-      {/* === TONE TUNER PANEL === */}
+      {/* === LISTING TUNER PANEL === */}
       <div className="bg-gradient-to-br from-violet-50 via-fuchsia-50 to-rose-50 border border-violet-200/60 rounded-2xl overflow-hidden shadow-sm">
-        {/* Header - Always visible */}
+        {/* Header - Always visible, shows summary when collapsed */}
         <button
           onClick={() => setIsTunerOpen(!isTunerOpen)}
           className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/30 transition-colors"
@@ -2949,7 +2967,17 @@ Return ONLY valid JSON, no markdown or extra text.`;
             </div>
             <div className="text-left">
               <span className="text-sm font-bold text-stone-800 block">Listing Tuner</span>
-              <span className="text-[10px] text-stone-500">Customize title & description style</span>
+              {/* Collapsed summary */}
+              {!isTunerOpen && (
+                <span className="text-[10px] text-stone-500">
+                  Sales {toneSettings.salesIntensity}/5 · Nerd {toneSettings.nerdFactor}/5 · Formal {toneSettings.formality}/5
+                  {toneSettings.includeFunFact && ' · 💡 Tidbit'}
+                  {toneSettings.includeDadJoke && ' · 🤓 Joke'}
+                </span>
+              )}
+              {isTunerOpen && (
+                <span className="text-[10px] text-stone-500">Customize title & description style</span>
+              )}
             </div>
           </div>
           <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isTunerOpen ? 'rotate-180' : ''}`} />
@@ -3086,7 +3114,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Optimized Title <span className={currentTitle.length > 70 ? 'text-amber-600' : 'text-stone-400'}>({currentTitle.length}/70)</span>
+            Title
           </label>
           <div className="flex items-center gap-2">
             {formData.listing_title && (
@@ -3099,12 +3127,11 @@ Return ONLY valid JSON, no markdown or extra text.`;
             </button>
           </div>
         </div>
-        <textarea
+        <input
+          type="text"
           value={currentTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
-          maxLength={70}
-          rows={2}
-          className={`w-full p-3 bg-white border rounded-xl text-[13px] font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none ${currentTitle.length > 70 ? 'border-amber-400' : 'border-stone-200'}`}
+          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
           placeholder="Enter listing title..."
         />
       </div>
@@ -3528,66 +3555,75 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* NEW HEADER: Status Buttons + Run AI + Close */}
-        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-2 shrink-0">
-          {/* Status Buttons - 3 visible options with icons */}
-          <div className="flex-1 flex gap-1">
-              <button
-              onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "keep" 
-                  ? "bg-blue-100 text-blue-700 border-2 border-blue-400 shadow-sm" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
-              }`}
-            >
-              <Lock size={14} />
-              <span className="hidden sm:inline">Keep</span>
-              </button>
-            <button
-              onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "sell" 
-                  ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-400 shadow-sm" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
-              }`}
-            >
-              <Tag size={14} />
-              <span className="hidden sm:inline">Sell</span>
-            </button>
-            <button
-              onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "TBD" || !formData.status
-                  ? "bg-amber-100 text-amber-700 border-2 border-amber-400 shadow-sm" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-stone-100"
-              }`}
-            >
-              <HelpCircle size={14} />
-              <span className="hidden sm:inline">TBD</span>
-            </button>
-          </div>
-          
-          {/* Run AI Button (prominent, in header) */}
-              <button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || formData.images.length === 0}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
-              isAnalyzing 
-                ? "bg-stone-100 text-stone-400 cursor-wait" 
-                : "bg-rose-500 text-white hover:bg-rose-600 shadow-sm hover:shadow active:scale-95"
-            }`}
-          >
-            {isAnalyzing ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{isAnalyzing ? "Analyzing..." : (formData.aiLastRun ? "Re-Run" : "Analyze")}</span>
-              </button>
-          
-          {/* Close Button (top right) */}
+        {/* NEW HEADER: Back Arrow + Tabs + Overflow Menu */}
+        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-3 shrink-0">
+          {/* Back Arrow */}
           <button
             onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-            className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full shrink-0 transition-colors"
+            className="p-2 -ml-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
+          
+          {/* Tab Switcher - Centered */}
+          <div className="flex-1 flex justify-center">
+            <div className="flex p-1 bg-stone-100 rounded-xl">
+              <button
+                onClick={() => setActiveTab("details")}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === "details" 
+                    ? "bg-white text-stone-800 shadow-sm" 
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                Details
+              </button>
+              <button
+                onClick={() => setActiveTab("listing")}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${
+                  activeTab === "listing" 
+                    ? "bg-white text-rose-600 shadow-sm" 
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                Listing
+              </button>
+            </div>
+          </div>
+          
+          {/* Overflow Menu */}
+          <div className="relative group">
+            <button className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 hidden group-hover:block z-50">
+              <div className="bg-white rounded-xl shadow-2xl border border-stone-100 p-1.5 min-w-[160px]">
+                <button
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}${window.location.pathname}?item=${formData.id}`;
+                    navigator.clipboard.writeText(shareUrl);
+                    playSuccessFeedback();
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share Item
+                </button>
+                <div className="h-px bg-stone-100 my-1" />
+                <button
+                  onClick={() => {
+                    if (window.confirm("Delete this item? This cannot be undone.")) {
+                      onDelete();
+                    }
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Item
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
         
         {/* Larger Thumbnail Strip (tap to expand, drag to reorder) */}
@@ -3708,30 +3744,34 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
           )}
         </div>
         
-        {/* Tab Switcher */}
-        <div className="px-3 py-2 bg-white border-b border-stone-100 shrink-0">
-          <div className="flex p-1 bg-stone-100 rounded-xl">
-              <button
-              onClick={() => setActiveTab("details")}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "details" ? "bg-white text-stone-800 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
-            >
-              Analysis & Details
-              </button>
-              <button
-              onClick={() => setActiveTab("listing")}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${activeTab === "listing" ? "bg-white text-rose-600 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}
-              >
-              <Sparkles className="w-3 h-3" /> Listing Helper
-              </button>
-            </div>
-          </div>
-
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
           {activeTab === "listing" ? (
             <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
             <div className="flex flex-col gap-3">
+              {/* Analyze Button - Prominent in Details tab */}
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || formData.images.length === 0}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                  isAnalyzing 
+                    ? "bg-stone-200 text-stone-500 cursor-wait" 
+                    : formData.aiLastRun
+                      ? "bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200"
+                      : "bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600 shadow-md hover:shadow-lg"
+                }`}
+              >
+                {isAnalyzing ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : formData.aiLastRun ? (
+                  <RefreshCw className="w-4 h-4" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                {isAnalyzing ? "Analyzing..." : formData.aiLastRun ? "Re-analyze" : "Analyze with AI"}
+              </button>
+              
               {/* TITLE - First and most prominent */}
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -4092,36 +4132,103 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                   </div>
                 )}
               </div>
+              
+              {/* Private Notes - Never visible in shared views */}
+              <div className="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden">
+                <div className="px-3 py-2 bg-amber-100/50 flex items-center gap-2">
+                  <StickyNote className="w-4 h-4 text-amber-600" />
+                  <span className="text-sm font-bold text-amber-800">Private Notes</span>
+                  <span className="text-[10px] text-amber-600 bg-amber-200/50 px-2 py-0.5 rounded-full">Never shared</span>
+                </div>
+                <div className="p-3">
+                  <textarea
+                    value={formData.private_notes || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, private_notes: e.target.value }))}
+                    rows={3}
+                    placeholder="Acquisition details, personal reminders, etc..."
+                    className="w-full p-3 bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm leading-relaxed placeholder:text-amber-400/70 resize-y"
+                  />
+                </div>
+              </div>
           </div>
             </div>
             )}
           </div>
           
-        {/* REDESIGNED Footer: Delete (left) | Save (right) */}
-        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center justify-between gap-3">
-          {/* Delete Button (bottom left) */}
-            <button
-              onClick={() => {
+        {/* STICKY BOTTOM BAR: Trash | Triage | Save */}
+        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center gap-2">
+          {/* Trash Button */}
+          <button
+            onClick={() => {
               if (confirm("Delete this item permanently? This cannot be undone.")) {
                 onDelete(item.id);
                 onClose();
               }
             }}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-all active:scale-95"
+            className="p-2.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-95"
+            title="Delete item"
           >
-            <Trash2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Delete</span>
+            <Trash2 className="w-5 h-5" />
           </button>
-
-          {/* Save Button (right side, prominent) */}
-          <button
-            onClick={handleSaveAndClose}
-            className="flex-1 sm:flex-none px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Save className="w-4 h-4" /> Save Changes
+          
+          {/* Divider */}
+          <div className="w-px h-8 bg-stone-200" />
+          
+          {/* Triage Controls */}
+          <div className="flex-1 flex items-center justify-center gap-1">
+            <button
+              onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "keep" 
+                  ? "bg-blue-100 text-blue-700 border-2 border-blue-400" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-blue-50 hover:text-blue-600"
+              }`}
+            >
+              <Lock size={14} />
+              Keep
+            </button>
+            <button
+              onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "sell" 
+                  ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-400" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-emerald-50 hover:text-emerald-600"
+              }`}
+            >
+              <Tag size={14} />
+              Sell
+            </button>
+            <button
+              onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                formData.status === "TBD" || !formData.status || formData.status === "draft"
+                  ? "bg-amber-100 text-amber-700 border-2 border-amber-400" 
+                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-amber-50 hover:text-amber-600"
+              }`}
+            >
+              <HelpCircle size={14} />
+              TBD
             </button>
           </div>
+          
+          {/* Divider */}
+          <div className="w-px h-8 bg-stone-200" />
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveAndClose}
+            disabled={!hasUnsavedChanges}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+              hasUnsavedChanges
+                ? "bg-stone-900 hover:bg-stone-800 text-white shadow-md"
+                : "bg-stone-100 text-stone-400 cursor-not-allowed"
+            }`}
+          >
+            <Check className="w-4 h-4" />
+            <span className="hidden sm:inline">Save</span>
+          </button>
         </div>
+      </div>
     </div>
   );
 };
@@ -4170,15 +4277,20 @@ const getDisplayTitle = (item) => {
 };
 
 // --- SHARED COLLECTION VIEW (Public) ---
-const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
+const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [ownerName, setOwnerName] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState(null);
   const [filter, setFilter] = useState(filterParam || "all");
   const [expandedItemIndex, setExpandedItemIndex] = useState(null); // Index in filteredItems
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, value_high, value_low, alpha
+  const [contactModalItem, setContactModalItem] = useState(null);
+  
+  // Determine if this is a "for sale" view (hides prices, shows contact)
+  const isForSaleMode = viewMode === 'forsale';
 
   useEffect(() => {
     const loadSharedCollection = async () => {
@@ -4482,13 +4594,69 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
         />
       )}
       
-      {/* Footer */}
+      {/* Footer - Different for For Sale mode */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 py-3 px-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-xs text-stone-500">
-          <Sparkles className="w-3 h-3 text-rose-400" />
-          <span>Powered by Vintage Wizard</span>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-stone-500">
+            <Sparkles className="w-3 h-3 text-rose-400" />
+            <span>Powered by Vintage Wizard</span>
+          </div>
+          <a 
+            href="/"
+            className="flex text-xs font-semibold text-rose-600 hover:text-rose-700 items-center gap-1 bg-rose-50 px-3 py-1.5 rounded-full"
+          >
+            <span>Create yours</span>
+            <ArrowRight className="w-3 h-3" />
+          </a>
         </div>
       </footer>
+      
+      {/* Contact Seller Modal (For Sale mode) */}
+      {contactModalItem && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setContactModalItem(null)}>
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-stone-100">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-stone-900">Contact Seller</h2>
+                <button onClick={() => setContactModalItem(null)} className="p-2 text-stone-400 hover:bg-stone-100 rounded-full">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">Re: {contactModalItem.title}</p>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Your Message</label>
+                <textarea
+                  rows={4}
+                  placeholder="Hi, I'm interested in this item..."
+                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Your Email</label>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+              <button
+                className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                Send Message
+              </button>
+              <p className="text-[10px] text-stone-400 text-center">
+                Messages are sent directly to the seller's email
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -4809,12 +4977,14 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
   );
 };
 
-// --- SHARE MODAL ---
+// --- SHARE MODAL (Two Share Modes) ---
 const ShareModal = ({ user, items, onClose }) => {
   const [shareData, setShareData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(null); // 'library' | 'forsale' | null
+  const [selectedMode, setSelectedMode] = useState(null); // 'library' | 'forsale' | null
+
+  const sellItemsCount = items.filter(i => i.status === "sell").length;
 
   useEffect(() => {
     const loadOrCreateShare = async () => {
@@ -4846,29 +5016,22 @@ const ShareModal = ({ user, items, onClose }) => {
     loadOrCreateShare();
   }, [user]);
 
-  const getShareUrl = () => {
+  const getShareUrl = (mode) => {
     const baseUrl = window.location.origin + window.location.pathname;
     const params = new URLSearchParams({
       share: user.uid,
       token: shareData?.token || "",
-      ...(selectedFilter !== "all" && { filter: selectedFilter })
+      mode: mode, // 'library' or 'forsale'
+      ...(mode === 'forsale' && { filter: 'sell' })
     });
     return `${baseUrl}?${params.toString()}`;
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getShareUrl());
-    setCopied(true);
+  const handleCopy = (mode) => {
+    navigator.clipboard.writeText(getShareUrl(mode));
+    setCopied(mode);
     playSuccessFeedback();
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleToggleActive = async () => {
-    if (!shareData) return;
-    const newIsActive = !shareData.isActive;
-    const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
-    await updateDoc(shareDocRef, { isActive: newIsActive });
-    setShareData({ ...shareData, isActive: newIsActive });
+    setTimeout(() => setCopied(null), 2000);
   };
 
   const handleRegenerateToken = async () => {
@@ -4877,13 +5040,6 @@ const ShareModal = ({ user, items, onClose }) => {
     const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
     await updateDoc(shareDocRef, { token: newToken });
     setShareData({ ...shareData, token: newToken });
-  };
-
-  const filterCounts = {
-    all: items.length,
-    sell: items.filter(i => i.status === "sell").length,
-    keep: items.filter(i => i.status === "keep").length,
-    TBD: items.filter(i => i.status === "draft" || i.status === "TBD" || i.status === "unprocessed" || i.status === "maybe").length,
   };
 
   return (
@@ -4899,8 +5055,8 @@ const ShareModal = ({ user, items, onClose }) => {
               <Share2 className="w-5 h-5 text-rose-600" />
             </div>
             <div>
-              <h2 className="font-bold text-stone-900">Share Collection</h2>
-              <p className="text-xs text-stone-500">Create a public link to your items</p>
+              <h2 className="font-bold text-stone-900">Share & Export</h2>
+              <p className="text-xs text-stone-500">Share links or download your collection</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-stone-400 hover:bg-stone-100 rounded-full">
@@ -4914,100 +5070,316 @@ const ShareModal = ({ user, items, onClose }) => {
           </div>
         ) : (
           <div className="p-4 space-y-4">
-            {/* Active Toggle */}
-            <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl">
-              <div className="flex items-center gap-2">
-                {shareData?.isActive ? (
-                  <Eye className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <EyeOff className="w-4 h-4 text-stone-400" />
-                )}
-                <span className="text-sm font-medium text-stone-700">
-                  {shareData?.isActive ? "Sharing enabled" : "Sharing disabled"}
-                </span>
-              </div>
+            {/* Section: Share Links */}
+            <div>
+              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 block">
+                Share Link
+              </label>
+              
+              {/* Library View Option */}
               <button
-                onClick={handleToggleActive}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  shareData?.isActive ? "bg-emerald-500" : "bg-stone-300"
+                onClick={() => setSelectedMode(selectedMode === 'library' ? null : 'library')}
+                className={`w-full p-4 rounded-xl border-2 transition-all text-left mb-3 ${
+                  selectedMode === 'library'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-stone-200 hover:border-stone-300 bg-white'
                 }`}
               >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                  shareData?.isActive ? "left-7" : "left-1"
-                }`} />
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    selectedMode === 'library' ? 'bg-blue-100' : 'bg-stone-100'
+                  }`}>
+                    <BookOpen className={`w-5 h-5 ${selectedMode === 'library' ? 'text-blue-600' : 'text-stone-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-stone-900">Library View</p>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      All {items.length} items · Full details & valuations
+                    </p>
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      For: appraisers, insurance, estate, family, friends
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Expanded Link Copy */}
+                {selectedMode === 'library' && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={getShareUrl('library')}
+                        className="flex-1 p-2.5 bg-white border border-blue-200 rounded-lg text-xs text-stone-600 font-mono truncate"
+                      />
+                      <button
+                        onClick={() => handleCopy('library')}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all ${
+                          copied === 'library'
+                            ? "bg-emerald-500 text-white" 
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                        }`}
+                      >
+                        {copied === 'library' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copied === 'library' ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </button>
+              
+              {/* For Sale View Option */}
+              <button
+                onClick={() => setSelectedMode(selectedMode === 'forsale' ? null : 'forsale')}
+                disabled={sellItemsCount === 0}
+                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                  selectedMode === 'forsale'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : sellItemsCount > 0
+                      ? 'border-stone-200 hover:border-stone-300 bg-white'
+                      : 'border-stone-100 bg-stone-50 opacity-60 cursor-not-allowed'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    selectedMode === 'forsale' ? 'bg-emerald-100' : 'bg-stone-100'
+                  }`}>
+                    <Tag className={`w-5 h-5 ${selectedMode === 'forsale' ? 'text-emerald-600' : 'text-stone-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-stone-900">For Sale View</p>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      {sellItemsCount} items marked Sell · Listing info only
+                    </p>
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      For: buyers, dealers, consignment shops
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Expanded Link Copy */}
+                {selectedMode === 'forsale' && sellItemsCount > 0 && (
+                  <div className="mt-3 pt-3 border-t border-emerald-200">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={getShareUrl('forsale')}
+                        className="flex-1 p-2.5 bg-white border border-emerald-200 rounded-lg text-xs text-stone-600 font-mono truncate"
+                      />
+                      <button
+                        onClick={() => handleCopy('forsale')}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all ${
+                          copied === 'forsale'
+                            ? "bg-emerald-500 text-white" 
+                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
+                      >
+                        {copied === 'forsale' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copied === 'forsale' ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-emerald-700 mt-2 flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      Buyers can message you directly
+                    </p>
+                  </div>
+                )}
               </button>
             </div>
             
-            {/* Filter Selection */}
-            <div>
-              <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 block">
-                What to share
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "all", label: "Everything", icon: Grid },
-                  { value: "sell", label: "For Sale", icon: Tag },
-                  { value: "keep", label: "Keepers", icon: Lock },
-                  { value: "TBD", label: "Undecided", icon: HelpCircle },
-                ].map(({ value, label, icon: Icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSelectedFilter(value)}
-                    className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                      selectedFilter === value
-                        ? "border-rose-500 bg-rose-50 text-rose-700"
-                        : "border-stone-200 hover:border-stone-300 text-stone-600"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{label}</span>
-                    <span className="ml-auto text-xs opacity-60">{filterCounts[value]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Share Link */}
-            {shareData?.isActive && (
-              <div>
-                <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 block">
-                  Share Link
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={getShareUrl()}
-                    className="flex-1 p-3 bg-stone-100 rounded-xl text-sm text-stone-600 font-mono truncate"
-                  />
-                  <button
-                    onClick={handleCopy}
-                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${
-                      copied 
-                        ? "bg-emerald-500 text-white" 
-                        : "bg-stone-900 text-white hover:bg-stone-800"
-                    }`}
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-              </div>
-            )}
-            
             {/* Security Note */}
             <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
-              <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-800">
-                Anyone with this link can view the selected items. 
+                Anyone with these links can view the specified items. 
                 <button onClick={handleRegenerateToken} className="underline ml-1 hover:text-amber-900">
-                  Generate new link
+                  Generate new links
                 </button> to revoke access.
               </p>
             </div>
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// --- PROFILE PAGE ---
+const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Calculate stats
+  const totalItems = items.length;
+  const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
+  const totalHigh = items.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
+  const memberSince = user?.metadata?.creationTime 
+    ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : 'Unknown';
+    
+  const handleSaveName = async () => {
+    if (!displayName.trim() || displayName === user?.displayName) return;
+    setIsSaving(true);
+    try {
+      await updateProfile(user, { displayName: displayName.trim() });
+      // Update in shares doc too
+      const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
+      const shareDoc = await getDoc(shareDocRef);
+      if (shareDoc.exists()) {
+        await updateDoc(shareDocRef, { ownerName: displayName.trim() });
+      }
+      playSuccessFeedback();
+    } catch (err) {
+      console.error('Failed to update name:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#FDFBF7] overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-stone-100 z-10">
+        <div className="max-w-md mx-auto px-4 h-14 flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="p-2 -ml-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="font-bold text-stone-900">Profile</h1>
+        </div>
+      </div>
+      
+      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+        {/* Avatar */}
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center overflow-hidden mb-3">
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <UserCircle className="w-12 h-12 text-stone-400" />
+            )}
+          </div>
+          <p className="text-xs text-stone-400">Avatar from Google</p>
+        </div>
+        
+        {/* Account Section */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Account</h2>
+          
+          {/* Display Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-stone-600">Display Name</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="flex-1 px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Your name"
+              />
+              {displayName !== user?.displayName && (
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSaving}
+                  className="px-4 py-2.5 bg-stone-900 text-white text-xs font-bold rounded-xl hover:bg-stone-800 disabled:opacity-50 transition-colors"
+                >
+                  {isSaving ? <Loader className="w-4 h-4 animate-spin" /> : 'Save'}
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-stone-400">Appears on your shared collections</p>
+          </div>
+          
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-stone-600">Email</label>
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-stone-100 border border-stone-200 rounded-xl">
+              <span className="flex-1 text-sm text-stone-600">{user?.email}</span>
+              <Lock className="w-4 h-4 text-stone-400" />
+            </div>
+            <p className="text-[11px] text-stone-400">Cannot be changed</p>
+          </div>
+        </div>
+        
+        {/* Stats Section */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Stats</h2>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white border border-stone-100 rounded-xl p-4">
+              <p className="text-2xl font-bold text-stone-900">{totalItems}</p>
+              <p className="text-xs text-stone-500">Total Items</p>
+            </div>
+            <div className="bg-white border border-stone-100 rounded-xl p-4">
+              <p className="text-lg font-bold text-emerald-600">
+                ${totalLow.toLocaleString()} – ${totalHigh.toLocaleString()}
+              </p>
+              <p className="text-xs text-stone-500">Estimated Value</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-stone-100 rounded-xl">
+            <Calendar className="w-4 h-4 text-stone-400" />
+            <span className="text-sm text-stone-600">Member Since</span>
+            <span className="text-sm font-medium text-stone-900 ml-auto">{memberSince}</span>
+          </div>
+        </div>
+        
+        {/* Actions Section */}
+        <div className="space-y-3 pt-4 border-t border-stone-100">
+          <button
+            onClick={onLogout}
+            className="w-full px-4 py-3 bg-white border border-stone-200 text-stone-700 text-sm font-bold rounded-xl hover:bg-stone-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Log Out
+          </button>
+          
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="w-full px-4 py-3 bg-white border border-red-200 text-red-600 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Account
+          </button>
+        </div>
+      </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div 
+            className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-stone-900 text-center mb-2">Delete Your Account?</h3>
+            <p className="text-sm text-stone-600 text-center mb-6">
+              This permanently deletes your account and all <strong>{totalItems} items</strong>. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2.5 bg-stone-100 text-stone-700 text-sm font-bold rounded-xl hover:bg-stone-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onDeleteAccount}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors"
+              >
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -5043,6 +5415,17 @@ export default function App() {
   const singleInputRef = useRef(null);
   const bulkInputRef = useRef(null);
   
+  // Add menu dropdown state
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const addMenuRef = useRef(null);
+  
+  // Profile page state
+  const [showProfilePage, setShowProfilePage] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  
+  // Mobile bottom nav state
+  const [mobileExportOpen, setMobileExportOpen] = useState(false);
+  
   // Check for share link in URL
   const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const shareId = urlParams.get('share');
@@ -5051,7 +5434,8 @@ export default function App() {
   
   // If viewing a shared collection, show the public view
   if (shareId && shareToken) {
-    return <SharedCollectionView shareId={shareId} shareToken={shareToken} filterParam={shareFilter} />;
+    const shareMode = urlParams.get('mode') || 'library';
+    return <SharedCollectionView shareId={shareId} shareToken={shareToken} filterParam={shareFilter} viewMode={shareMode} />;
   }
 
   const handleQuickAnalyze = async (item) => {
@@ -6081,53 +6465,36 @@ export default function App() {
   if (!user) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32">
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32 md:pb-8">
       {/* --- Header --- */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-30 overflow-visible">
         {/* Row 1: Logo + Search + Actions */}
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          {/* Logo - visible on all sizes */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shadow-sm">
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
-            <h1 className="text-base font-serif font-bold text-stone-900 tracking-tight hidden lg:block">
-              {user.displayName?.split(' ')[0] || "My"}'s Vintage Wizard
+            <h1 className="text-sm md:text-base font-serif font-bold text-stone-900 tracking-tight">
+              <span className="hidden sm:inline">{user.displayName?.split(' ')[0] || "My"}'s </span>
+              <span className="inline sm:hidden">Vintage</span>
+              <span className="hidden sm:inline">Vintage Wizard</span>
             </h1>
           </div>
           
-          {/* Mobile Search Toggle */}
-          <button
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            className={`md:hidden p-2 rounded-lg transition-all ${
-              isMobileSearchOpen || searchQuery 
-                ? 'bg-rose-100 text-rose-600' 
-                : 'text-stone-500 hover:bg-stone-100'
-            }`}
-          >
-            <Search className="w-5 h-5" />
-            {searchQuery && !isMobileSearchOpen && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full" />
-            )}
-          </button>
-
-          {/* Search Bar - Hidden on mobile unless expanded */}
-          <div className={`${isMobileSearchOpen ? 'flex' : 'hidden'} md:flex flex-1 max-w-xs relative`}>
+          {/* Search Bar - Desktop only (mobile uses bottom nav) */}
+          <div className="hidden md:flex flex-1 max-w-xs relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
             <input
-              ref={mobileSearchRef}
               type="text"
               placeholder="Search items..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-200 transition-all placeholder:text-stone-400"
-              autoFocus={isMobileSearchOpen}
             />
-            {(searchQuery || isMobileSearchOpen) && (
+            {searchQuery && (
               <button 
-                onClick={() => { 
-                  setSearchQuery(""); 
-                  if (isMobileSearchOpen && !searchQuery) setIsMobileSearchOpen(false);
-                }}
+                onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1"
               >
                 <X className="w-3.5 h-3.5" />
@@ -6135,165 +6502,91 @@ export default function App() {
             )}
           </div>
           
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-             {/* Add Item (Single) - with Premium Tooltip */}
-             <div className="relative group/tooltip">
-            <button
-                    onClick={() => singleInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-stone-900 text-white hover:bg-stone-800 hover:shadow-md hover:scale-[1.02] shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-                 >
-                    <ImagePlus className="w-4 h-4" />
-                    <span className="hidden sm:inline">Add</span>
-            </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  Add single item (1-4 photos)
-                </div>
-              </div>
-
-             {/* Bulk Upload - with Premium Tooltip */}
-             <div className="relative group/tooltip">
-              <button
-                    onClick={() => bulkInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-white text-stone-700 hover:bg-stone-50 hover:shadow-md hover:scale-[1.02] border border-stone-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-                 >
-                    <Images className="w-4 h-4" />
-                    <span className="hidden sm:inline">Bulk</span>
-                </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  Bulk upload & organize photos
-                </div>
-             </div>
-
-             {/* Multi-Select Toggle - with Premium Tooltip */}
-             <div className="relative group/tooltip">
-                <button
-                    onClick={() => setIsSelectionMode(!isSelectionMode)}
-                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border hover:shadow-md hover:scale-[1.02] active:scale-95 ${
-                      isSelectionMode 
-                        ? "bg-violet-100 text-violet-700 border-violet-200 shadow-sm" 
-                        : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
-                    }`}
-                 >
-                    <ListChecks className={`w-4 h-4 ${isSelectionMode ? "stroke-[2.5]" : ""}`} />
-                </button>
-                {/* Tooltip */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  {isSelectionMode ? "Exit multi-select" : "Select multiple items"}
-                </div>
-             </div>
-
-             {/* Divider - desktop only */}
-             <div className="hidden md:block w-px h-6 bg-stone-200 mx-1" />
-
-             {/* Share & Export Dropdown - desktop only */}
-             <div className="hidden md:block relative" ref={exportMenuRef}>
-                <button
-                    onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                    disabled={items.length === 0}
-                    className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-1 ${
-                      isExportMenuOpen 
-                        ? 'bg-stone-100 text-stone-700' 
-                        : 'text-stone-500 hover:text-stone-700 hover:bg-stone-50'
-                    } disabled:opacity-40`}
-                >
-                    <Upload className="w-4 h-4" />
-                    <ChevronDown className={`w-3 h-3 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {/* Dropdown Menu */}
-                {isExportMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                      Share & Export
-                    </div>
-                    
-                    <button
-                      onClick={() => { setShowShareModal(true); setIsExportMenuOpen(false); }}
-                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
-                    >
-                      <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
-                        <Share2 className="w-3.5 h-3.5 text-rose-600" />
-                      </div>
-                      <div>
-                        <span className="block">Share Collection</span>
-                        <span className="text-[10px] text-stone-400">Create a public link</span>
-                      </div>
-                    </button>
-                    
-                    <div className="h-px bg-stone-100 my-1" />
-                    
-                    <button
-                      onClick={() => { handleExportCSV(); setIsExportMenuOpen(false); }}
-                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
-                    >
-                      <div className="w-7 h-7 rounded-md bg-emerald-50 group-hover/item:bg-emerald-100 flex items-center justify-center transition-colors">
-                        <Download className="w-3.5 h-3.5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <span className="block">Export CSV</span>
-                        <span className="text-[10px] text-stone-400">Download spreadsheet</span>
-                      </div>
-                    </button>
-                    
-                    <button
-                      onClick={() => { handleExportPDF(); setIsExportMenuOpen(false); }}
-                      disabled={isGeneratingPDF}
-                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item disabled:opacity-50"
-                    >
-                      <div className="w-7 h-7 rounded-md bg-blue-50 group-hover/item:bg-blue-100 flex items-center justify-center transition-colors">
-                        {isGeneratingPDF ? (
-                          <Loader className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                        ) : (
-                          <FileText className="w-3.5 h-3.5 text-blue-600" />
-                        )}
-                      </div>
-                      <div>
-                        <span className="block">Export PDF Report</span>
-                        <span className="text-[10px] text-stone-400">For insurance & records</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
-             </div>
-
-             {/* Profile Dropdown */}
-             <div className="relative group cursor-pointer ml-1 z-50">
-                <div className="transition-all duration-200 hover:scale-105 hover:shadow-md rounded-full">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="Profile"
-                      className="w-8 h-8 rounded-full border-2 border-stone-200 shadow-sm transition-all duration-200 group-hover:border-stone-400"
-                  />
-                ) : (
-                    <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center transition-all duration-200 group-hover:bg-stone-300">
-                    <UserCircle className="w-5 h-5 text-stone-400" />
-                  </div>
-                )}
-                </div>
-               {/* Dropdown Menu */}
-               <div className="absolute right-0 top-full pt-2 hidden group-hover:block z-[100]">
-                 <div className="w-52 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                   {/* User Info Header */}
-                   <div className="px-3 py-2.5 bg-gradient-to-r from-stone-50 to-stone-100 rounded-lg mb-1.5">
-                    <p className="text-sm font-bold text-stone-900 truncate">{user.displayName}</p>
-                    <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
-                      <Cloud className="w-2.5 h-2.5 text-emerald-500" /> Synced • {user.email}
-                    </p>
-                   </div>
-                   
-                   {/* Menu Items */}
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-1.5 sm:gap-2 shrink-0">
+             {/* Add Dropdown */}
+             <div className="relative" ref={addMenuRef}>
+               <button
+                 onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+                 disabled={isUploading}
+                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-stone-900 text-white hover:bg-stone-800 hover:shadow-md hover:scale-[1.02] shadow-sm active:scale-95 disabled:opacity-50"
+               >
+                 <Plus className="w-4 h-4" />
+                 <span>Add</span>
+                 <ChevronDown className={`w-3 h-3 transition-transform ${isAddMenuOpen ? 'rotate-180' : ''}`} />
+               </button>
+               
+               {isAddMenuOpen && (
+                 <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
                    <button
-                     onClick={() => setShowShareModal(true)}
-                     disabled={items.length === 0}
-                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
+                     onClick={() => { singleInputRef.current?.click(); setIsAddMenuOpen(false); }}
+                     className="w-full text-left px-3 py-3 text-xs hover:bg-stone-50 rounded-lg flex items-start gap-3 transition-all duration-150 group/item"
+                   >
+                     <div className="w-9 h-9 rounded-lg bg-rose-100 group-hover/item:bg-rose-200 flex items-center justify-center transition-colors shrink-0">
+                       <Camera className="w-4 h-4 text-rose-600" />
+                     </div>
+                     <div>
+                       <span className="block font-bold text-stone-800">One Item</span>
+                       <span className="text-[11px] text-stone-500">Multiple angles, up to 4 photos</span>
+                     </div>
+                   </button>
+                   <button
+                     onClick={() => { bulkInputRef.current?.click(); setIsAddMenuOpen(false); }}
+                     className="w-full text-left px-3 py-3 text-xs hover:bg-stone-50 rounded-lg flex items-start gap-3 transition-all duration-150 group/item"
+                   >
+                     <div className="w-9 h-9 rounded-lg bg-violet-100 group-hover/item:bg-violet-200 flex items-center justify-center transition-colors shrink-0">
+                       <Images className="w-4 h-4 text-violet-600" />
+                     </div>
+                     <div>
+                       <span className="block font-bold text-stone-800">Multiple Items</span>
+                       <span className="text-[11px] text-stone-500">Up to 10 items, 4 photos each</span>
+                     </div>
+                   </button>
+                 </div>
+               )}
+             </div>
+
+             {/* Select Button */}
+             <button
+               onClick={() => setIsSelectionMode(!isSelectionMode)}
+               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border hover:shadow-md hover:scale-[1.02] active:scale-95 ${
+                 isSelectionMode 
+                   ? "bg-violet-100 text-violet-700 border-violet-200 shadow-sm" 
+                   : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
+               }`}
+             >
+               <ListChecks className={`w-4 h-4 ${isSelectionMode ? "stroke-[2.5]" : ""}`} />
+               <span>Select</span>
+             </button>
+
+             {/* Divider */}
+             <div className="w-px h-6 bg-stone-200 mx-1" />
+
+             {/* Export Dropdown */}
+             <div className="relative" ref={exportMenuRef}>
+               <button
+                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                 disabled={items.length === 0}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border ${
+                   isExportMenuOpen 
+                     ? 'bg-stone-100 text-stone-700 border-stone-300' 
+                     : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                 } disabled:opacity-40`}
+               >
+                 <Upload className="w-4 h-4" />
+                 <span>Export</span>
+                 <ChevronDown className={`w-3 h-3 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
+               </button>
+                
+               {isExportMenuOpen && (
+                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                   <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                     Share & Export
+                   </div>
+                    
+                   <button
+                     onClick={() => { setShowShareModal(true); setIsExportMenuOpen(false); }}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
                      <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
                        <Share2 className="w-3.5 h-3.5 text-rose-600" />
@@ -6301,13 +6594,14 @@ export default function App() {
                      <div>
                        <span className="block">Share Collection</span>
                        <span className="text-[10px] text-stone-400">Create a public link</span>
-                </div>
-              </button>
-                   
+                     </div>
+                   </button>
+                    
+                   <div className="h-px bg-stone-100 my-1" />
+                    
                    <button
-                     onClick={handleExportCSV}
-                     disabled={items.length === 0}
-                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
+                     onClick={() => { handleExportCSV(); setIsExportMenuOpen(false); }}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
                      <div className="w-7 h-7 rounded-md bg-emerald-50 group-hover/item:bg-emerald-100 flex items-center justify-center transition-colors">
                        <Download className="w-3.5 h-3.5 text-emerald-600" />
@@ -6317,11 +6611,11 @@ export default function App() {
                        <span className="text-[10px] text-stone-400">Download spreadsheet</span>
                      </div>
                    </button>
-                   
+                    
                    <button
-                     onClick={handleExportPDF}
-                     disabled={items.length === 0 || isGeneratingPDF}
-                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 disabled:opacity-50 transition-all duration-150 group/item"
+                     onClick={() => { handleExportPDF(); setIsExportMenuOpen(false); }}
+                     disabled={isGeneratingPDF}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item disabled:opacity-50"
                    >
                      <div className="w-7 h-7 rounded-md bg-blue-50 group-hover/item:bg-blue-100 flex items-center justify-center transition-colors">
                        {isGeneratingPDF ? (
@@ -6335,6 +6629,47 @@ export default function App() {
                        <span className="text-[10px] text-stone-400">For insurance & records</span>
                      </div>
                    </button>
+                 </div>
+               )}
+             </div>
+
+             {/* Profile Avatar - Desktop */}
+             <div className="relative group cursor-pointer ml-1 z-50">
+               <div 
+                 onClick={() => setShowProfilePage(true)}
+                 className="transition-all duration-200 hover:scale-105 hover:shadow-md rounded-full"
+               >
+                 {user.photoURL ? (
+                   <img
+                     src={user.photoURL}
+                     alt="Profile"
+                     className="w-8 h-8 rounded-full border-2 border-stone-200 shadow-sm transition-all duration-200 group-hover:border-stone-400"
+                   />
+                 ) : (
+                   <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center transition-all duration-200 group-hover:bg-stone-300">
+                     <UserCircle className="w-5 h-5 text-stone-400" />
+                   </div>
+                 )}
+               </div>
+               {/* Dropdown Menu */}
+               <div className="absolute right-0 top-full pt-2 hidden group-hover:block z-[100]">
+                 <div className="w-52 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                   <div className="px-3 py-2.5 bg-gradient-to-r from-stone-50 to-stone-100 rounded-lg mb-1.5">
+                     <p className="text-sm font-bold text-stone-900 truncate">{user.displayName}</p>
+                     <p className="text-[10px] text-stone-500 truncate flex items-center gap-1 mt-0.5">
+                       <Cloud className="w-2.5 h-2.5 text-emerald-500" /> Synced • {user.email}
+                     </p>
+                   </div>
+                   
+                   <button
+                     onClick={() => setShowProfilePage(true)}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
+                   >
+                     <div className="w-7 h-7 rounded-md bg-stone-100 group-hover/item:bg-stone-200 flex items-center justify-center transition-colors">
+                       <User className="w-3.5 h-3.5 text-stone-600" />
+                     </div>
+                     <span>Profile & Settings</span>
+                   </button>
                    
                    <div className="h-px bg-stone-100 my-1" />
                    
@@ -6347,9 +6682,22 @@ export default function App() {
                      </div>
                      <span>Sign Out</span>
                    </button>
-          </div>
-        </div>
+                 </div>
+               </div>
              </div>
+          </div>
+          
+          {/* Mobile: Just show Select button if in selection mode */}
+          <div className="flex md:hidden items-center gap-2">
+            {isSelectionMode && (
+              <button
+                onClick={() => setIsSelectionMode(false)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 border border-violet-200"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Cancel</span>
+              </button>
+            )}
           </div>
         </div>
         
@@ -6788,6 +7136,256 @@ export default function App() {
             </p>
           </div>
         </div>
+      )}
+      
+      {/* === MOBILE BOTTOM NAVIGATION === */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-40 safe-area-pb">
+        <div className="flex items-center justify-around h-16 px-2">
+          {/* Search */}
+          <button
+            onClick={() => setIsMobileSearchOpen(true)}
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all ${
+              isMobileSearchOpen ? 'text-rose-600 bg-rose-50' : 'text-stone-500'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Search</span>
+          </button>
+          
+          {/* Add */}
+          <button
+            onClick={() => setIsAddMenuOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+          >
+            <div className="w-10 h-10 -mt-5 bg-stone-900 rounded-full flex items-center justify-center shadow-lg">
+              <Plus className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-[10px] font-medium mt-0.5">Add</span>
+          </button>
+          
+          {/* Profile */}
+          <button
+            onClick={() => setShowProfilePage(true)}
+            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Profile</span>
+          </button>
+          
+          {/* Export */}
+          <button
+            onClick={() => setMobileExportOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-4 py-2 text-stone-500"
+          >
+            <Upload className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Export</span>
+          </button>
+        </div>
+      </nav>
+      
+      {/* Mobile Search Modal */}
+      {isMobileSearchOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom duration-200">
+          <div className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="p-2 -ml-2 text-stone-600"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <input
+                  ref={mobileSearchRef}
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {searchQuery && (
+              <div className="space-y-2">
+                <p className="text-xs text-stone-500">{filteredItems.length} results</p>
+                {filteredItems.slice(0, 10).map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setSelectedItem(item); setIsMobileSearchOpen(false); }}
+                    className="w-full flex items-center gap-3 p-3 bg-stone-50 rounded-xl text-left hover:bg-stone-100 transition-colors"
+                  >
+                    {item.images?.[0] ? (
+                      <img src={item.images[0]} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-stone-200 flex items-center justify-center">
+                        <Camera className="w-5 h-5 text-stone-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-stone-900 truncate">{item.title || 'Untitled'}</p>
+                      <p className="text-xs text-stone-500">{item.category}</p>
+                    </div>
+                    {item.valuation_high > 0 && (
+                      <span className="text-sm font-bold text-emerald-600">${item.valuation_low}-${item.valuation_high}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Add Modal */}
+      {isAddMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsAddMenuOpen(false)}>
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-200 safe-area-pb"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-6" />
+            <h3 className="text-lg font-bold text-stone-900 mb-4">Add Items</h3>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => { singleInputRef.current?.click(); setIsAddMenuOpen(false); }}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-rose-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">One Item</p>
+                  <p className="text-xs text-stone-500">Multiple angles, up to 4 photos</p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => { bulkInputRef.current?.click(); setIsAddMenuOpen(false); }}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+                  <Images className="w-6 h-6 text-violet-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">Multiple Items</p>
+                  <p className="text-xs text-stone-500">Up to 10 items, 4 photos each</p>
+                </div>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setIsAddMenuOpen(false)}
+              className="w-full mt-4 py-3 text-stone-500 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Export Modal */}
+      {mobileExportOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMobileExportOpen(false)}>
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-200 safe-area-pb"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-6" />
+            <h3 className="text-lg font-bold text-stone-900 mb-4">Share & Export</h3>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => { setShowShareModal(true); setMobileExportOpen(false); }}
+                disabled={items.length === 0}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <Share2 className="w-5 h-5 text-rose-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">Share Collection</p>
+                  <p className="text-xs text-stone-500">Create a public link</p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => { handleExportCSV(); setMobileExportOpen(false); }}
+                disabled={items.length === 0}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <Download className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">Export CSV</p>
+                  <p className="text-xs text-stone-500">Download spreadsheet</p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => { handleExportPDF(); setMobileExportOpen(false); }}
+                disabled={items.length === 0 || isGeneratingPDF}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  {isGeneratingPDF ? (
+                    <Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">Export PDF Report</p>
+                  <p className="text-xs text-stone-500">For insurance & records</p>
+                </div>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setMobileExportOpen(false)}
+              className="w-full mt-4 py-3 text-stone-500 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Profile Page */}
+      {showProfilePage && (
+        <ProfilePage
+          user={user}
+          items={items}
+          onClose={() => setShowProfilePage(false)}
+          onLogout={() => signOut(auth)}
+          onDeleteAccount={async () => {
+            // Delete all user data first
+            try {
+              const itemsRef = collection(db, "artifacts", appId, "users", user.uid, "inventory");
+              const itemsSnap = await getDocs(itemsRef);
+              for (const itemDoc of itemsSnap.docs) {
+                await deleteDoc(itemDoc.ref);
+              }
+              // Delete user auth
+              await user.delete();
+            } catch (err) {
+              console.error("Failed to delete account:", err);
+              alert("Failed to delete account. Please try again.");
+            }
+          }}
+        />
       )}
     </div>
   );
