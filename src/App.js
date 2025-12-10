@@ -1679,20 +1679,39 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Enhanced Skeleton with shimmer effect
-const SkeletonCard = () => (
-  <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full">
-    <div className="aspect-square bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite]" />
-    <div className="p-3 flex-1 flex flex-col gap-2">
-      <div className="h-4 bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-3/4" />
-      <div className="h-3 bg-gradient-to-r from-stone-50 via-stone-150 to-stone-50 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-1/2" />
-      <div className="mt-auto pt-2 flex justify-between items-center border-t border-stone-50">
-        <div className="h-3 bg-stone-100 rounded w-1/3" />
-        <div className="h-3 bg-stone-100 rounded w-1/4" />
+// Enhanced Skeleton with shimmer effect and loading indicator
+const SkeletonCard = ({ showMessage = false, messageIndex = 0 }) => {
+  const loadingHints = [
+    "Loading treasures...",
+    "Fetching your items...",
+    "Almost there...",
+    "Gathering inventory...",
+    "Unpacking goodies...",
+  ];
+  
+  return (
+    <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full">
+      <div className="aspect-square bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] relative">
+        {showMessage && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-stone-300 border-t-rose-400 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-[10px] text-stone-400 font-medium">{loadingHints[messageIndex % loadingHints.length]}</p>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="p-3 flex-1 flex flex-col gap-2">
+        <div className="h-4 bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-3/4" />
+        <div className="h-3 bg-gradient-to-r from-stone-50 via-stone-150 to-stone-50 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] rounded w-1/2" />
+        <div className="mt-auto pt-2 flex justify-between items-center border-t border-stone-50">
+          <div className="h-3 bg-stone-100 rounded w-1/3" />
+          <div className="h-3 bg-stone-100 rounded w-1/4" />
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Global Loading Overlay Component with fun rotating messages
 const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
@@ -2030,10 +2049,10 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
 
 
         {item.valuation_high > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8 pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-white font-extrabold text-lg drop-shadow-md">
+                <p className="text-white font-bold text-sm drop-shadow-md">
                   ${item.valuation_low} - ${item.valuation_high}
                 </p>
                 {/* Confidence Indicator */}
@@ -6442,9 +6461,9 @@ export default function App() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {dataLoading ? (
-             // Skeleton Loading Grid
+             // Skeleton Loading Grid with message on first card
              Array.from({ length: 10 }).map((_, i) => (
-                <SkeletonCard key={i} />
+                <SkeletonCard key={i} showMessage={i === 0} messageIndex={i} />
              ))
           ) : (
              filteredItems.map((item) => (
