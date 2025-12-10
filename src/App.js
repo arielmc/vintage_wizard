@@ -4493,57 +4493,29 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-12">
-      {/* Header */}
+      {/* Header - Matching private mobile view style */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-20">
+        {/* Row 1: Title + Search */}
         <div className="max-w-6xl mx-auto px-4 py-3">
-          {/* Row 1: Title across full width */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-rose-400" fill="currentColor" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-stone-900 rounded-lg flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-serif font-bold text-stone-900 truncate">{ownerName}'s Collection</h1>
-              <p className="text-xs text-stone-500 flex items-center gap-1">
-                <Globe className="w-3 h-3" /> Shared • {items.length} items
+              <h1 className="text-sm font-serif font-bold text-stone-900 truncate">{ownerName}'s Collection</h1>
+              <p className="text-[10px] text-stone-500 flex items-center gap-1">
+                <Globe className="w-2.5 h-2.5" /> Shared • {items.length} items
               </p>
             </div>
-          </div>
-          
-          {/* Row 2: Search & Sort */}
-          <div className="flex items-center gap-2">
-            {/* Search Bar */}
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-8 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none transition-all placeholder:text-stone-400"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            {/* Search Icon */}
+            <div className="relative">
+              <button 
+                onClick={() => document.getElementById('shared-search')?.focus()}
+                className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+              >
+                <Search className="w-4 h-4" />
+              </button>
             </div>
-            
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="text-xs bg-stone-100 border border-transparent focus:border-stone-300 rounded-lg px-3 py-2 focus:outline-none cursor-pointer hover:bg-stone-200 transition-colors"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="value_high">High $</option>
-              <option value="value_low">Low $</option>
-              <option value="alpha">A-Z</option>
-            </select>
-            
             {/* Create Your Own Link */}
             <a 
               href="/"
@@ -4554,54 +4526,89 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           </div>
         </div>
         
-        {/* Filter Tabs - Only show if not filtered by URL param */}
+        {/* Row 2: Filter Tabs + Value/Sort - Same style as private mobile */}
         {!filterParam && (
-          <div className="px-4 py-2 border-t border-stone-50 bg-stone-50/50 overflow-x-auto">
-            <div className="max-w-6xl mx-auto flex gap-2">
-              {[
-                { value: "all", label: "All", icon: Grid },
-                { value: "keep", label: "Keep", icon: Lock },
-                { value: "sell", label: "Sell", icon: Tag },
-                { value: "TBD", label: "TBD", icon: HelpCircle },
-              ].map(({ value: f, label: displayName, icon: Icon }) => {
-                const stats = filterStats[f];
-                const isActive = filter === f;
-                
-                return (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={`flex-shrink-0 transition-all duration-200 ${
-                      isActive
-                        ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
-                        : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white"
-                    }`}
-                  >
-                    {isActive ? (
-                      <div className="flex flex-col items-start">
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-3 h-3 text-stone-600" />
-                          <span className="text-xs font-bold text-stone-800">{displayName}</span>
-                          <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
-                        </div>
-                        {stats.high > 0 && (
-                          <span className="text-sm font-bold text-emerald-600 mt-0.5">
-                            ${stats.low.toLocaleString()} - ${stats.high.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
-                        <Icon className="w-3 h-3" />
-                        {displayName} <span className="opacity-60">{stats.count}</span>
+          <div className="border-t border-stone-50 bg-stone-50/50">
+            <div className="max-w-6xl mx-auto px-4 py-2">
+              {/* Filter Tabs - Tab style with underline */}
+              <div className="flex items-center border-b border-stone-200 -mx-1">
+                {[
+                  { value: "all", label: "All" },
+                  { value: "keep", label: "Keep" },
+                  { value: "sell", label: "Sell" },
+                  { value: "TBD", label: "TBD" },
+                ].map(({ value: f, label: displayName }) => {
+                  const stats = filterStats[f];
+                  const isActive = filter === f;
+                  
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 -mb-px transition-all ${
+                        isActive
+                          ? "border-stone-800 text-stone-900"
+                          : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300"
+                      }`}
+                    >
+                      {displayName}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-stone-200 text-stone-700' : 'bg-stone-100 text-stone-400'}`}>
+                        {stats.count}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Value + Sort Row */}
+              <div className="flex items-center justify-between pt-2">
+                {/* Value on left */}
+                {filterStats[filter].high > 0 && (
+                  <span className="text-sm font-bold text-emerald-600">
+                    ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
+                  </span>
+                )}
+                {!filterStats[filter].high && <span />}
+                
+                {/* Sort on right */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="text-xs text-stone-500 bg-transparent border-none focus:outline-none cursor-pointer hover:text-stone-700"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="value_high">High $</option>
+                  <option value="value_low">Low $</option>
+                  <option value="alpha">A-Z</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
+        
+        {/* Search Bar - Expandable */}
+        <div className="px-4 pb-2 max-w-6xl mx-auto">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
+            <input
+              id="shared-search"
+              type="text"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-8 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none transition-all placeholder:text-stone-400"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* Grid */}
