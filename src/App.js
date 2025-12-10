@@ -5341,7 +5341,7 @@ export default function App() {
     setContextMenu({ item, position });
   };
 
-  // Helper: Load image as base64 for PDF
+  // Helper: Load image as base64 for PDF (preserves aspect ratio)
   const loadImageForPDF = (url) => {
     return new Promise((resolve) => {
       if (!url) { resolve(null); return; }
@@ -5350,24 +5350,52 @@ export default function App() {
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
-          const maxSize = 200;
+          const maxSize = 300;
           let width = img.width;
           let height = img.height;
-          if (width > height) {
-            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-          } else {
-            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+          // Scale down while preserving aspect ratio
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
           }
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
+          // Return both data URL and dimensions for aspect ratio
+          resolve({
+            dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+            width: img.width,
+            height: img.height
+          });
         } catch (e) { resolve(null); }
       };
       img.onerror = () => resolve(null);
       img.src = url;
     });
+  };
+
+  // Helper: Calculate image dimensions preserving aspect ratio
+  const fitImageToBox = (imgWidth, imgHeight, boxWidth, boxHeight) => {
+    const imgRatio = imgWidth / imgHeight;
+    const boxRatio = boxWidth / boxHeight;
+    
+    let finalWidth, finalHeight;
+    if (imgRatio > boxRatio) {
+      // Image is wider - fit to width
+      finalWidth = boxWidth;
+      finalHeight = boxWidth / imgRatio;
+    } else {
+      // Image is taller - fit to height
+      finalHeight = boxHeight;
+      finalWidth = boxHeight * imgRatio;
+    }
+    return { width: finalWidth, height: finalHeight };
   };
 
   // Helper: Wrap text to fit width
@@ -5404,91 +5432,160 @@ export default function App() {
       const contentWidth = pageWidth - margin * 2;
       
       // === COVER PAGE ===
-      // Background gradient effect (using rectangles)
-      pdf.setFillColor(28, 25, 23); // stone-900
-      pdf.rect(0, 0, pageWidth, 80, 'F');
+      // Light header bar (ink-friendly)
+      pdf.setFillColor(245, 245, 244); // stone-100
+      pdf.rect(0, 0, pageWidth, 55, 'F');
+      pdf.setDrawColor(214, 211, 209); // stone-300
+      pdf.line(0, 55, pageWidth, 55);
       
       // Title
       pdf.setFontSize(28);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("Vintage Collection", margin, 35);
+      pdf.setTextColor(28, 25, 23); // stone-900
+      pdf.text("Vintage Collection", margin, 28);
       pdf.setFontSize(14);
-      pdf.setTextColor(168, 162, 158);
-      pdf.text("Inventory & Valuation Report", margin, 45);
+      pdf.setTextColor(120, 113, 108); // stone-500
+      pdf.text("Inventory & Valuation Report", margin, 40);
       
       // Owner info
       pdf.setFontSize(10);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 60);
+      pdf.setTextColor(87, 83, 78); // stone-600
+      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 50);
       pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-      })}`, margin, 67);
+      })}`, pageWidth - margin, 50, { align: 'right' });
       
       // Summary stats
       const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
       const totalHigh = items.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
-      const sellItems = items.filter(i => i.status === 'sell').length;
-      const keepItems = items.filter(i => i.status === 'keep').length;
-      const tbdItems = items.length - sellItems - keepItems;
+      const sellItems = items.filter(i => i.status === 'sell');
+      const keepItems = items.filter(i => i.status === 'keep');
+      const tbdItems = items.filter(i => i.status !== 'sell' && i.status !== 'keep');
       
-      let yPos = 95;
+      let yPos = 65;
       
       // Stats cards
-      pdf.setFillColor(250, 250, 249);
-      pdf.roundedRect(margin, yPos, contentWidth, 45, 3, 3, 'F');
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text("TOTAL ITEMS", margin + 10, yPos + 12);
-      pdf.setFontSize(24);
-      pdf.setTextColor(28, 25, 23);
-      pdf.text(`${items.length}`, margin + 10, yPos + 28);
-      
-      pdf.setFontSize(10);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text("ESTIMATED VALUE RANGE", margin + 60, yPos + 12);
-      pdf.setFontSize(18);
-      pdf.setTextColor(180, 83, 9); // amber
-      pdf.text(`$${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, margin + 60, yPos + 28);
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(214, 211, 209);
+      pdf.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'FD');
       
       pdf.setFontSize(9);
       pdf.setTextColor(120, 113, 108);
-      pdf.text(`Keep: ${keepItems}  •  Sell: ${sellItems}  •  Undecided: ${tbdItems}`, margin + 10, yPos + 40);
-      
-      yPos += 55;
-      
-      // Category breakdown
-      const categories = {};
-      items.forEach(item => {
-        const cat = item.category || 'Other';
-        if (!categories[cat]) categories[cat] = { count: 0, low: 0, high: 0 };
-        categories[cat].count++;
-        categories[cat].low += Number(item.valuation_low) || 0;
-        categories[cat].high += Number(item.valuation_high) || 0;
-      });
-      
-      pdf.setFontSize(11);
+      pdf.text("TOTAL ITEMS", margin + 8, yPos + 10);
+      pdf.setFontSize(20);
       pdf.setTextColor(28, 25, 23);
-      pdf.text("Category Breakdown", margin, yPos + 8);
-      yPos += 14;
+      pdf.text(`${items.length}`, margin + 8, yPos + 24);
       
-      Object.entries(categories).sort((a, b) => b[1].count - a[1].count).forEach(([cat, data]) => {
-        if (yPos > pageHeight - 30) return;
-        pdf.setFontSize(9);
-        pdf.setTextColor(87, 83, 78);
-        pdf.text(`${cat}`, margin + 5, yPos);
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 113, 108);
+      pdf.text("ESTIMATED VALUE RANGE", margin + 50, yPos + 10);
+      pdf.setFontSize(16);
+      pdf.setTextColor(180, 83, 9); // amber
+      pdf.text(`$${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, margin + 50, yPos + 24);
+      
+      pdf.setFontSize(9);
+      pdf.setTextColor(120, 113, 108);
+      pdf.text("STATUS", pageWidth - margin - 50, yPos + 10);
+      pdf.setFontSize(10);
+      pdf.setTextColor(28, 25, 23);
+      pdf.text(`Keep: ${keepItems.length}  •  Sell: ${sellItems.length}  •  TBD: ${tbdItems.length}`, pageWidth - margin - 50, yPos + 20);
+      
+      yPos += 45;
+      
+      // === SUMMARY TABLES BY STATUS ===
+      const renderStatusTable = async (statusItems, statusName, statusColor, bgColor) => {
+        if (statusItems.length === 0) return;
+        
+        // Check if we need new page
+        if (yPos > pageHeight - 60) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        
+        // Section header
+        pdf.setFillColor(...bgColor);
+        pdf.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F');
+        pdf.setFontSize(10);
+        pdf.setTextColor(...statusColor);
+        pdf.text(`${statusName.toUpperCase()} (${statusItems.length} items)`, margin + 4, yPos + 7);
+        
+        const statusLow = statusItems.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
+        const statusHigh = statusItems.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
+        pdf.text(`$${statusLow.toLocaleString()} - $${statusHigh.toLocaleString()}`, pageWidth - margin - 4, yPos + 7, { align: 'right' });
+        
+        yPos += 14;
+        
+        // Table header
+        pdf.setFontSize(7);
         pdf.setTextColor(120, 113, 108);
-        pdf.text(`${data.count} items  •  $${data.low.toLocaleString()} - $${data.high.toLocaleString()}`, margin + 55, yPos);
-        yPos += 6;
-      });
+        pdf.text("PHOTO", margin + 2, yPos);
+        pdf.text("ITEM", margin + 22, yPos);
+        pdf.text("VALUE", pageWidth - margin - 2, yPos, { align: 'right' });
+        yPos += 3;
+        
+        // Table rows
+        for (const item of statusItems) {
+          if (yPos > pageHeight - 25) {
+            pdf.addPage();
+            yPos = margin;
+          }
+          
+          const rowHeight = 18;
+          
+          // Row background (alternating)
+          pdf.setFillColor(252, 252, 251);
+          pdf.rect(margin, yPos, contentWidth, rowHeight, 'F');
+          pdf.setDrawColor(240, 240, 240);
+          pdf.line(margin, yPos + rowHeight, pageWidth - margin, yPos + rowHeight);
+          
+          // Hero image thumbnail
+          const heroUrl = item.images?.[0] || item.image;
+          if (heroUrl) {
+            try {
+              const imgData = await loadImageForPDF(heroUrl);
+              if (imgData) {
+                const dims = fitImageToBox(imgData.width, imgData.height, 14, 14);
+                const imgX = margin + 2 + (14 - dims.width) / 2;
+                const imgY = yPos + 2 + (14 - dims.height) / 2;
+                pdf.addImage(imgData.dataUrl, 'JPEG', imgX, imgY, dims.width, dims.height, undefined, 'FAST');
+              }
+            } catch (e) {}
+          }
+          
+          // Title (truncated)
+          pdf.setFontSize(9);
+          pdf.setTextColor(28, 25, 23);
+          const title = getDisplayTitle(item).substring(0, 50) + (getDisplayTitle(item).length > 50 ? '...' : '');
+          pdf.text(title, margin + 22, yPos + 8);
+          
+          // Category
+          pdf.setFontSize(7);
+          pdf.setTextColor(120, 113, 108);
+          pdf.text(item.category || 'Other', margin + 22, yPos + 14);
+          
+          // Value
+          if (item.valuation_high > 0) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(21, 128, 61);
+            pdf.text(`$${item.valuation_low || 0} - $${item.valuation_high}`, pageWidth - margin - 2, yPos + 10, { align: 'right' });
+          }
+          
+          yPos += rowHeight;
+        }
+        
+        yPos += 8;
+      };
       
-      // Footer
+      // Render status tables
+      await renderStatusTable(sellItems, 'Sell', [180, 83, 9], [255, 251, 235]); // amber
+      await renderStatusTable(keepItems, 'Keep', [22, 163, 74], [236, 253, 245]); // green
+      await renderStatusTable(tbdItems, 'Undecided / TBD', [59, 130, 246], [239, 246, 255]); // blue
+      
+      // Footer on summary page
       pdf.setFontSize(8);
       pdf.setTextColor(168, 162, 158);
-      pdf.text("This report is for insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 15, { align: 'center' });
-      pdf.text("Generated by Vintage Wizard", pageWidth / 2, pageHeight - 10, { align: 'center' });
+      pdf.text("This report is for insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 10, { align: 'center' });
       
-      // === ITEM PAGES ===
+      // === ITEM DETAIL PAGES ===
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
@@ -5499,98 +5596,110 @@ export default function App() {
         );
         const validImages = loadedImages.filter(Boolean);
         
-        // New page for each item (or every 2 items for compact mode)
+        // New page for each item
         pdf.addPage();
         yPos = margin;
         
-        // Item header bar
-        pdf.setFillColor(28, 25, 23);
-        pdf.rect(0, 0, pageWidth, 20, 'F');
+        // Light header bar (ink-friendly)
+        pdf.setFillColor(250, 250, 249); // stone-50
+        pdf.rect(0, 0, pageWidth, 16, 'F');
+        pdf.setDrawColor(229, 229, 229);
+        pdf.line(0, 16, pageWidth, 16);
         
-        pdf.setFontSize(10);
-        pdf.setTextColor(168, 162, 158);
-        pdf.text(`Item ${i + 1} of ${items.length}`, margin, 13);
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 113, 108);
+        pdf.text(`Item ${i + 1} of ${items.length}`, margin, 11);
         
         // Status badge in header
         const statusColors = {
-          keep: [16, 185, 129],
-          sell: [245, 158, 11],
-          TBD: [59, 130, 246],
-          draft: [156, 163, 175],
+          keep: { fill: [236, 253, 245], text: [22, 163, 74] },
+          sell: { fill: [255, 251, 235], text: [180, 83, 9] },
+          TBD: { fill: [239, 246, 255], text: [59, 130, 246] },
+          draft: { fill: [250, 250, 249], text: [120, 113, 108] },
         };
-        const statusColor = statusColors[item.status] || statusColors.draft;
-        pdf.setFillColor(...statusColor);
-        pdf.roundedRect(pageWidth - margin - 22, 6, 18, 8, 2, 2, 'F');
+        const statusStyle = statusColors[item.status] || statusColors.draft;
+        pdf.setFillColor(...statusStyle.fill);
+        pdf.roundedRect(pageWidth - margin - 22, 4, 18, 8, 2, 2, 'F');
         pdf.setFontSize(7);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 13, 11.5, { align: 'center' });
+        pdf.setTextColor(...statusStyle.text);
+        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 13, 9.5, { align: 'center' });
         
-        yPos = 28;
+        yPos = 24;
         
-        // Images section (left side)
-        const imgSectionWidth = 70;
-        const imgSectionHeight = 70;
+        // Images section (left side) - PRESERVE ASPECT RATIO
+        const imgBoxWidth = 65;
+        const imgBoxHeight = 55;
         
         if (validImages.length > 0) {
-          // Hero image (large)
+          // Hero image (large) - preserve aspect ratio
           try {
-            pdf.addImage(validImages[0], 'JPEG', margin, yPos, imgSectionWidth, imgSectionHeight - (validImages.length > 1 ? 18 : 0), undefined, 'MEDIUM');
+            const heroImg = validImages[0];
+            const dims = fitImageToBox(heroImg.width, heroImg.height, imgBoxWidth, imgBoxHeight - (validImages.length > 1 ? 16 : 0));
+            const imgX = margin + (imgBoxWidth - dims.width) / 2;
+            const imgY = yPos + ((imgBoxHeight - (validImages.length > 1 ? 16 : 0)) - dims.height) / 2;
+            pdf.addImage(heroImg.dataUrl, 'JPEG', imgX, imgY, dims.width, dims.height, undefined, 'MEDIUM');
           } catch (e) {
             pdf.setFillColor(245, 245, 244);
-            pdf.rect(margin, yPos, imgSectionWidth, imgSectionHeight - 18, 'F');
+            pdf.rect(margin, yPos, imgBoxWidth, imgBoxHeight - 16, 'F');
           }
           
-          // Thumbnail strip (up to 3 more)
+          // Thumbnail strip (up to 3 more) - preserve aspect ratio
           if (validImages.length > 1) {
-            const thumbY = yPos + imgSectionHeight - 16;
-            const thumbSize = 16;
+            const thumbY = yPos + imgBoxHeight - 14;
+            const thumbSize = 13;
             const thumbGap = 2;
             for (let j = 1; j < Math.min(validImages.length, 4); j++) {
+              const thumb = validImages[j];
               const thumbX = margin + (j - 1) * (thumbSize + thumbGap);
               try {
-                pdf.addImage(validImages[j], 'JPEG', thumbX, thumbY, thumbSize, thumbSize, undefined, 'MEDIUM');
+                const tDims = fitImageToBox(thumb.width, thumb.height, thumbSize, thumbSize);
+                const tx = thumbX + (thumbSize - tDims.width) / 2;
+                const ty = thumbY + (thumbSize - tDims.height) / 2;
+                pdf.addImage(thumb.dataUrl, 'JPEG', tx, ty, tDims.width, tDims.height, undefined, 'FAST');
               } catch (e) {}
             }
           }
         } else {
-          pdf.setFillColor(245, 245, 244);
-          pdf.rect(margin, yPos, imgSectionWidth, imgSectionHeight, 'F');
+          pdf.setFillColor(250, 250, 249);
+          pdf.setDrawColor(229, 229, 229);
+          pdf.roundedRect(margin, yPos, imgBoxWidth, imgBoxHeight, 2, 2, 'FD');
           pdf.setFontSize(8);
           pdf.setTextColor(168, 162, 158);
-          pdf.text("No image", margin + imgSectionWidth / 2, yPos + imgSectionHeight / 2, { align: 'center' });
+          pdf.text("No image", margin + imgBoxWidth / 2, yPos + imgBoxHeight / 2, { align: 'center' });
         }
         
         // Details section (right side)
-        const detailsX = margin + imgSectionWidth + 8;
-        const detailsWidth = contentWidth - imgSectionWidth - 8;
+        const detailsX = margin + imgBoxWidth + 8;
+        const detailsWidth = contentWidth - imgBoxWidth - 8;
         let detailY = yPos;
         
         // Title
-        pdf.setFontSize(14);
+        pdf.setFontSize(13);
         pdf.setTextColor(28, 25, 23);
         const titleLines = wrapText(pdf, getDisplayTitle(item), detailsWidth);
         titleLines.slice(0, 2).forEach((line, idx) => {
-          pdf.text(line, detailsX, detailY + 5 + idx * 6);
+          pdf.text(line, detailsX, detailY + 5 + idx * 5);
         });
-        detailY += 5 + Math.min(titleLines.length, 2) * 6 + 4;
+        detailY += 5 + Math.min(titleLines.length, 2) * 5 + 3;
         
         // Category & Era
         pdf.setFontSize(9);
         pdf.setTextColor(120, 113, 108);
         const metaText = [item.category, item.era].filter(Boolean).join(' • ');
         pdf.text(metaText || 'Uncategorized', detailsX, detailY);
-        detailY += 8;
+        detailY += 7;
         
         // Valuation box
         if (item.valuation_high > 0) {
           pdf.setFillColor(236, 253, 245); // emerald-50
-          pdf.roundedRect(detailsX, detailY, detailsWidth, 18, 2, 2, 'F');
+          pdf.setDrawColor(167, 243, 208); // emerald-200
+          pdf.roundedRect(detailsX, detailY, detailsWidth, 22, 2, 2, 'FD');
           
           pdf.setFontSize(8);
           pdf.setTextColor(22, 163, 74);
           pdf.text("ESTIMATED VALUE", detailsX + 4, detailY + 5);
           
-          pdf.setFontSize(14);
+          pdf.setFontSize(13);
           pdf.setTextColor(21, 128, 61);
           pdf.text(`$${item.valuation_low || 0} — $${item.valuation_high}`, detailsX + 4, detailY + 14);
           
@@ -5600,14 +5709,14 @@ export default function App() {
             const color = confColors[item.confidence] || confColors.medium;
             pdf.setFontSize(7);
             pdf.setTextColor(...color);
-            pdf.text(`${item.confidence.toUpperCase()} CONFIDENCE`, detailsX + detailsWidth - 4, detailY + 6, { align: 'right' });
+            pdf.text(`${item.confidence.toUpperCase()} CONF.`, detailsX + detailsWidth - 4, detailY + 6, { align: 'right' });
           }
           
-          detailY += 22;
+          detailY += 26;
         }
         
         // Details grid below images
-        yPos = margin + imgSectionHeight + 10;
+        yPos = margin + imgBoxHeight + 8;
         
         // Details fields
         const fields = [
@@ -5619,16 +5728,16 @@ export default function App() {
         
         if (fields.length > 0 || item.condition) {
           pdf.setFillColor(250, 250, 249);
-          pdf.roundedRect(margin, yPos, contentWidth, 35 + (item.condition ? 15 : 0), 2, 2, 'F');
+          pdf.roundedRect(margin, yPos, contentWidth, 32 + (item.condition ? 12 : 0), 2, 2, 'F');
           
-          let fieldY = yPos + 8;
-          const colWidth = contentWidth / 2 - 10;
+          let fieldY = yPos + 6;
+          const colWidth = contentWidth / 2 - 8;
           
           fields.forEach((field, idx) => {
             const col = idx % 2;
             const row = Math.floor(idx / 2);
-            const fx = margin + 6 + col * (colWidth + 10);
-            const fy = fieldY + row * 14;
+            const fx = margin + 5 + col * (colWidth + 6);
+            const fy = fieldY + row * 12;
             
             pdf.setFontSize(7);
             pdf.setTextColor(120, 113, 108);
@@ -5637,62 +5746,81 @@ export default function App() {
             pdf.setFontSize(9);
             pdf.setTextColor(41, 37, 36);
             const valueLines = wrapText(pdf, field.value, colWidth);
-            pdf.text(valueLines[0] || '', fx, fy + 5);
+            pdf.text(valueLines[0] || '', fx, fy + 4);
           });
           
-          yPos += 35;
+          yPos += 32;
           
           // Condition (full width)
           if (item.condition) {
             pdf.setFontSize(7);
             pdf.setTextColor(120, 113, 108);
-            pdf.text("CONDITION", margin + 6, yPos);
+            pdf.text("CONDITION", margin + 5, yPos);
             
             pdf.setFontSize(9);
             pdf.setTextColor(41, 37, 36);
-            const condLines = wrapText(pdf, item.condition, contentWidth - 12);
+            const condLines = wrapText(pdf, item.condition, contentWidth - 10);
             condLines.slice(0, 2).forEach((line, idx) => {
-              pdf.text(line, margin + 6, yPos + 5 + idx * 4);
+              pdf.text(line, margin + 5, yPos + 4 + idx * 4);
             });
-            yPos += 15;
+            yPos += 12;
           }
           
-          yPos += 5;
+          yPos += 4;
+        }
+        
+        // Confidence Reason (NEW)
+        if (item.confidence_reason) {
+          yPos += 3;
+          pdf.setFontSize(7);
+          pdf.setTextColor(120, 113, 108);
+          pdf.text("CONFIDENCE REASONING", margin, yPos);
+          yPos += 4;
+          
+          pdf.setFontSize(8);
+          const confColors = { high: [22, 163, 74], medium: [180, 83, 9], low: [220, 38, 38] };
+          const confColor = confColors[item.confidence] || [87, 83, 78];
+          pdf.setTextColor(...confColor);
+          const reasonLines = wrapText(pdf, item.confidence_reason, contentWidth);
+          reasonLines.slice(0, 2).forEach((line, idx) => {
+            pdf.text(line, margin, yPos + idx * 3.5);
+          });
+          yPos += Math.min(reasonLines.length, 2) * 3.5 + 4;
         }
         
         // Sales blurb / reasoning
         if (item.sales_blurb || item.reasoning) {
-          yPos += 5;
+          yPos += 3;
           const blurbText = item.sales_blurb || item.reasoning;
           
-          pdf.setFontSize(8);
+          pdf.setFontSize(7);
           pdf.setTextColor(120, 113, 108);
           pdf.text("DESCRIPTION", margin, yPos);
-          yPos += 5;
+          yPos += 4;
           
           pdf.setFontSize(9);
           pdf.setTextColor(68, 64, 60);
           const blurbLines = wrapText(pdf, blurbText, contentWidth);
-          blurbLines.slice(0, 5).forEach((line, idx) => {
-            pdf.text(line, margin, yPos + idx * 4.5);
+          blurbLines.slice(0, 4).forEach((line, idx) => {
+            pdf.text(line, margin, yPos + idx * 4);
           });
-          yPos += Math.min(blurbLines.length, 5) * 4.5 + 5;
+          yPos += Math.min(blurbLines.length, 4) * 4 + 4;
         }
         
         // User notes
         if (item.userNotes) {
-          yPos += 3;
-          pdf.setFontSize(8);
+          yPos += 2;
+          pdf.setFontSize(7);
           pdf.setTextColor(120, 113, 108);
           pdf.text("OWNER NOTES", margin, yPos);
-          yPos += 5;
+          yPos += 4;
           
           pdf.setFontSize(9);
           pdf.setTextColor(68, 64, 60);
           pdf.setFont(undefined, 'italic');
           const noteLines = wrapText(pdf, item.userNotes, contentWidth);
           noteLines.slice(0, 3).forEach((line, idx) => {
-            pdf.text(line, margin, yPos + idx * 4.5);
+            pdf.text(line, margin, yPos + idx * 4);
           });
           pdf.setFont(undefined, 'normal');
         }
@@ -5700,7 +5828,7 @@ export default function App() {
         // Page footer
         pdf.setFontSize(7);
         pdf.setTextColor(168, 162, 158);
-        pdf.text(`Item ID: ${item.id?.substring(0, 8) || 'N/A'}`, margin, pageHeight - 8);
+        pdf.text(`ID: ${item.id?.substring(0, 8) || 'N/A'}`, margin, pageHeight - 8);
         pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       
