@@ -3564,12 +3564,20 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
   const handleAnalyze = async () => {
     if (formData.images.length === 0) return;
     setIsAnalyzing(true);
+    
+    // DEBUG: Log what we have
+    console.log("=== ANALYSIS DEBUG ===");
+    console.log("formData.images:", formData.images?.length, "items");
+    console.log("formData.images_base64:", formData.images_base64?.length, "items");
+    console.log("First image type:", formData.images?.[0]?.substring?.(0, 50) || typeof formData.images?.[0]);
+    console.log("First base64 type:", formData.images_base64?.[0]?.substring?.(0, 50) || "none");
+    
     try {
       let imagesToAnalyze;
       
       // Priority 1: Use stored base64 images (most reliable)
-      if (formData.images_base64?.length > 0) {
-        console.log("Using stored images_base64");
+      if (formData.images_base64?.length > 0 && formData.images_base64[0]?.startsWith?.('data:')) {
+        console.log("✅ Using stored images_base64");
         imagesToAnalyze = formData.images_base64;
       } 
       // Priority 2: Check if images are already base64 or blobs (from recent adds)
@@ -3579,25 +3587,30 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         const isBlob = firstImg instanceof Blob;
         const isBlobUrl = typeof firstImg === 'string' && firstImg.startsWith('blob:');
         
+        console.log("Image check - isBase64:", isBase64, "isBlob:", isBlob, "isBlobUrl:", isBlobUrl);
+        
         if (isBase64 || isBlob || isBlobUrl) {
-          console.log("Images are local (base64/blob) - converting if needed");
+          console.log("✅ Images are local (base64/blob) - using directly");
           imagesToAnalyze = formData.images;
         } else {
           // Images are Firebase URLs - CORS will block
-          console.error("Images are Firebase URLs without stored base64 - CORS will block");
-          alert("This item was uploaded before AI analysis was fixed. Please delete and re-upload the photos to enable AI analysis.");
+          console.error("❌ Images are Firebase URLs without stored base64");
+          console.error("First image URL:", firstImg?.substring?.(0, 100));
+          alert("This item needs photos re-added for AI analysis.\n\nPlease:\n1. Delete the photos using the X buttons\n2. Re-add them using the + button\n3. Then try AI analysis again");
           setIsAnalyzing(false);
           return;
         }
       }
       
-      console.log(`Analyzing item with ${imagesToAnalyze?.length || 0} images`);
+      console.log(`🔍 Analyzing with ${imagesToAnalyze?.length || 0} images`);
       
       const analysis = await analyzeImagesWithGemini(
         imagesToAnalyze,
         formData.userNotes || "",
         formData
       );
+      
+      console.log("✅ Analysis complete:", analysis?.title);
       
       // Also save base64 images if we generated them
       const base64ToStore = [];
@@ -3613,8 +3626,8 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         aiLastRun: new Date().toISOString(),
       }));
     } catch (err) {
-      console.error("Analysis failed:", err);
-      alert("Analysis failed. Please try deleting and re-adding the photos.");
+      console.error("❌ Analysis failed:", err);
+      alert("Analysis failed: " + err.message);
     } finally {
       setIsAnalyzing(false);
     }
@@ -5968,6 +5981,15 @@ export default function App() {
   const handleConfirmBulkUpload = async (stacks) => {
      // stacks is Array<{ id, files: File[] }>
      // Transform to format handleConfirmUpload expects: Array<File[]>
+     console.log("=== BULK UPLOAD START ===");
+     console.log("Stacks received:", stacks.length);
+     stacks.forEach((stack, i) => {
+       console.log(`Stack ${i}:`, stack.files.length, "files");
+       stack.files.forEach((f, j) => {
+         console.log(`  File ${j}:`, f?.name, f?.type, f?.size, "isFile:", f instanceof File);
+       });
+     });
+     
      const fileGroups = stacks.map(s => s.files);
      await handleConfirmUpload('bulk', 'process_batch', fileGroups);
      setView('dashboard');
@@ -6024,16 +6046,25 @@ export default function App() {
 
         // Step 3: ALWAYS generate base64 for AI analysis (first 4 images only)
         // This avoids CORS issues when analyzing later
+        console.log("=== UPLOAD: Generating base64 ===");
+        console.log("Files to convert:", groupFiles.length);
         const base64Images = [];
         const imagesToConvert = groupFiles.slice(0, 4); // AI only uses first 4
         for (const file of imagesToConvert) {
           try {
+            console.log("Converting file:", file?.name, file?.type, file?.size);
             const b64 = await compressImage(file, false); // false = return base64
-            base64Images.push(b64);
+            console.log("Base64 result:", b64?.substring?.(0, 50) || "FAILED");
+            if (b64 && typeof b64 === 'string' && b64.startsWith('data:')) {
+              base64Images.push(b64);
+            } else {
+              console.error("Invalid base64 result for file:", file?.name);
+            }
           } catch (err) {
             console.error("Failed to convert file to base64:", err);
           }
         }
+        console.log("Total base64 images generated:", base64Images.length);
 
         // Step 4: Run AI analysis if this is single upload with analyze_now
         let analysisResult = {};
