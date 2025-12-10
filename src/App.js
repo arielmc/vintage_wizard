@@ -93,6 +93,7 @@ import {
   Package,
   DollarSign,
   Gauge,
+  ListChecks,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -6098,22 +6099,22 @@ export default function App() {
                 </div>
              </div>
 
-             {/* Batch AI Analysis Toggle - with Premium Tooltip */}
+             {/* Multi-Select Toggle - with Premium Tooltip */}
              <div className="relative group/tooltip">
                 <button
                     onClick={() => setIsSelectionMode(!isSelectionMode)}
                     className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border hover:shadow-md hover:scale-[1.02] active:scale-95 ${
                       isSelectionMode 
-                        ? "bg-rose-100 text-rose-700 border-rose-200 shadow-sm" 
+                        ? "bg-violet-100 text-violet-700 border-violet-200 shadow-sm" 
                         : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
                     }`}
                  >
-                    <Wand2 className={`w-4 h-4 ${isSelectionMode ? "fill-current" : ""}`} />
+                    <ListChecks className={`w-4 h-4 ${isSelectionMode ? "stroke-[2.5]" : ""}`} />
                 </button>
                 {/* Tooltip */}
                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-stone-900 text-white text-[11px] font-medium rounded-lg shadow-xl whitespace-nowrap opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 delay-300 pointer-events-none z-50">
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-stone-900 rotate-45" />
-                  {isSelectionMode ? "Exit batch mode" : "Select items for batch analysis"}
+                  {isSelectionMode ? "Exit multi-select" : "Select multiple items"}
                 </div>
              </div>
 
@@ -6456,15 +6457,17 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- Batch Action Bar (Fixed Bottom) --- */}
+      {/* --- Batch Action Bar (Sticky Top - Below Header) --- */}
       {isSelectionMode && (
-         <div className="fixed bottom-4 md:bottom-8 left-2 right-2 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-2xl z-50 animate-in slide-in-from-bottom-10 fade-in duration-300">
-            <div className="bg-stone-900 text-white rounded-2xl shadow-2xl shadow-stone-900/50 p-3 sm:p-4 border border-stone-700/50 backdrop-blur-md">
-               {/* Top row: Selection info */}
-               <div className="flex items-center justify-between mb-3 pb-3 border-b border-stone-700/50">
+         <div className="sticky top-0 z-40 bg-gradient-to-b from-stone-100 to-transparent pb-4 pt-2 px-4 -mx-4 sm:-mx-6 lg:-mx-8 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="bg-white rounded-xl shadow-lg shadow-stone-200/50 border border-stone-200 overflow-hidden">
+               {/* Single row: All controls */}
+               <div className="flex items-center justify-between p-2.5 sm:p-3 gap-3">
+                  {/* Left: Selection count + Select All */}
                   <div className="flex items-center gap-2 sm:gap-3">
-                     <div className="bg-stone-700 px-2.5 py-1 rounded-lg text-xs font-bold shadow-inner">
-                        {selectedIds.size} selected
+                     <div className="flex items-center gap-2 bg-violet-50 px-2.5 py-1.5 rounded-lg border border-violet-100">
+                        <ListChecks className="w-3.5 h-3.5 text-violet-600" />
+                        <span className="text-xs font-bold text-violet-700">{selectedIds.size}</span>
                      </div>
                      <button 
                         onClick={() => {
@@ -6474,55 +6477,44 @@ export default function App() {
                             setSelectedIds(new Set(filteredItems.map(i => i.id)));
                           }
                         }}
-                        className="text-stone-400 hover:text-white text-xs font-medium transition-colors"
+                        className="text-stone-500 hover:text-stone-800 text-xs font-medium transition-colors hidden sm:block"
                      >
-                        {selectedIds.size === filteredItems.length ? "Deselect All" : "Select All"}
+                        {selectedIds.size === filteredItems.length ? "Deselect" : "All"}
                      </button>
                   </div>
-                  <button 
-                     onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
-                     className="text-stone-500 hover:text-white text-xs font-medium transition-colors flex items-center gap-1"
-                  >
-                     <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-               </div>
-               
-               {/* Bottom row: Actions */}
-               <div className="flex items-center justify-between gap-2">
-                  {/* Status buttons */}
-                  <div className="flex items-center gap-1.5">
+                  
+                  {/* Center: Mark as buttons with label */}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                     <span className="text-[10px] font-medium text-stone-400 uppercase tracking-wide hidden md:block">Mark:</span>
                      <button 
                         onClick={() => handleBatchStatusChange('keep')}
                         disabled={selectedIds.size === 0}
-                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 disabled:opacity-40"
+                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
-                        <span className="hidden sm:inline">Mark </span>Keep
+                        Keep
                      </button>
                      <button 
                         onClick={() => handleBatchStatusChange('sell')}
                         disabled={selectedIds.size === 0}
-                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 border border-amber-500/30 disabled:opacity-40"
+                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
-                        <span className="hidden sm:inline">Mark </span>Sell
+                        Sell
                      </button>
                      <button 
                         onClick={() => handleBatchStatusChange('TBD')}
                         disabled={selectedIds.size === 0}
-                        className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 disabled:opacity-40"
+                        className="px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 disabled:opacity-40 disabled:cursor-not-allowed"
                      >
                         TBD
                      </button>
                   </div>
                   
-                  {/* Divider */}
-                  <div className="w-px h-6 bg-stone-700 hidden sm:block" />
-                  
-                  {/* Delete & AI */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
+                  {/* Right: Delete, AI, Cancel */}
+                  <div className="flex items-center gap-1 sm:gap-2">
                      <button 
                         onClick={handleBatchDelete}
                         disabled={selectedIds.size === 0}
-                        className="p-2 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors border border-transparent hover:border-red-500/30 disabled:opacity-40"
+                        className="p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors border border-transparent hover:border-red-200 disabled:opacity-40"
                         title="Delete Selected"
                      >
                         <Trash2 className="w-4 h-4" />
@@ -6530,11 +6522,19 @@ export default function App() {
                      <button 
                         onClick={handleBatchAnalyze}
                         disabled={isBatchProcessing || selectedIds.size === 0}
-                        className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-rose-900/30 transition-all active:scale-95 disabled:opacity-50"
+                        className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 disabled:opacity-50"
                      >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">AI Analyze</span>
-                        <span className="sm:hidden">AI</span>
+                        <span className="hidden sm:inline">AI</span>
+                     </button>
+                     
+                     {/* Cancel/Done button */}
+                     <button 
+                        onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
+                        className="p-2 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                        title="Exit multi-select"
+                     >
+                        <X className="w-4 h-4" />
                      </button>
                   </div>
                </div>
