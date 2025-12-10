@@ -101,6 +101,7 @@ import {
   ArrowLeft,
   Calendar,
   StickyNote,
+  CheckSquare,
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
@@ -6479,6 +6480,18 @@ export default function App() {
               {user.displayName?.split(' ')[0] || "My"}'s Collection
             </h1>
           </div>
+          
+          {/* Mobile Select Button - Right side on mobile */}
+          <button
+            onClick={() => setIsSelectionMode(!isSelectionMode)}
+            className={`md:hidden p-2 rounded-lg transition-all ${
+              isSelectionMode 
+                ? "bg-violet-100 text-violet-700" 
+                : "text-stone-500 hover:bg-stone-100"
+            }`}
+          >
+            <CheckSquare className="w-5 h-5" />
+          </button>
           
           {/* Search Bar - Desktop only (mobile uses bottom nav) */}
           <div className="hidden md:flex flex-1 max-w-xs relative">
