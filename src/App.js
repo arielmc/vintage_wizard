@@ -3531,8 +3531,16 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
     if (formData.images.length === 0) return;
     setIsAnalyzing(true);
     try {
+      // Use stored base64 images if available (avoids CORS issues)
+      // Fall back to regular images if base64 not stored
+      const imagesToAnalyze = formData.images_base64?.length > 0 
+        ? formData.images_base64 
+        : formData.images;
+      
+      console.log(`Analyzing item with ${imagesToAnalyze.length} images (base64: ${!!formData.images_base64?.length})`);
+      
       const analysis = await analyzeImagesWithGemini(
-        formData.images,
+        imagesToAnalyze,
         formData.userNotes || "",
         formData
       );
@@ -3542,7 +3550,8 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         aiLastRun: new Date().toISOString(),
       }));
     } catch (err) {
-      alert("Analysis failed. Please check your Gemini API Key in the code.");
+      console.error("Analysis failed:", err);
+      alert("Analysis failed. Please try re-uploading this item.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -5732,9 +5741,15 @@ export default function App() {
       });
       
       try {
-        console.log(`Analyzing item ${item.id} with ${item.images?.length || 0} images:`, item.images);
+        // Use stored base64 images if available (avoids CORS issues)
+        // Fall back to URL conversion if base64 not stored
+        const imagesToAnalyze = item.images_base64?.length > 0 
+          ? item.images_base64 
+          : item.images;
+        
+        console.log(`Analyzing item ${item.id} with ${imagesToAnalyze?.length || 0} images (base64: ${!!item.images_base64?.length})`);
         const analysis = await analyzeImagesWithGemini(
-          item.images,
+          imagesToAnalyze,
           item.userNotes || "",
           item
         );
@@ -5927,15 +5942,23 @@ export default function App() {
           imageUrls.push(url);
         }
 
-        // Step 3: Generate base64 for AI analysis if needed (lower quality)
+        // Step 3: ALWAYS generate base64 for AI analysis (first 4 images only)
+        // This avoids CORS issues when analyzing later
+        const base64Images = [];
+        const imagesToConvert = groupFiles.slice(0, 4); // AI only uses first 4
+        for (const file of imagesToConvert) {
+          try {
+            const b64 = await compressImage(file, false); // false = return base64
+            base64Images.push(b64);
+          } catch (err) {
+            console.error("Failed to convert file to base64:", err);
+          }
+        }
+
+        // Step 4: Run AI analysis if this is single upload with analyze_now
         let analysisResult = {};
         if (shouldAutoAnalyze) {
           try {
-            // Create base64 versions for AI analysis only
-            const base64Images = [];
-            for (const file of groupFiles) {
-              base64Images.push(await compressImage(file, false)); // false = return base64
-            }
             analysisResult = await analyzeImagesWithGemini(base64Images, "");
           } catch (aiError) {
             console.error("Auto-analysis failed:", aiError);
@@ -5943,9 +5966,10 @@ export default function App() {
           }
         }
 
-        // Step 4: Update the document with Storage URLs and analysis
+        // Step 5: Update the document with Storage URLs, base64 for AI, and analysis
         await updateDoc(docRef, {
           images: imageUrls,
+          images_base64: base64Images, // Store for later AI analysis
           image: imageUrls[0] || "",
           title: analysisResult.title || "",
           ...analysisResult,
