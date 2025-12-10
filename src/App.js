@@ -2571,7 +2571,7 @@ const LoginScreen = () => {
 
 // --- LISTING GENERATOR COMPONENT WITH TONE TUNER ---
 const ListingGenerator = ({ formData, setFormData }) => {
-  // Tone Tuner state - initialize from formData or defaults
+  // Listing Tuner state - initialize from formData or defaults
   const [toneSettings, setToneSettings] = useState({
     salesIntensity: formData.tone_sales ?? 3,
     nerdFactor: formData.tone_nerd ?? 3,
@@ -2624,12 +2624,12 @@ const ListingGenerator = ({ formData, setFormData }) => {
     const nerdLabels = ['general audience', 'some context', 'moderate depth', 'collector-focused', 'deep expertise with trivia'];
     const formalityLabels = ['very casual', 'casual', 'balanced', 'professional', 'formal/academic'];
     const emojiInstructions = {
-      'none': 'Do NOT use any emojis.',
-      'minimal': 'Use emojis sparingly, only for section headers (like 🏷️ DETAILS:).',
-      'full': 'Use emojis throughout to add personality and visual appeal.'
+      'none': 'Do NOT use any emojis in the title or description.',
+      'minimal': 'Use emojis sparingly in description only (like 🏷️ DETAILS:). No emojis in title.',
+      'full': 'Use emojis throughout description to add personality. Optionally 1 emoji at start of title if appropriate.'
     };
 
-    const prompt = `You are an expert marketplace listing copywriter. Generate a compelling product listing for the item below.
+    const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
 
 TONE SETTINGS (follow these precisely):
 - Sales Intensity: ${toneSettings.salesIntensity}/5 (${salesLabels[toneSettings.salesIntensity - 1]})
@@ -2639,7 +2639,7 @@ TONE SETTINGS (follow these precisely):
 ${toneSettings.includeFunFact ? '- IMPORTANT: Include a "Did you know?" or collector trivia fact about this specific item, maker, era, or category. Make it genuinely interesting and obscure.' : '- Do NOT include trivia or fun facts.'}
 
 ITEM DETAILS:
-- Title: ${formData.title || 'Vintage Item'}
+- Current Title: ${formData.title || 'Vintage Item'}
 - Category: ${formData.category || 'Other'}
 - Maker/Brand: ${formData.maker || 'Unknown'}
 - Style: ${formData.style || 'Unknown'}
@@ -2649,14 +2649,20 @@ ITEM DETAILS:
 - Markings: ${formData.markings || 'None visible'}
 - Original AI Description: ${formData.sales_blurb || ''}
 
-Generate a marketplace listing description that:
-1. Opens with a compelling hook (1-2 sentences) matching the sales intensity
-2. Lists key details in bullet points
-3. Describes condition honestly
-${toneSettings.includeFunFact ? '4. Includes a "💡 Collector\'s Note:" or "Did you know?" section with genuinely interesting trivia' : ''}
-5. Ends with a brief call to action
+TITLE GUIDELINES (based on tone settings):
+- For high sales intensity: Add compelling words like "Rare", "Stunning", "Collector's"
+- For high nerd factor: Include specific details collectors care about (maker marks, period names, variations)
+- For formal: Use proper terminology; for casual: use everyday language
+- Keep title under 80 characters for marketplace compatibility
+- Include: [Condition word if notable] [Era/Age] [Maker if known] [Style] [Item type] [Notable feature]
 
-Keep the total length to 150-250 words. Return ONLY the description text, no JSON or formatting instructions.`;
+Generate a JSON response with this exact format:
+{
+  "title": "Your optimized marketplace title here",
+  "description": "Your marketplace description here (150-250 words, with hook, bullets, condition, ${toneSettings.includeFunFact ? 'fun fact, ' : ''}and call to action)"
+}
+
+Return ONLY valid JSON, no markdown or extra text.`;
 
     try {
       const response = await fetch(GEMINI_URL, {
@@ -2671,19 +2677,37 @@ Keep the total length to 150-250 words. Return ONLY the description text, no JSO
       if (!response.ok) throw new Error('API request failed');
       
       const data = await response.json();
-      const newDescription = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      if (newDescription) {
-        setFormData(prev => ({ 
-          ...prev, 
-          listing_description: newDescription.trim(),
-          tone_sales: toneSettings.salesIntensity,
-          tone_nerd: toneSettings.nerdFactor,
-          tone_formality: toneSettings.formality,
-          tone_funfact: toneSettings.includeFunFact,
-          tone_emoji: toneSettings.emojiStyle,
-        }));
-        playSuccessFeedback();
+      if (responseText) {
+        // Parse JSON response
+        const cleanedResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        try {
+          const parsed = JSON.parse(cleanedResponse);
+          setFormData(prev => ({ 
+            ...prev,
+            title: parsed.title || prev.title,
+            listing_description: parsed.description?.trim() || prev.listing_description,
+            tone_sales: toneSettings.salesIntensity,
+            tone_nerd: toneSettings.nerdFactor,
+            tone_formality: toneSettings.formality,
+            tone_funfact: toneSettings.includeFunFact,
+            tone_emoji: toneSettings.emojiStyle,
+          }));
+          playSuccessFeedback();
+        } catch (parseError) {
+          // Fallback: treat response as just description
+          setFormData(prev => ({ 
+            ...prev, 
+            listing_description: responseText.trim(),
+            tone_sales: toneSettings.salesIntensity,
+            tone_nerd: toneSettings.nerdFactor,
+            tone_formality: toneSettings.formality,
+            tone_funfact: toneSettings.includeFunFact,
+            tone_emoji: toneSettings.emojiStyle,
+          }));
+          playSuccessFeedback();
+        }
       }
     } catch (error) {
       console.error('Regeneration failed:', error);
@@ -2807,8 +2831,8 @@ Keep the total length to 150-250 words. Return ONLY the description text, no JSO
               <Sparkles className="w-4 h-4 text-white" />
             </div>
             <div className="text-left">
-              <span className="text-sm font-bold text-stone-800 block">Tone Tuner</span>
-              <span className="text-[10px] text-stone-500">Customize AI-generated copy style</span>
+              <span className="text-sm font-bold text-stone-800 block">Listing Tuner</span>
+              <span className="text-[10px] text-stone-500">Customize title & description style</span>
             </div>
           </div>
           <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isTunerOpen ? 'rotate-180' : ''}`} />
@@ -5662,7 +5686,10 @@ export default function App() {
       pdf.setTextColor(168, 162, 158);
       pdf.text("This report is for insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 10, { align: 'center' });
       
-      // === ITEM DETAIL PAGES ===
+      // === ITEM DETAIL PAGES (2 items per page) ===
+      const itemsPerPage = 2;
+      const itemHeight = (pageHeight - margin * 2 - 10) / itemsPerPage; // Height for each item block
+      
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
@@ -5673,21 +5700,28 @@ export default function App() {
         );
         const validImages = loadedImages.filter(Boolean);
         
-        // New page for each item
-        pdf.addPage();
-        yPos = margin;
+        // Check if we need a new page (every 2 items or first item)
+        const positionOnPage = i % itemsPerPage;
+        if (positionOnPage === 0) {
+          pdf.addPage();
+        }
         
-        // Light header bar (ink-friendly)
-        pdf.setFillColor(250, 250, 249); // stone-50
-        pdf.rect(0, 0, pageWidth, 16, 'F');
-        pdf.setDrawColor(229, 229, 229);
-        pdf.line(0, 16, pageWidth, 16);
+        // Calculate Y position for this item
+        const itemStartY = margin + (positionOnPage * itemHeight);
+        yPos = itemStartY;
         
-        pdf.setFontSize(9);
-        pdf.setTextColor(120, 113, 108);
-        pdf.text(`Item ${i + 1} of ${items.length}`, margin, 11);
+        // Draw separator line between items (not for first item on page)
+        if (positionOnPage > 0) {
+          pdf.setDrawColor(229, 229, 229);
+          pdf.line(margin, itemStartY - 5, pageWidth - margin, itemStartY - 5);
+        }
         
-        // Status badge in header
+        // === ITEM HEADER: Number + Status ===
+        pdf.setFontSize(8);
+        pdf.setTextColor(168, 162, 158);
+        pdf.text(`#${i + 1}`, margin, yPos + 4);
+        
+        // Status badge
         const statusColors = {
           keep: { fill: [236, 253, 245], text: [22, 163, 74] },
           sell: { fill: [255, 251, 235], text: [180, 83, 9] },
@@ -5696,212 +5730,141 @@ export default function App() {
         };
         const statusStyle = statusColors[item.status] || statusColors.draft;
         pdf.setFillColor(...statusStyle.fill);
-        pdf.roundedRect(pageWidth - margin - 22, 4, 18, 8, 2, 2, 'F');
-        pdf.setFontSize(7);
+        pdf.roundedRect(margin + 12, yPos, 14, 6, 1, 1, 'F');
+        pdf.setFontSize(6);
         pdf.setTextColor(...statusStyle.text);
-        pdf.text((item.status || 'TBD').toUpperCase(), pageWidth - margin - 13, 9.5, { align: 'center' });
+        pdf.text((item.status || 'TBD').toUpperCase(), margin + 19, yPos + 4.5, { align: 'center' });
         
-        yPos = 24;
+        yPos += 10;
         
-        // Images section (left side) - PRESERVE ASPECT RATIO
-        const imgBoxWidth = 65;
-        const imgBoxHeight = 55;
+        // === LEFT COLUMN: Photo (left-justified) ===
+        const imgColWidth = 45;
+        const imgHeight = 50;
         
         if (validImages.length > 0) {
-          // Hero image (large) - preserve aspect ratio
+          // Hero image - LEFT justified, preserve aspect ratio
           try {
             const heroImg = validImages[0];
-            const dims = fitImageToBox(heroImg.width, heroImg.height, imgBoxWidth, imgBoxHeight - (validImages.length > 1 ? 16 : 0));
-            const imgX = margin + (imgBoxWidth - dims.width) / 2;
-            const imgY = yPos + ((imgBoxHeight - (validImages.length > 1 ? 16 : 0)) - dims.height) / 2;
-            pdf.addImage(heroImg.dataUrl, 'JPEG', imgX, imgY, dims.width, dims.height, undefined, 'MEDIUM');
-          } catch (e) {
-            pdf.setFillColor(245, 245, 244);
-            pdf.rect(margin, yPos, imgBoxWidth, imgBoxHeight - 16, 'F');
-          }
+            const dims = fitImageToBox(heroImg.width, heroImg.height, imgColWidth, imgHeight - (validImages.length > 1 ? 12 : 0));
+            // Left-justified: imgX = margin (no centering)
+            pdf.addImage(heroImg.dataUrl, 'JPEG', margin, yPos, dims.width, dims.height, undefined, 'MEDIUM');
+          } catch (e) {}
           
-          // Thumbnail strip (up to 3 more) - preserve aspect ratio
+          // Thumbnail strip below hero (up to 3 more)
           if (validImages.length > 1) {
-            const thumbY = yPos + imgBoxHeight - 14;
-            const thumbSize = 13;
+            const thumbY = yPos + imgHeight - 10;
+            const thumbSize = 10;
             const thumbGap = 2;
             for (let j = 1; j < Math.min(validImages.length, 4); j++) {
               const thumb = validImages[j];
               const thumbX = margin + (j - 1) * (thumbSize + thumbGap);
               try {
                 const tDims = fitImageToBox(thumb.width, thumb.height, thumbSize, thumbSize);
-                const tx = thumbX + (thumbSize - tDims.width) / 2;
-                const ty = thumbY + (thumbSize - tDims.height) / 2;
-                pdf.addImage(thumb.dataUrl, 'JPEG', tx, ty, tDims.width, tDims.height, undefined, 'FAST');
+                pdf.addImage(thumb.dataUrl, 'JPEG', thumbX, thumbY, tDims.width, tDims.height, undefined, 'FAST');
               } catch (e) {}
             }
           }
-        } else {
-          pdf.setFillColor(250, 250, 249);
-          pdf.setDrawColor(229, 229, 229);
-          pdf.roundedRect(margin, yPos, imgBoxWidth, imgBoxHeight, 2, 2, 'FD');
-          pdf.setFontSize(8);
-          pdf.setTextColor(168, 162, 158);
-          pdf.text("No image", margin + imgBoxWidth / 2, yPos + imgBoxHeight / 2, { align: 'center' });
         }
         
-        // Details section (right side)
-        const detailsX = margin + imgBoxWidth + 8;
-        const detailsWidth = contentWidth - imgBoxWidth - 8;
+        // === RIGHT COLUMN: Title + Value + Details ===
+        const detailsX = margin + imgColWidth + 6;
+        const detailsWidth = contentWidth - imgColWidth - 6;
         let detailY = yPos;
         
-        // Title
-        pdf.setFontSize(13);
+        // Title (bold, larger)
+        pdf.setFontSize(11);
         pdf.setTextColor(28, 25, 23);
         const titleLines = wrapText(pdf, getDisplayTitle(item), detailsWidth);
         titleLines.slice(0, 2).forEach((line, idx) => {
-          pdf.text(line, detailsX, detailY + 5 + idx * 5);
+          pdf.text(line, detailsX, detailY + 4 + idx * 4.5);
         });
-        detailY += 5 + Math.min(titleLines.length, 2) * 5 + 3;
+        detailY += Math.min(titleLines.length, 2) * 4.5 + 6;
         
-        // Category & Era
-        pdf.setFontSize(9);
+        // Category & Era (smaller, grey)
+        pdf.setFontSize(8);
         pdf.setTextColor(120, 113, 108);
         const metaText = [item.category, item.era].filter(Boolean).join(' • ');
         pdf.text(metaText || 'Uncategorized', detailsX, detailY);
-        detailY += 7;
+        detailY += 6;
         
-        // Valuation box (includes confidence reasoning)
+        // === VALUATION LINE (inline, no box) ===
         if (item.valuation_high > 0) {
-          const hasReason = item.confidence_reason;
-          const boxHeight = hasReason ? 30 : 22;
+          pdf.setFontSize(11);
+          pdf.setTextColor(21, 128, 61); // green
+          pdf.text(`$${item.valuation_low || 0} — $${item.valuation_high}`, detailsX, detailY + 1);
           
-          pdf.setFillColor(236, 253, 245); // emerald-50
-          pdf.setDrawColor(167, 243, 208); // emerald-200
-          pdf.roundedRect(detailsX, detailY, detailsWidth, boxHeight, 2, 2, 'FD');
-          
-          pdf.setFontSize(8);
-          pdf.setTextColor(22, 163, 74);
-          pdf.text("ESTIMATED VALUE", detailsX + 4, detailY + 5);
-          
-          pdf.setFontSize(13);
-          pdf.setTextColor(21, 128, 61);
-          pdf.text(`$${item.valuation_low || 0} — $${item.valuation_high}`, detailsX + 4, detailY + 14);
-          
-          // Confidence badge
+          // Confidence inline
           if (item.confidence) {
             const confColors = { high: [22, 163, 74], medium: [217, 119, 6], low: [220, 38, 38] };
             const color = confColors[item.confidence] || confColors.medium;
             pdf.setFontSize(7);
             pdf.setTextColor(...color);
-            pdf.text(`${item.confidence.toUpperCase()} CONF.`, detailsX + detailsWidth - 4, detailY + 6, { align: 'right' });
+            const valWidth = pdf.getTextWidth(`$${item.valuation_low || 0} — $${item.valuation_high}`);
+            pdf.text(`(${item.confidence})`, detailsX + valWidth + 3, detailY + 1);
           }
+          detailY += 6;
           
-          // Confidence reasoning (inside the valuation box)
-          if (hasReason) {
+          // Confidence reasoning (smaller, below value)
+          if (item.confidence_reason) {
             pdf.setFontSize(7);
-            const confColors = { high: [22, 163, 74], medium: [180, 83, 9], low: [220, 38, 38] };
-            const confColor = confColors[item.confidence] || [87, 83, 78];
-            pdf.setTextColor(...confColor);
-            const reasonLines = wrapText(pdf, item.confidence_reason, detailsWidth - 8);
-            pdf.text(reasonLines[0] || '', detailsX + 4, detailY + 21);
-            if (reasonLines[1]) pdf.text(reasonLines[1], detailsX + 4, detailY + 25);
+            pdf.setTextColor(120, 113, 108);
+            const reasonLines = wrapText(pdf, item.confidence_reason, detailsWidth);
+            pdf.text(reasonLines[0] || '', detailsX, detailY);
+            detailY += 4;
           }
-          
-          detailY += boxHeight + 4;
         }
         
-        // Details grid below images
-        yPos = margin + imgBoxHeight + 8;
+        detailY += 2;
         
-        // Details fields
+        // === DETAILS (no grey box, compact grid) ===
         const fields = [
-          { label: 'Maker/Brand', value: item.maker },
-          { label: 'Style/Period', value: item.style },
+          { label: 'Maker', value: item.maker },
+          { label: 'Style', value: item.style },
           { label: 'Materials', value: item.materials },
           { label: 'Markings', value: item.markings },
         ].filter(f => f.value && f.value.toLowerCase() !== 'unknown');
         
-        if (fields.length > 0 || item.condition) {
-          pdf.setFillColor(250, 250, 249);
-          pdf.roundedRect(margin, yPos, contentWidth, 32 + (item.condition ? 12 : 0), 2, 2, 'F');
-          
-          let fieldY = yPos + 6;
-          const colWidth = contentWidth / 2 - 8;
-          
-          fields.forEach((field, idx) => {
-            const col = idx % 2;
-            const row = Math.floor(idx / 2);
-            const fx = margin + 5 + col * (colWidth + 6);
-            const fy = fieldY + row * 12;
-            
-            pdf.setFontSize(7);
-            pdf.setTextColor(120, 113, 108);
-            pdf.text(field.label.toUpperCase(), fx, fy);
-            
-            pdf.setFontSize(9);
-            pdf.setTextColor(41, 37, 36);
-            const valueLines = wrapText(pdf, field.value, colWidth);
-            pdf.text(valueLines[0] || '', fx, fy + 4);
+        // Details inline (no grey box, compact)
+        if (fields.length > 0) {
+          pdf.setFontSize(7);
+          pdf.setTextColor(120, 113, 108);
+          // Show fields inline: "Maker: X • Materials: Y"
+          const fieldStrings = fields.slice(0, 4).map(f => `${f.label}: ${f.value.substring(0, 25)}${f.value.length > 25 ? '...' : ''}`);
+          const fieldLine = fieldStrings.join(' • ');
+          const fieldLines = wrapText(pdf, fieldLine, detailsWidth);
+          fieldLines.slice(0, 2).forEach((line, idx) => {
+            pdf.text(line, detailsX, detailY + idx * 3.5);
           });
-          
-          yPos += 32;
-          
-          // Condition (full width)
-          if (item.condition) {
-            pdf.setFontSize(7);
-            pdf.setTextColor(120, 113, 108);
-            pdf.text("CONDITION", margin + 5, yPos);
-            
-            pdf.setFontSize(9);
-            pdf.setTextColor(41, 37, 36);
-            const condLines = wrapText(pdf, item.condition, contentWidth - 10);
-            condLines.slice(0, 2).forEach((line, idx) => {
-              pdf.text(line, margin + 5, yPos + 4 + idx * 4);
-            });
-            yPos += 12;
-          }
-          
-          yPos += 4;
+          detailY += Math.min(fieldLines.length, 2) * 3.5 + 2;
         }
         
-        // Sales blurb / reasoning
+        // Condition (compact, inline)
+        if (item.condition) {
+          pdf.setFontSize(7);
+          pdf.setTextColor(168, 162, 158);
+          const condText = `Cond: ${item.condition.substring(0, 70)}${item.condition.length > 70 ? '...' : ''}`;
+          const condLines = wrapText(pdf, condText, detailsWidth);
+          pdf.text(condLines[0] || '', detailsX, detailY);
+          detailY += 4;
+        }
+        
+        // Description (compact, 2 lines max)
         if (item.sales_blurb || item.reasoning) {
-          yPos += 3;
           const blurbText = item.sales_blurb || item.reasoning;
-          
           pdf.setFontSize(7);
-          pdf.setTextColor(120, 113, 108);
-          pdf.text("DESCRIPTION", margin, yPos);
-          yPos += 4;
-          
-          pdf.setFontSize(9);
-          pdf.setTextColor(68, 64, 60);
-          const blurbLines = wrapText(pdf, blurbText, contentWidth);
-          blurbLines.slice(0, 4).forEach((line, idx) => {
-            pdf.text(line, margin, yPos + idx * 4);
+          pdf.setTextColor(87, 83, 78);
+          const blurbLines = wrapText(pdf, blurbText, detailsWidth);
+          blurbLines.slice(0, 2).forEach((line, idx) => {
+            pdf.text(line, detailsX, detailY + idx * 3.5);
           });
-          yPos += Math.min(blurbLines.length, 4) * 4 + 4;
         }
         
-        // User notes
-        if (item.userNotes) {
-          yPos += 2;
+        // Page footer only on bottom of page (after last item on page)
+        if (positionOnPage === itemsPerPage - 1 || i === items.length - 1) {
           pdf.setFontSize(7);
-          pdf.setTextColor(120, 113, 108);
-          pdf.text("OWNER NOTES", margin, yPos);
-          yPos += 4;
-          
-          pdf.setFontSize(9);
-          pdf.setTextColor(68, 64, 60);
-          pdf.setFont(undefined, 'italic');
-          const noteLines = wrapText(pdf, item.userNotes, contentWidth);
-          noteLines.slice(0, 3).forEach((line, idx) => {
-            pdf.text(line, margin, yPos + idx * 4);
-          });
-          pdf.setFont(undefined, 'normal');
+          pdf.setTextColor(168, 162, 158);
+          pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
         }
-        
-        // Page footer
-        pdf.setFontSize(7);
-        pdf.setTextColor(168, 162, 158);
-        pdf.text(`ID: ${item.id?.substring(0, 8) || 'N/A'}`, margin, pageHeight - 8);
-        pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       
       // Save
