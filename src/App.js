@@ -2029,28 +2029,49 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
         )}
 
 
-        <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-          <StatusBadge status={item.status} />
-        </div>
-
         {item.valuation_high > 0 && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8 pointer-events-none">
-            <p className="text-white font-extrabold text-lg drop-shadow-md">
-              ${item.valuation_low} - ${item.valuation_high}
-            </p>
-            {/* Confidence Indicator */}
-            {item.confidence && (
-              <div className={`flex items-center gap-1 mt-0.5 ${
-                item.confidence === 'high' ? 'text-emerald-300' :
-                item.confidence === 'medium' ? 'text-amber-300' :
-                'text-red-300'
-              }`}>
-                <Gauge className="w-2.5 h-2.5" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">
-                  {item.confidence}
-                </span>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-white font-extrabold text-lg drop-shadow-md">
+                  ${item.valuation_low} - ${item.valuation_high}
+                </p>
+                {/* Confidence Indicator */}
+                {item.confidence && (
+                  <div className={`flex items-center gap-1 mt-0.5 ${
+                    item.confidence === 'high' ? 'text-emerald-300' :
+                    item.confidence === 'medium' ? 'text-amber-300' :
+                    'text-red-300'
+                  }`}>
+                    <Gauge className="w-2.5 h-2.5" />
+                    <span className="text-[10px] font-medium uppercase tracking-wide">
+                      {item.confidence}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+              {/* Status text - bottom right, no pill */}
+              <span className={`text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
+                item.status === 'keep' ? 'text-blue-300' :
+                item.status === 'sell' ? 'text-green-300' :
+                'text-amber-300'
+              }`}>
+                {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Status for items without value - show at bottom right */}
+        {!item.valuation_high && (
+          <div className="absolute bottom-2 right-2">
+            <span className={`text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
+              item.status === 'keep' ? 'text-blue-600' :
+              item.status === 'sell' ? 'text-green-600' :
+              'text-amber-600'
+            }`}>
+              {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
+            </span>
           </div>
         )}
       </div>
@@ -4314,52 +4335,54 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam }) => {
           </div>
         </div>
         
-        {/* Filter Tabs */}
-        <div className="px-4 py-2 border-t border-stone-50 bg-stone-50/50 overflow-x-auto">
-          <div className="max-w-6xl mx-auto flex gap-2">
-            {[
-              { value: "all", label: "All", icon: Grid },
-              { value: "keep", label: "Keep", icon: Lock },
-              { value: "sell", label: "Sell", icon: Tag },
-              { value: "TBD", label: "TBD", icon: HelpCircle },
-            ].map(({ value: f, label: displayName, icon: Icon }) => {
-              const stats = filterStats[f];
-              const isActive = filter === f;
-              
-              return (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`flex-shrink-0 transition-all duration-200 ${
-                    isActive
-                      ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
-                      : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white"
-                  }`}
-                >
-                  {isActive ? (
-                    <div className="flex flex-col items-start">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-3 h-3 text-stone-600" />
-                        <span className="text-xs font-bold text-stone-800">{displayName}</span>
-                        <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
+        {/* Filter Tabs - Only show if not filtered by URL param */}
+        {!filterParam && (
+          <div className="px-4 py-2 border-t border-stone-50 bg-stone-50/50 overflow-x-auto">
+            <div className="max-w-6xl mx-auto flex gap-2">
+              {[
+                { value: "all", label: "All", icon: Grid },
+                { value: "keep", label: "Keep", icon: Lock },
+                { value: "sell", label: "Sell", icon: Tag },
+                { value: "TBD", label: "TBD", icon: HelpCircle },
+              ].map(({ value: f, label: displayName, icon: Icon }) => {
+                const stats = filterStats[f];
+                const isActive = filter === f;
+                
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`flex-shrink-0 transition-all duration-200 ${
+                      isActive
+                        ? "bg-white rounded-xl shadow-md border border-stone-200 px-3 py-2"
+                        : "px-3 py-1.5 rounded-full text-xs font-bold bg-white/80 text-stone-500 border border-stone-200 hover:border-stone-400 hover:bg-white"
+                    }`}
+                  >
+                    {isActive ? (
+                      <div className="flex flex-col items-start">
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3 h-3 text-stone-600" />
+                          <span className="text-xs font-bold text-stone-800">{displayName}</span>
+                          <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded-full">{stats.count}</span>
+                        </div>
+                        {stats.high > 0 && (
+                          <span className="text-sm font-bold text-emerald-600 mt-0.5">
+                            ${stats.low.toLocaleString()} - ${stats.high.toLocaleString()}
+                          </span>
+                        )}
                       </div>
-                      {stats.high > 0 && (
-                        <span className="text-sm font-bold text-emerald-600 mt-0.5">
-                          ${stats.low.toLocaleString()} - ${stats.high.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
-                      <Icon className="w-3 h-3" />
-                      {displayName} <span className="opacity-60">{stats.count}</span>
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                    ) : (
+                      <span className="text-xs font-bold whitespace-nowrap flex items-center gap-1">
+                        <Icon className="w-3 h-3" />
+                        {displayName} <span className="opacity-60">{stats.count}</span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Grid */}
@@ -4498,31 +4521,17 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
             </div>
           )}
           
-          {/* Status Badge with Icon */}
-          <div className="absolute top-2 right-2">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 ${
-              item.status === "keep" ? "bg-blue-100 text-blue-700" :
-              item.status === "sell" ? "bg-emerald-100 text-emerald-700" :
-              "bg-amber-100 text-amber-700"
-            }`}>
-              {item.status === "keep" && <Lock size={10} />}
-              {item.status === "sell" && <Tag size={10} />}
-              {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
-              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
-            </span>
-          </div>
-          
-          {/* Value */}
+          {/* Value - compact */}
           {item.valuation_high > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
-              <p className="text-white font-bold text-lg drop-shadow-md">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+              <p className="text-white font-bold text-sm drop-shadow-md">
                 ${item.valuation_low} - ${item.valuation_high}
               </p>
             </div>
           )}
         </div>
         
-        <div className="p-3">
+        <div className="p-2.5">
           <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">
             {getDisplayTitle(item)}
           </h3>
@@ -4691,51 +4700,26 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
         
         {/* Details */}
         <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
-            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 shrink-0 ${
-              item.status === "keep" ? "bg-blue-100 text-blue-700" :
-              item.status === "sell" ? "bg-emerald-100 text-emerald-700" :
-              "bg-amber-100 text-amber-700"
-            }`}>
-              {item.status === "keep" && <Lock size={10} />}
-              {item.status === "sell" && <Tag size={10} />}
-              {(item.status === "draft" || item.status === "unprocessed" || item.status === "TBD" || !item.status) && <HelpCircle size={10} />}
-              {item.status === "draft" || item.status === "unprocessed" ? "TBD" : (item.status || "TBD")}
-            </span>
-          </div>
+          <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
           
+          {/* Value - compact inline */}
           {item.valuation_high > 0 && (
-            <div className="bg-emerald-50 p-3 rounded-xl">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-emerald-600 font-semibold">Estimated Value</p>
-                {/* Confidence Badge */}
-                {item.confidence && (
-                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                    item.confidence === 'high' 
-                      ? 'bg-emerald-100 text-emerald-700' 
-                      : item.confidence === 'medium' 
-                        ? 'bg-amber-100 text-amber-700' 
-                        : 'bg-red-100 text-red-700'
-                  }`}>
-                    <Gauge className="w-3 h-3" />
-                    {item.confidence}
-                  </div>
-                )}
-              </div>
-              <p className="text-xl font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</p>
-              {/* Confidence Reason */}
-              {item.confidence_reason && (
-                <p className="text-xs text-emerald-600/80 mt-1 italic">{item.confidence_reason}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-base font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</span>
+              {item.confidence && (
+                <span className={`text-[10px] font-medium uppercase ${
+                  item.confidence === 'high' ? 'text-emerald-600' :
+                  item.confidence === 'medium' ? 'text-amber-600' :
+                  'text-red-600'
+                }`}>
+                  {item.confidence} conf.
+                </span>
               )}
             </div>
           )}
           
-          {item.sales_blurb && (
-            <p className="text-sm text-stone-600">{item.sales_blurb}</p>
-          )}
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-1.5 text-sm">
             {item.maker && item.maker.toLowerCase() !== "unknown" && (
               <div><span className="text-stone-400">Maker:</span> <span className="font-medium">{item.maker}</span></div>
             )}
@@ -4750,11 +4734,10 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
             )}
           </div>
           
-          {/* Navigation hint */}
-          <p className="text-xs text-stone-400 text-center pt-2 border-t border-stone-100">
-            {images.length > 1 && "← → to browse photos • "}
-            Use arrow keys to navigate items
-          </p>
+          {/* Listing description */}
+          {item.sales_blurb && (
+            <p className="text-sm text-stone-600 pt-2 border-t border-stone-100">{item.sales_blurb}</p>
+          )}
         </div>
       </div>
     </div>
