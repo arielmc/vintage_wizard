@@ -2888,6 +2888,16 @@ Return ONLY valid JSON, no markdown or extra text.`;
   const currentDesc = formData.listing_description ?? generateDescription();
   const currentTags = formData.listing_tags ?? generateTags();
   const itemSku = formData.id ? formData.id.substring(0, 8).toUpperCase() : "N/A";
+  
+  // Derive listing price from estimates (slightly above midpoint, or use saved value)
+  const derivedListingPrice = () => {
+    const low = Number(formData.valuation_low) || 0;
+    const high = Number(formData.valuation_high) || 0;
+    if (low === 0 && high === 0) return "";
+    // Pick a price around 60% of the way from low to high
+    return Math.round(low + (high - low) * 0.6);
+  };
+  const currentListingPrice = formData.listing_price ?? derivedListingPrice();
 
   // Update handlers that persist to formData
   const handleTitleChange = (value) => {
@@ -2898,6 +2908,9 @@ Return ONLY valid JSON, no markdown or extra text.`;
   };
   const handleTagsChange = (value) => {
     setFormData(prev => ({ ...prev, listing_tags: value }));
+  };
+  const handleListingPriceChange = (value) => {
+    setFormData(prev => ({ ...prev, listing_price: value ? Number(value) : null }));
   };
 
   // Reset to AI-generated version
@@ -3084,6 +3097,41 @@ Return ONLY valid JSON, no markdown or extra text.`;
             </button>
           </div>
         )}
+      </div>
+
+      {/* Listing Price - Single price for marketplace listing */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+              Listing Price
+            </label>
+            {formData.valuation_low && formData.valuation_high && (
+              <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                Est. ${formData.valuation_low}-${formData.valuation_high}
+              </span>
+            )}
+          </div>
+          {formData.listing_price && (
+            <button 
+              onClick={() => setFormData(prev => ({ ...prev, listing_price: null }))} 
+              className="text-emerald-600 text-[10px] hover:underline"
+            >
+              Reset to suggested
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-emerald-700 text-xl font-bold">$</span>
+          <input
+            type="number"
+            value={currentListingPrice || ""}
+            onChange={(e) => handleListingPriceChange(e.target.value)}
+            className="flex-1 p-2.5 bg-white border border-emerald-300 rounded-lg text-lg font-bold text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder="0"
+          />
+        </div>
+        <p className="text-[10px] text-emerald-600 mt-1.5">This is the price shown to buyers on your public listing</p>
       </div>
 
       {/* Editable Title */}
@@ -4516,6 +4564,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
                 key={item.id} 
                 item={item}
                 onExpand={() => setExpandedItemIndex(idx)}
+                isForSaleMode={isForSaleMode}
               />
             ))}
           </div>
@@ -4527,6 +4576,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
         <SharedItemCard
           item={filteredItems[expandedItemIndex]}
           isExpandedView={true}
+          isForSaleMode={isForSaleMode}
           onClose={() => setExpandedItemIndex(null)}
           onNext={() => setExpandedItemIndex(prev => Math.min(prev + 1, filteredItems.length - 1))}
           onPrev={() => setExpandedItemIndex(prev => Math.max(prev - 1, 0))}
@@ -4604,7 +4654,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
 
 // Simplified card for shared view (read-only)
 // Shared Item Card with expanded view, image gallery, and item navigation
-const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPrev, hasNext, hasPrev }) => {
+const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose, onNext, onPrev, hasNext, hasPrev }) => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState(null); // 'next' | 'prev'
@@ -4695,11 +4745,13 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
             </div>
           )}
           
-          {/* Value - compact */}
-          {item.valuation_high > 0 && (
+          {/* Value - show listing price in For Sale mode, range otherwise */}
+          {(isForSaleMode ? item.listing_price : item.valuation_high > 0) && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
               <p className="text-white font-bold text-sm drop-shadow-md">
-                ${item.valuation_low} - ${item.valuation_high}
+                {isForSaleMode 
+                  ? `$${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6) || 'Contact'}` 
+                  : `$${item.valuation_low} - $${item.valuation_high}`}
               </p>
             </div>
           )}
@@ -4876,11 +4928,15 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, onClose, onNext, onPre
         <div className="p-4 space-y-3">
           <h2 className="text-lg font-bold text-stone-900">{getDisplayTitle(item)}</h2>
           
-          {/* Value - compact inline */}
-          {item.valuation_high > 0 && (
+          {/* Value - show listing price in For Sale mode, range otherwise */}
+          {(isForSaleMode ? (item.listing_price || item.valuation_high > 0) : item.valuation_high > 0) && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-base font-bold text-emerald-700">${item.valuation_low} - ${item.valuation_high}</span>
-              {item.confidence && (
+              <span className="text-base font-bold text-emerald-700">
+                {isForSaleMode 
+                  ? `$${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6)}` 
+                  : `$${item.valuation_low} - $${item.valuation_high}`}
+              </span>
+              {!isForSaleMode && item.confidence && (
                 <span className={`text-[10px] font-medium uppercase ${
                   item.confidence === 'high' ? 'text-emerald-600' :
                   item.confidence === 'medium' ? 'text-amber-600' :
