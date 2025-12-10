@@ -3100,39 +3100,43 @@ Return ONLY valid JSON, no markdown or extra text.`;
         )}
       </div>
 
-      {/* Listing Price - Single price for marketplace listing */}
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
-              Listing Price
-            </label>
-            {formData.valuation_low && formData.valuation_high && (
-              <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
-                Est. ${formData.valuation_low}-${formData.valuation_high}
-              </span>
-            )}
-          </div>
-          {formData.listing_price && (
-            <button 
-              onClick={() => setFormData(prev => ({ ...prev, listing_price: null }))} 
-              className="text-emerald-600 text-[10px] hover:underline"
-            >
-              Reset to suggested
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-emerald-700 text-xl font-bold">$</span>
+      {/* Listing Price - Compact single line */}
+      <div className="flex items-center gap-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+        <label className="text-xs font-bold text-emerald-700 uppercase tracking-wider whitespace-nowrap">
+          Price
+        </label>
+        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
+          <span className="text-emerald-600 font-bold">$</span>
           <input
             type="number"
             value={currentListingPrice || ""}
             onChange={(e) => handleListingPriceChange(e.target.value)}
-            className="flex-1 p-2.5 bg-white border border-emerald-300 rounded-lg text-lg font-bold text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-20 bg-transparent font-bold text-emerald-800 focus:outline-none"
             placeholder="0"
           />
         </div>
-        <p className="text-[10px] text-emerald-600 mt-1.5">This is the price shown to buyers on your public listing</p>
+        {formData.valuation_low && formData.valuation_high && (
+          <span className="text-[10px] text-stone-500">
+            Est. ${formData.valuation_low}-${formData.valuation_high}
+          </span>
+        )}
+        {formData.confidence && (
+          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+            formData.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
+            formData.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            {formData.confidence}
+          </span>
+        )}
+        {formData.listing_price && (
+          <button 
+            onClick={() => setFormData(prev => ({ ...prev, listing_price: null }))} 
+            className="text-stone-400 text-[10px] hover:text-stone-600 ml-auto"
+          >
+            Reset
+          </button>
+        )}
       </div>
 
       {/* Editable Title */}
@@ -3162,10 +3166,10 @@ Return ONLY valid JSON, no markdown or extra text.`;
       </div>
 
       {/* Editable Description */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex justify-between items-center">
           <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-            Professional Description
+            Description
           </label>
           <div className="flex items-center gap-2">
             {formData.listing_description && (
@@ -3181,7 +3185,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
         <textarea 
           value={currentDesc}
           onChange={(e) => handleDescChange(e.target.value)}
-          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-mono text-stone-600 h-40 md:h-48 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y shadow-sm"
+          className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-mono text-stone-600 h-32 md:h-40 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y shadow-sm leading-relaxed"
           placeholder="Enter listing description..."
         />
       </div>
@@ -3703,54 +3707,56 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
           )}
         </div>
 
-        {/* VALUE INPUT - Below photos, prominent */}
-        <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
-              {/* Confidence Badge */}
-              {formData.confidence && (
-                <div 
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-help ${
-                    formData.confidence === 'high' 
-                      ? 'bg-emerald-200 text-emerald-800' 
-                      : formData.confidence === 'medium' 
-                        ? 'bg-amber-200 text-amber-800' 
-                        : 'bg-red-200 text-red-800'
-                  }`}
-                  title={formData.confidence_reason || 'AI confidence level'}
-                >
-                  <Gauge className="w-3 h-3" />
-                  {formData.confidence}
-                </div>
-              )}
+        {/* VALUE INPUT - Below photos, only on Details tab */}
+        {activeTab === "details" && (
+          <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
+                {/* Confidence Badge */}
+                {formData.confidence && (
+                  <div 
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-help ${
+                      formData.confidence === 'high' 
+                        ? 'bg-emerald-200 text-emerald-800' 
+                        : formData.confidence === 'medium' 
+                          ? 'bg-amber-200 text-amber-800' 
+                          : 'bg-red-200 text-red-800'
+                    }`}
+                    title={formData.confidence_reason || 'AI confidence level'}
+                  >
+                    <Gauge className="w-3 h-3" />
+                    {formData.confidence}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
+                <span className="text-emerald-600 text-sm font-bold">$</span>
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={formData.valuation_low || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+                  className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+                />
+                <span className="text-emerald-300 font-bold">—</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={formData.valuation_high || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+                  className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
-              <span className="text-emerald-600 text-sm font-bold">$</span>
-              <input
-                type="number"
-                placeholder="Min"
-                value={formData.valuation_low || ""}
-                onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
-                className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-              />
-              <span className="text-emerald-300 font-bold">—</span>
-              <input
-                type="number"
-                placeholder="Max"
-                value={formData.valuation_high || ""}
-                onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
-                className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-              />
-            </div>
+            {/* Confidence Reason */}
+            {formData.confidence_reason && (
+              <p className="text-[11px] text-emerald-600/80 mt-1.5 italic leading-relaxed">
+                {formData.confidence_reason}
+              </p>
+            )}
           </div>
-          {/* Confidence Reason */}
-          {formData.confidence_reason && (
-            <p className="text-[11px] text-emerald-600/80 mt-1.5 italic leading-relaxed">
-              {formData.confidence_reason}
-            </p>
-          )}
-        </div>
+        )}
         
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
