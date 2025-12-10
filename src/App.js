@@ -3624,142 +3624,144 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
           <div className="w-9" />
         </div>
         
-        {/* Thumbnail Strip (tap to expand, drag to reorder, X to delete) */}
-        <div className="px-3 py-3 bg-stone-100 border-b border-stone-200 flex gap-3 overflow-x-auto no-scrollbar">
-          {formData.images.length > 0 ? (
-            <>
-              {formData.images.map((img, idx) => (
-                <div
-                  key={img}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
-                  onDrop={(e) => handleDrop(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  className={`group relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all shadow-sm ${
-                    activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-white hover:border-stone-300"
-                  }`}
-                >
-                  {/* Click to expand */}
-                  <img 
-                    src={img} 
-                    alt="" 
-                    className="w-full h-full object-cover cursor-pointer" 
-                    draggable={false}
-                    onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
-                  />
-                  {/* HERO badge */}
-                  {idx === 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5 pointer-events-none">
-                      HERO
+        {/* === SINGLE SCROLLABLE CONTENT AREA === */}
+        <div className="flex-1 overflow-y-auto bg-stone-50">
+          {/* Thumbnail Strip (tap to expand, drag to reorder, X to delete) */}
+          <div className="px-3 py-3 bg-stone-100 border-b border-stone-200">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {formData.images.length > 0 ? (
+                <>
+                  {formData.images.map((img, idx) => (
+                    <div
+                      key={img}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      onDragEnd={handleDragEnd}
+                      className={`group relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all shadow-sm ${
+                        activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-white hover:border-stone-300"
+                      }`}
+                    >
+                      {/* Click to expand */}
+                      <img 
+                        src={img} 
+                        alt="" 
+                        className="w-full h-full object-cover cursor-pointer" 
+                        draggable={false}
+                        onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
+                      />
+                      {/* HERO badge */}
+                      {idx === 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5 pointer-events-none">
+                          HERO
+                        </div>
+                      )}
+                      {/* Delete button - always visible */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (formData.images.length === 1) {
+                            if (!window.confirm("Remove the only photo?")) return;
+                          }
+                          const newImages = formData.images.filter((_, i) => i !== idx);
+                          setFormData((prev) => ({ ...prev, images: newImages }));
+                          if (activeImageIdx >= newImages.length) setActiveImageIdx(Math.max(0, newImages.length - 1));
+                        }}
+                        className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 transition-colors shadow-sm"
+                        title="Remove photo"
+                      >
+                        <X size={12} />
+                      </button>
+                      {/* Drag handle indicator */}
+                      <div className="absolute bottom-0.5 left-0.5 bg-black/40 text-white text-[8px] px-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                        drag
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex items-center gap-2 text-stone-400 text-xs py-2">
+                  <Camera size={16} /> No photos yet
+                </div>
+              )}
+              
+              {/* Add Photo Button */}
+              <button
+                onClick={() => addPhotoInputRef.current?.click()}
+                className="flex-shrink-0 w-20 h-20 rounded-lg border-2 border-dashed border-stone-300 bg-white hover:bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-600 transition-colors shadow-sm"
+              >
+                <Plus size={16} />
+                <span className="text-[9px] font-bold mt-0.5">ADD</span>
+              </button>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                ref={addPhotoInputRef}
+                onChange={handleAddPhoto}
+              />
+            </div>
+            {/* AI Info Note - BELOW the images row */}
+            {formData.images.length > 0 && (
+              <p className="text-[10px] text-stone-400 mt-2 text-center">📷 AI uses first 4 photos</p>
+            )}
+          </div>
+
+          {/* VALUE INPUT - Below photos, only on Details tab */}
+          {activeTab === "details" && (
+            <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
+                  {/* Confidence Badge */}
+                  {formData.confidence && (
+                    <div 
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-help ${
+                        formData.confidence === 'high' 
+                          ? 'bg-emerald-200 text-emerald-800' 
+                          : formData.confidence === 'medium' 
+                            ? 'bg-amber-200 text-amber-800' 
+                            : 'bg-red-200 text-red-800'
+                      }`}
+                      title={formData.confidence_reason || 'AI confidence level'}
+                    >
+                      <Gauge className="w-3 h-3" />
+                      {formData.confidence}
                     </div>
                   )}
-                  {/* Delete button - always visible */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (formData.images.length === 1) {
-                        if (!window.confirm("Remove the only photo?")) return;
-                      }
-                      const newImages = formData.images.filter((_, i) => i !== idx);
-                      setFormData((prev) => ({ ...prev, images: newImages }));
-                      if (activeImageIdx >= newImages.length) setActiveImageIdx(Math.max(0, newImages.length - 1));
-                    }}
-                    className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 transition-colors shadow-sm"
-                    title="Remove photo"
-                  >
-                    <X size={12} />
-                  </button>
-                  {/* Drag handle indicator */}
-                  <div className="absolute bottom-0.5 left-0.5 bg-black/40 text-white text-[8px] px-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                    drag
-                  </div>
                 </div>
-              ))}
-            </>
-          ) : (
-            <div className="flex items-center gap-2 text-stone-400 text-xs py-2">
-              <Camera size={16} /> No photos yet
+                <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
+                  <span className="text-emerald-600 text-sm font-bold">$</span>
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={formData.valuation_low || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
+                    className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+                  />
+                  <span className="text-emerald-300 font-bold">—</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={formData.valuation_high || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
+                    className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
+                  />
+                </div>
+              </div>
+              {/* Confidence Reason */}
+              {formData.confidence_reason && (
+                <p className="text-[11px] text-emerald-600/80 mt-1.5 italic leading-relaxed">
+                  {formData.confidence_reason}
+                </p>
+              )}
             </div>
           )}
           
-          {/* Add Photo Button */}
-            <button
-              onClick={() => addPhotoInputRef.current?.click()}
-            className="flex-shrink-0 w-24 h-24 rounded-xl border-2 border-dashed border-stone-300 bg-white hover:bg-stone-50 flex flex-col items-center justify-center text-stone-400 hover:text-stone-600 transition-colors shadow-sm"
-            >
-              <Plus size={20} />
-            <span className="text-[10px] font-bold mt-1">ADD</span>
-            </button>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              ref={addPhotoInputRef}
-              onChange={handleAddPhoto}
-            />
-          {/* AI Info Note */}
-          {formData.images.length > 0 && (
-            <div className="flex-shrink-0 flex items-center text-[10px] text-stone-400 pl-2 border-l border-stone-200 ml-1">
-              <span>📷 AI uses first 4</span>
-          </div>
-          )}
-        </div>
-
-        {/* VALUE INPUT - Below photos, only on Details tab */}
-        {activeTab === "details" && (
-          <div className="px-3 py-2.5 bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-b border-emerald-100 shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Estimated Value</span>
-                {/* Confidence Badge */}
-                {formData.confidence && (
-                  <div 
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide cursor-help ${
-                      formData.confidence === 'high' 
-                        ? 'bg-emerald-200 text-emerald-800' 
-                        : formData.confidence === 'medium' 
-                          ? 'bg-amber-200 text-amber-800' 
-                          : 'bg-red-200 text-red-800'
-                    }`}
-                    title={formData.confidence_reason || 'AI confidence level'}
-                  >
-                    <Gauge className="w-3 h-3" />
-                    {formData.confidence}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
-                <span className="text-emerald-600 text-sm font-bold">$</span>
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={formData.valuation_low || ""}
-                  onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value }))}
-                  className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-                />
-                <span className="text-emerald-300 font-bold">—</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={formData.valuation_high || ""}
-                  onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value }))}
-                  className="w-16 bg-transparent text-center font-bold text-emerald-800 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-            {/* Confidence Reason */}
-            {formData.confidence_reason && (
-              <p className="text-[11px] text-emerald-600/80 mt-1.5 italic leading-relaxed">
-                {formData.confidence_reason}
-              </p>
-            )}
-          </div>
-        )}
-        
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-stone-50">
+          {/* Tab Content */}
+          <div className="p-3 md:p-4 space-y-3">
           {activeTab === "listing" ? (
             <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
@@ -4146,10 +4148,11 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                 )}
               </div>
               
-          </div>
+              </div>
             </div>
-            )}
+          )}
           </div>
+        </div>
           
         {/* STICKY BOTTOM BAR: Trash | Triage | Save */}
         <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center gap-2">
