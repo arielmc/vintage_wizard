@@ -2101,6 +2101,17 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
           item.status === 'sell' ? 'bg-emerald-500' :
           'bg-amber-500'
         }`} />
+        
+        {/* Status text - UPPER RIGHT - desktop only */}
+        <div className="absolute top-2 right-2 hidden md:block">
+          <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+            item.status === 'keep' ? 'bg-blue-500/80 text-white' :
+            item.status === 'sell' ? 'bg-emerald-500/80 text-white' :
+            'bg-amber-500/80 text-white'
+          }`}>
+            {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
+          </span>
+        </div>
 
         {item.valuation_high > 0 && (
           <div className="absolute bottom-1 md:bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
@@ -2123,28 +2134,7 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
                   </div>
                 )}
               </div>
-              {/* Status text - desktop only */}
-              <span className={`hidden md:inline text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
-                item.status === 'keep' ? 'text-blue-300' :
-                item.status === 'sell' ? 'text-green-300' :
-                'text-amber-300'
-              }`}>
-                {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
-              </span>
             </div>
-          </div>
-        )}
-        
-        {/* Status for items without value - desktop only */}
-        {!item.valuation_high && (
-          <div className="absolute bottom-2 right-2 hidden md:block">
-            <span className={`text-[10px] font-medium uppercase tracking-wide drop-shadow-md ${
-              item.status === 'keep' ? 'text-blue-600' :
-              item.status === 'sell' ? 'text-green-600' :
-              'text-amber-600'
-            }`}>
-              {item.status === 'draft' || item.status === 'unprocessed' || item.status === 'maybe' ? 'TBD' : (item.status || 'TBD')}
-            </span>
           </div>
         )}
       </div>
@@ -2775,7 +2765,9 @@ ITEM DETAILS:
 - Original AI Description: ${formData.sales_blurb || ''}
 
 TITLE GUIDELINES:
-- STRICTLY LIMIT to 70 characters maximum. Count carefully. If over 70, truncate or abbreviate.
+- STRICTLY LIMIT to 70 characters maximum. Count every character.
+- CRITICAL: Never cut off a word mid-way. If a word would push past 70 chars, omit it entirely.
+- The title must make complete sense and be readable - no partial words like "Vint" instead of "Vintage".
 - Sales 1-2: Just facts. Sales 4-5: Can add "Rare", "Stunning", etc.
 - Nerd 4-5: Include specific details collectors care about
 - Formal 5: Proper terminology. Casual 1: Everyday language.
@@ -2788,7 +2780,7 @@ DESCRIPTION FORMATTING:
 
 OUTPUT FORMAT - Generate a JSON response:
 {
-  "title": "Your title (MUST be under 70 characters - count them)",
+  "title": "Your title (MUST be 70 chars or less, no cut-off words)",
   "description": "Your description with \\n for line breaks between sections"
 }
 
@@ -3555,8 +3547,8 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* NEW HEADER: Back Arrow + Tabs + Overflow Menu */}
-        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-3 shrink-0">
+        {/* HEADER: Back Arrow + Tabs */}
+        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-3 shrink-0 sticky top-0 z-10">
           {/* Back Arrow */}
           <button
             onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
@@ -3591,43 +3583,12 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
             </div>
           </div>
           
-          {/* Overflow Menu */}
-          <div className="relative group">
-            <button className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5" />
-            </button>
-            <div className="absolute right-0 top-full mt-1 hidden group-hover:block z-50">
-              <div className="bg-white rounded-xl shadow-2xl border border-stone-100 p-1.5 min-w-[160px]">
-                <button
-                  onClick={() => {
-                    const shareUrl = `${window.location.origin}${window.location.pathname}?item=${formData.id}`;
-                    navigator.clipboard.writeText(shareUrl);
-                    playSuccessFeedback();
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 rounded-lg flex items-center gap-2"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share Item
-                </button>
-                <div className="h-px bg-stone-100 my-1" />
-                <button
-                  onClick={() => {
-                    if (window.confirm("Delete this item? This cannot be undone.")) {
-                      onDelete();
-                    }
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete Item
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Spacer for balance */}
+          <div className="w-9" />
         </div>
         
-        {/* Larger Thumbnail Strip (tap to expand, drag to reorder) */}
-        <div className="px-3 py-3 bg-stone-100 border-b border-stone-200 flex gap-3 overflow-x-auto no-scrollbar shrink-0">
+        {/* Thumbnail Strip (tap to expand, drag to reorder, X to delete) */}
+        <div className="px-3 py-3 bg-stone-100 border-b border-stone-200 flex gap-3 overflow-x-auto no-scrollbar">
           {formData.images.length > 0 ? (
             <>
               {formData.images.map((img, idx) => (
@@ -3638,30 +3599,44 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDrop={(e) => handleDrop(e, idx)}
                   onDragEnd={handleDragEnd}
-                  onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
-                  className={`relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden cursor-pointer border-2 transition-all shadow-sm hover:shadow-md ${
+                  className={`group relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all shadow-sm ${
                     activeImageIdx === idx ? "border-rose-500 ring-2 ring-rose-200" : "border-white hover:border-stone-300"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" draggable={false} />
+                  {/* Click to expand */}
+                  <img 
+                    src={img} 
+                    alt="" 
+                    className="w-full h-full object-cover cursor-pointer" 
+                    draggable={false}
+                    onClick={() => { setActiveImageIdx(idx); setIsLightboxOpen(true); }}
+                  />
+                  {/* HERO badge */}
                   {idx === 0 && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-0.5">
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5 pointer-events-none">
                       HERO
                     </div>
                   )}
-                  {formData.images.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newImages = formData.images.filter((_, i) => i !== idx);
-                        setFormData((prev) => ({ ...prev, images: newImages }));
-                        if (activeImageIdx >= newImages.length) setActiveImageIdx(0);
-                      }}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 hover:opacity-100 transition-opacity shadow-md"
-                    >
-                      <X size={10} />
-                    </button>
-                  )}
+                  {/* Delete button - always visible */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (formData.images.length === 1) {
+                        if (!window.confirm("Remove the only photo?")) return;
+                      }
+                      const newImages = formData.images.filter((_, i) => i !== idx);
+                      setFormData((prev) => ({ ...prev, images: newImages }));
+                      if (activeImageIdx >= newImages.length) setActiveImageIdx(Math.max(0, newImages.length - 1));
+                    }}
+                    className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-500 text-white rounded-full p-1 transition-colors shadow-sm"
+                    title="Remove photo"
+                  >
+                    <X size={12} />
+                  </button>
+                  {/* Drag handle indicator */}
+                  <div className="absolute bottom-0.5 left-0.5 bg-black/40 text-white text-[8px] px-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                    drag
+                  </div>
                 </div>
               ))}
             </>
@@ -3750,17 +3725,15 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
             <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
             <div className="flex flex-col gap-3">
-              {/* Analyze Button - Prominent in Details tab */}
+              {/* Analyze Button - Always rose/pink AI color */}
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || formData.images.length === 0}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   isAnalyzing 
-                    ? "bg-stone-200 text-stone-500 cursor-wait" 
-                    : formData.aiLastRun
-                      ? "bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200"
-                      : "bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600 shadow-md hover:shadow-lg"
-                }`}
+                    ? "bg-rose-100 text-rose-400 cursor-wait" 
+                    : "bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600 shadow-md hover:shadow-lg active:scale-[0.98]"
+                } disabled:opacity-50`}
               >
                 {isAnalyzing ? (
                   <Loader className="w-4 h-4 animate-spin" />
@@ -3769,10 +3742,10 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                 ) : (
                   <Sparkles className="w-4 h-4" />
                 )}
-                {isAnalyzing ? "Analyzing..." : formData.aiLastRun ? "Re-analyze" : "Analyze with AI"}
+                {isAnalyzing ? "Analyzing..." : formData.aiLastRun ? "Re-analyze with AI" : "Analyze with AI"}
               </button>
               
-              {/* TITLE - First and most prominent */}
+              {/* TITLE - Single line */}
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider">
@@ -3785,14 +3758,15 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                     </div>
                   </div>
                 </div>
-                <textarea
+                <input
+                  type="text"
                   name="title"
-                  rows={2}
                   value={formData.title || ""}
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, title: e.target.value }))
                   }
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium resize-none text-sm shadow-sm"
+                  className="w-full p-2.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm shadow-sm"
+                  placeholder="Item title..."
                 />
               </div>
 
@@ -4133,23 +4107,6 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
                 )}
               </div>
               
-              {/* Private Notes - Never visible in shared views */}
-              <div className="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden">
-                <div className="px-3 py-2 bg-amber-100/50 flex items-center gap-2">
-                  <StickyNote className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm font-bold text-amber-800">Private Notes</span>
-                  <span className="text-[10px] text-amber-600 bg-amber-200/50 px-2 py-0.5 rounded-full">Never shared</span>
-                </div>
-                <div className="p-3">
-                  <textarea
-                    value={formData.private_notes || ""}
-                    onChange={(e) => setFormData(prev => ({ ...prev, private_notes: e.target.value }))}
-                    rows={3}
-                    placeholder="Acquisition details, personal reminders, etc..."
-                    className="w-full p-3 bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm leading-relaxed placeholder:text-amber-400/70 resize-y"
-                  />
-                </div>
-              </div>
           </div>
             </div>
             )}
@@ -6555,7 +6512,6 @@ export default function App() {
                    : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
                }`}
              >
-               <ListChecks className={`w-4 h-4 ${isSelectionMode ? "stroke-[2.5]" : ""}`} />
                <span>Select</span>
              </button>
 
