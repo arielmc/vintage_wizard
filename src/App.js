@@ -299,34 +299,82 @@ const logAnalyticsEvent = (eventName, eventParams = {}) => {
 const GEMINI_API_KEY = process.env.REACT_APP_GEMINI_API_KEY;
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-// --- Helper: Convert URL to base64 ---
+// --- Helper: Convert URL to base64 using Image + Canvas (bypasses CORS) ---
 async function urlToBase64(url) {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    console.error("Failed to convert URL to base64:", err);
-    return null;
-  }
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // Try to get CORS approval
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        // Limit size for reasonable payload
+        const maxSize = 1024;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize;
+            width = maxSize;
+          } else {
+            width = (width / height) * maxSize;
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        resolve(dataUrl);
+      } catch (err) {
+        console.error("Canvas conversion failed:", err);
+        resolve(null);
+      }
+    };
+    
+    img.onerror = async () => {
+      // Fallback: try fetch approach if image loading fails
+      console.log("Image load failed, trying fetch approach...");
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.error("Fetch fallback also failed:", err);
+        resolve(null);
+      }
+    };
+    
+    // Add cache-busting and start loading
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+  });
 }
 
 // --- Helper: Ensure image is base64 ---
 async function ensureBase64(img) {
-  if (!img) return null;
+  if (!img) {
+    console.log("ensureBase64: No image provided");
+    return null;
+  }
   // Already base64
-  if (img.startsWith('data:image')) {
+  if (typeof img === 'string' && img.startsWith('data:image')) {
+    console.log("ensureBase64: Already base64");
     return img;
   }
   // URL - convert to base64
-  if (img.startsWith('http')) {
-    return await urlToBase64(img);
+  if (typeof img === 'string' && img.startsWith('http')) {
+    console.log("ensureBase64: Converting URL to base64:", img.substring(0, 50) + "...");
+    const result = await urlToBase64(img);
+    console.log("ensureBase64: Conversion result:", result ? "Success" : "Failed");
+    return result;
   }
+  console.log("ensureBase64: Unknown image format:", typeof img, img?.toString?.()?.substring(0, 50));
   return null;
 }
 
@@ -5668,18 +5716,20 @@ export default function App() {
       });
       
       try {
+        console.log(`Analyzing item ${item.id} with ${item.images?.length || 0} images:`, item.images);
         const analysis = await analyzeImagesWithGemini(
           item.images,
           item.userNotes || "",
           item
         );
+        console.log(`Analysis successful for item ${item.id}:`, analysis?.title);
         await updateDoc(
           doc(db, "artifacts", appId, "users", user.uid, "inventory", item.id),
           { ...analysis, aiLastRun: new Date().toISOString() }
         );
         successCount++;
       } catch (err) {
-        console.error(`Failed to analyze item ${item.id}`, err);
+        console.error(`Failed to analyze item ${item.id}:`, err);
         failCount++;
       }
     }
