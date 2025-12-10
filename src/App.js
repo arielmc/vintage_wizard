@@ -2684,10 +2684,8 @@ CRITICAL STYLE RULE: Do NOT use exclamation points anywhere.
 === TONE SETTINGS (FOLLOW THESE EXACTLY - the differences should be DRAMATIC) ===
 
 SALES INTENSITY: ${toneSettings.salesIntensity}/5
-${toneSettings.salesIntensity === 1 ? `LEVEL 1 - JUST THE FACTS: Write like an inventory list. NO adjectives except factual ones (condition: "good", "fair"). NO persuasive language. NO words like "charming", "lovely", "beautiful", "stunning", "rare". Just state what it IS.
-Example: "1980s hardcover edition. Illustrated boards. Shows wear. Publisher: Modern Promotions."` : ''}
-${toneSettings.salesIntensity === 2 ? `LEVEL 2 - MOSTLY FACTUAL: Minimal flourish. One or two mild descriptors allowed. Focus on facts.
-Example: "A nice 1980s hardcover edition with illustrated boards. Good condition with gentle wear."` : ''}
+${toneSettings.salesIntensity === 1 ? `LEVEL 1 - JUST THE FACTS: Write like an inventory list. NO adjectives except factual ones (condition: "good", "fair"). NO persuasive language. NO words like "charming", "lovely", "beautiful", "stunning", "rare". Just state what it IS. BUT STILL INCLUDE ALL THE SAME DETAILS/FACTS as other levels - maker, era, materials, condition, markings. The content should be comprehensive, just delivered without flourish.` : ''}
+${toneSettings.salesIntensity === 2 ? `LEVEL 2 - MOSTLY FACTUAL: Minimal flourish. One or two mild descriptors allowed. Focus on facts but include all relevant details.` : ''}
 ${toneSettings.salesIntensity === 3 ? `LEVEL 3 - BALANCED: Mix of facts and light sales appeal. Moderate use of appealing language.` : ''}
 ${toneSettings.salesIntensity === 4 ? `LEVEL 4 - PERSUASIVE: Emphasize appeal and desirability. Use compelling language freely.` : ''}
 ${toneSettings.salesIntensity === 5 ? `LEVEL 5 - FULL CHARM: Maximum appeal. Paint a picture. Make them WANT it. Every sentence sells.` : ''}
@@ -2722,15 +2720,21 @@ ITEM DETAILS:
 - Original AI Description: ${formData.sales_blurb || ''}
 
 TITLE GUIDELINES:
-- Keep title under 70 characters (shorter is better for marketplaces)
+- STRICTLY LIMIT to 70 characters maximum. Count carefully. If over 70, truncate or abbreviate.
 - Sales 1-2: Just facts. Sales 4-5: Can add "Rare", "Stunning", etc.
 - Nerd 4-5: Include specific details collectors care about
 - Formal 5: Proper terminology. Casual 1: Everyday language.
 
+DESCRIPTION FORMATTING:
+- Use line breaks (\\n) to separate sections for readability
+- Structure: Opening hook\\n\\nDetails section\\n\\nCondition\\n\\n[Tidbit if enabled]\\n\\n[Dad joke if enabled]
+- 120-200 words max
+- NO call to action at the end
+
 OUTPUT FORMAT - Generate a JSON response:
 {
-  "title": "Your title here (under 70 chars)",
-  "description": "Your description here (120-200 words max, NO call to action at the end)"
+  "title": "Your title (MUST be under 70 characters - count them)",
+  "description": "Your description with \\n for line breaks between sections"
 }
 
 Return ONLY valid JSON, no markdown or extra text.`;
@@ -3058,9 +3062,9 @@ Return ONLY valid JSON, no markdown or extra text.`;
         <textarea
           value={currentTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
-          maxLength={80}
+          maxLength={70}
           rows={2}
-          className="w-full p-3 bg-white border border-stone-200 rounded-xl text-[13px] font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+          className={`w-full p-3 bg-white border rounded-xl text-[13px] font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none ${currentTitle.length > 70 ? 'border-amber-400' : 'border-stone-200'}`}
           placeholder="Enter listing title..."
         />
       </div>
