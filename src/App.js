@@ -4480,6 +4480,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
         }
         
         setOwnerName(shareData.ownerName || "A collector");
+        setOwnerEmail(shareData.ownerEmail || null);
         
         // Load items from user's inventory
         const itemsRef = collection(db, "artifacts", appId, "users", shareData.userId, "inventory");
@@ -4772,22 +4773,65 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           ownerName={ownerName}
           onClose={() => setContactModalItem(null)}
           onSend={async ({ message, email, itemTitle, itemId }) => {
-            // Store the contact request in Firestore for now
-            // A Cloud Function can be set up later to send emails
+            // Write to 'mail' collection - Firebase Trigger Email extension will send
+            if (!ownerEmail) {
+              throw new Error("Seller email not available. Please try again later.");
+            }
+            
+            const itemPrice = contactModalItem.listing_price || 
+              Math.round((Number(contactModalItem.valuation_low) + Number(contactModalItem.valuation_high)) * 0.6);
+            
             try {
-              await addDoc(collection(db, "artifacts", appId, "contact_requests"), {
-                shareId,
-                itemId,
-                itemTitle,
-                buyerEmail: email,
-                message,
-                timestamp: serverTimestamp(),
-                status: 'pending'
+              await addDoc(collection(db, "mail"), {
+                to: ownerEmail,
+                replyTo: email,
+                message: {
+                  subject: `Inquiry about: ${itemTitle}`,
+                  html: `
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                      <div style="background: linear-gradient(135deg, #f43f5e, #ec4899); padding: 20px; border-radius: 12px 12px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 24px;">🧙 Vintage Wizard</h1>
+                        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Someone is interested in your item!</p>
+                      </div>
+                      
+                      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+                        <h2 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px;">
+                          Inquiry about: ${itemTitle}
+                        </h2>
+                        <p style="margin: 0 0 8px 0; color: #10b981; font-weight: bold; font-size: 16px;">
+                          Listed at: $${itemPrice}
+                        </p>
+                        
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                          <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+                        </div>
+                        
+                        <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
+                          <strong>From:</strong> ${email}
+                        </p>
+                        
+                        <a href="mailto:${email}?subject=Re: ${encodeURIComponent(itemTitle)}" 
+                           style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                          Reply to Buyer
+                        </a>
+                      </div>
+                      
+                      <div style="padding: 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                        <p style="margin: 0; color: #64748b; font-size: 12px;">
+                          Reply directly to this email to respond to the buyer.
+                        </p>
+                        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 11px;">
+                          Item ID: ${itemId?.substring(0, 8).toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                  `,
+                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`
+                }
               });
-              // Show success - the cloud function will handle email
               return true;
             } catch (err) {
-              console.error("Failed to save contact request:", err);
+              console.error("Failed to send contact email:", err);
               throw err;
             }
           }}
@@ -5456,12 +5500,18 @@ const ShareModal = ({ user, items, onClose }) => {
           const newShareData = {
             userId: user.uid,
             ownerName: user.displayName || "A collector",
+            ownerEmail: user.email, // Store email for contact seller feature
             token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
             isActive: true,
             createdAt: new Date().toISOString(),
           };
           await setDoc(shareDocRef, newShareData);
           setShareData(newShareData);
+        }
+        
+        // Update existing share with email if missing
+        if (shareDoc.exists() && !shareDoc.data().ownerEmail && user.email) {
+          await setDoc(shareDocRef, { ownerEmail: user.email }, { merge: true });
         }
       } catch (err) {
         console.error("Error with share:", err);
