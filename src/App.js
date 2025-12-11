@@ -535,6 +535,22 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
 
     STEP 3: EVALUATE
     Assess condition (mint, very good, fair) and estimate value based on the identified specifics.
+    
+    PRICING CALIBRATION (CRITICAL - avoid overpricing):
+    
+    [BOOKS] Most books have VERY LOW resale value. Be realistic:
+    - Common paperbacks, book club editions, ex-library copies: $1-5 (often unsellable)
+    - Standard hardcovers without dust jacket: $3-10
+    - Hardcovers WITH dust jacket in good condition: $5-20
+    - Later printings of popular titles: $5-15
+    - VALUABLE exceptions (price higher ONLY if these criteria are met):
+      * TRUE first editions with first printing indicators AND dust jacket: $20-500+
+      * Signed by author with authentication: $50-500+
+      * Antiquarian books (pre-1900) in good condition: $20-200+
+      * Limited editions with documentation: $30-200+
+      * Rare titles with documented scarcity: research needed
+    - Check: Is this book readily available on Amazon/eBay for $5? If so, price LOW.
+    - Red flags for LOW value: book club edition marks, "BCE", missing DJ, ex-library stamps, common bestsellers, modern reprints
 
     Provide a JSON response with:
     - category: Choose one strictly from: [Vinyl & Music, Furniture, Decor & Lighting, Art, Jewelry & Watches, Fashion, Ceramics & Glass, Collectibles, Books, Automotive, Electronics, Other].
@@ -685,7 +701,60 @@ INSTRUCTIONS:
   }
 }
 
+// --- Image Limits ---
+const MAX_IMAGES_SINGLE_UPLOAD = 6; // Single item upload limit
+const MAX_IMAGES_PER_STACK = 8; // Bulk upload: max per stack/item
+const MAX_IMAGES_BULK_SESSION = 30; // Bulk upload: total photos allowed in session
+
 // --- Image Helper ---
+// Convert image to base64 for AI analysis - FULL RESOLUTION (no compression)
+// Details matter for accurate identification (marks, signatures, hallmarks)
+const imageToBase64FullRes = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
+// Moderate compression for storing base64 in Firestore subcollection
+// 1600px preserves details while staying under 1MB per document
+const compressImageForBase64Storage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1600; // Preserve details for AI
+        if (width > height) {
+          if (width > maxDim) {
+            height *= maxDim / width;
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width *= maxDim / height;
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85)); // High quality for details
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 // Compress image and return as base64 (for AI analysis) or Blob (for Storage)
 const compressImage = (file, returnBlob = false) => {
   return new Promise((resolve, reject) => {
@@ -1212,6 +1281,15 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     const sourceStack = newStacks[draggedStackIdx];
     const targetStack = newStacks[dropIndex];
 
+    // Check if merging would exceed limit
+    const mergedCount = sourceStack.files.length + targetStack.files.length;
+    if (mergedCount > MAX_IMAGES_PER_STACK) {
+      setGroupingFeedback(`⚠️ Max ${MAX_IMAGES_PER_STACK} photos per item! This merge would create ${mergedCount}.`);
+      setTimeout(() => setGroupingFeedback(null), 4000);
+      setDraggedStackIdx(null);
+      return;
+    }
+
     // Merge source into target
     targetStack.files = [...targetStack.files, ...sourceStack.files];
     
@@ -1237,7 +1315,6 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   const handleStackSelected = () => {
       if (selectedStackIds.size < 2) return;
 
-      const newStacks = [];
       const filesToStack = [];
       const remainingStacks = [];
 
@@ -1249,6 +1326,13 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
               remainingStacks.push(stack);
           }
       });
+
+      // Check if merging would exceed limit
+      if (filesToStack.length > MAX_IMAGES_PER_STACK) {
+        setGroupingFeedback(`⚠️ Max ${MAX_IMAGES_PER_STACK} photos per item! Selection has ${filesToStack.length} photos.`);
+        setTimeout(() => setGroupingFeedback(null), 4000);
+        return;
+      }
 
       // Create new merged stack
       const mergedStack = {
@@ -1348,9 +1432,15 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[80vh]">
               <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50">
                  <div>
-                    <h3 className="font-bold text-stone-800">Refine Stack ({stack.files.length} photos)</h3>
+                    <h3 className="font-bold text-stone-800">
+                      Refine Stack ({stack.files.length}/{MAX_IMAGES_PER_STACK} photos)
+                      {stack.files.length >= MAX_IMAGES_PER_STACK && <span className="ml-2 text-red-600 text-sm">MAX</span>}
+                    </h3>
                     <p className="text-xs text-stone-500">
                       <span className="text-amber-600">⭐ First = Hero Image.</span> Drag to reorder.
+                      {stack.files.length >= MAX_IMAGES_PER_STACK - 2 && stack.files.length < MAX_IMAGES_PER_STACK && (
+                        <span className="ml-2 text-amber-600">({MAX_IMAGES_PER_STACK - stack.files.length} more allowed)</span>
+                      )}
                     </p>
                  </div>
                  <button onClick={() => setExpandedStackIdx(null)} className="p-2 hover:bg-stone-200 rounded-full text-stone-500">
@@ -1598,9 +1688,14 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
            )}
 
 
-           {/* Badge */}
-           <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none">
+           {/* Badge - shows warning if near/at limit */}
+           <div className={`absolute bottom-2 right-2 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none ${
+             stack.files.length >= MAX_IMAGES_PER_STACK ? 'bg-red-600' : 
+             stack.files.length >= MAX_IMAGES_PER_STACK - 2 ? 'bg-amber-600' : 
+             'bg-black/70'
+           }`}>
               {stack.files.length} {stack.files.length === 1 ? 'photo' : 'photos'}
+              {stack.files.length >= MAX_IMAGES_PER_STACK && ' (MAX)'}
            </div>
            
            {/* Stack indicator + Open button for multi-photo stacks */}
@@ -1805,7 +1900,16 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
           
           {/* Primary CTA - Add Items */}
           <button 
-            onClick={() => onConfirm(stacks)}
+            onClick={() => {
+              // Validate no stacks exceed limit
+              const oversizedStacks = stacks.filter(s => s.files.length > MAX_IMAGES_PER_STACK);
+              if (oversizedStacks.length > 0) {
+                setGroupingFeedback(`⚠️ ${oversizedStacks.length} item(s) have more than ${MAX_IMAGES_PER_STACK} photos. Please ungroup or remove photos.`);
+                setTimeout(() => setGroupingFeedback(null), 5000);
+                return;
+              }
+              onConfirm(stacks);
+            }}
             disabled={isLoading || stacks.length === 0 || isProcessingBatch}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 shadow-lg transition-all active:scale-95 disabled:opacity-50"
           >
@@ -3553,14 +3657,36 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
     setIsAnalyzing(true);
     
     try {
-      let imagesToAnalyze;
+      let imagesToAnalyze = [];
       
-      // Priority 1: Use stored base64 images (most reliable, avoids CORS)
-      if (formData.images_base64?.length > 0 && formData.images_base64[0]?.startsWith?.('data:')) {
+      // Priority 1: Fetch from subcollection (new storage method - full quality)
+      if (formData.id && user) {
+        try {
+          const aiImagesSnapshot = await getDocs(
+            collection(db, "artifacts", appId, "users", user.uid, "inventory", formData.id, "images_ai")
+          );
+          if (!aiImagesSnapshot.empty) {
+            const aiImages = aiImagesSnapshot.docs
+              .map(doc => ({ ...doc.data(), docId: doc.id }))
+              .sort((a, b) => (a.index || 0) - (b.index || 0))
+              .map(d => d.base64)
+              .filter(b64 => b64 && b64.startsWith('data:'));
+            if (aiImages.length > 0) {
+              imagesToAnalyze = aiImages;
+            }
+          }
+        } catch (subErr) {
+          console.warn("Could not fetch from subcollection:", subErr);
+        }
+      }
+      
+      // Priority 2: Use stored base64 images (legacy - in main doc)
+      if (imagesToAnalyze.length === 0 && formData.images_base64?.length > 0 && formData.images_base64[0]?.startsWith?.('data:')) {
         imagesToAnalyze = formData.images_base64;
       } 
-      // Priority 2: Check if images are already base64 or blobs (from recent adds)
-      else if (formData.images.length > 0) {
+      
+      // Priority 3: Check if images are already base64 or blobs (from recent adds)
+      if (imagesToAnalyze.length === 0 && formData.images.length > 0) {
         const firstImg = formData.images[0];
         const isBase64 = typeof firstImg === 'string' && firstImg.startsWith('data:');
         const isBlob = firstImg instanceof Blob;
@@ -3582,17 +3708,45 @@ const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, h
         formData
       );
       
-      // Also save base64 images if we generated them
-      const base64ToStore = [];
-      for (const img of imagesToAnalyze.slice(0, 4)) {
-        const b64 = await ensureBase64(img);
-        if (b64) base64ToStore.push(b64);
+      // Store base64 images in subcollection for future analysis
+      if (formData.id && user) {
+        const imagesToStore = imagesToAnalyze.slice(0, 4);
+        for (let i = 0; i < imagesToStore.length; i++) {
+          try {
+            const b64 = await ensureBase64(imagesToStore[i]);
+            if (b64) {
+              // Compress for storage (1600px, 85%)
+              const compressed = await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  const canvas = document.createElement("canvas");
+                  let width = img.width, height = img.height;
+                  const maxDim = 1600;
+                  if (width > maxDim || height > maxDim) {
+                    if (width > height) { height *= maxDim / width; width = maxDim; }
+                    else { width *= maxDim / height; height = maxDim; }
+                  }
+                  canvas.width = width; canvas.height = height;
+                  canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                  resolve(canvas.toDataURL("image/jpeg", 0.85));
+                };
+                img.onerror = () => resolve(b64); // Fallback to original
+                img.src = b64;
+              });
+              await setDoc(
+                doc(db, "artifacts", appId, "users", user.uid, "inventory", formData.id, "images_ai", `img_${i}`),
+                { base64: compressed, index: i, createdAt: serverTimestamp() }
+              );
+            }
+          } catch (storeErr) {
+            console.error(`Failed to store base64 image ${i}:`, storeErr);
+          }
+        }
       }
       
       setFormData((prev) => ({
         ...prev,
         ...analysis,
-        images_base64: base64ToStore.length > 0 ? base64ToStore : prev.images_base64,
         aiLastRun: new Date().toISOString(),
       }));
     } catch (err) {
@@ -6079,14 +6233,34 @@ export default function App() {
       });
       
       try {
-        let imagesToAnalyze;
+        let imagesToAnalyze = [];
         
-        // Priority 1: Use stored base64 images (most reliable)
-        if (item.images_base64?.length > 0) {
+        // Priority 1: Fetch from subcollection (new storage - full quality)
+        try {
+          const aiImagesSnapshot = await getDocs(
+            collection(db, "artifacts", appId, "users", user.uid, "inventory", item.id, "images_ai")
+          );
+          if (!aiImagesSnapshot.empty) {
+            const aiImages = aiImagesSnapshot.docs
+              .map(doc => ({ ...doc.data(), docId: doc.id }))
+              .sort((a, b) => (a.index || 0) - (b.index || 0))
+              .map(d => d.base64)
+              .filter(b64 => b64 && b64.startsWith('data:'));
+            if (aiImages.length > 0) {
+              imagesToAnalyze = aiImages;
+            }
+          }
+        } catch (subErr) {
+          console.warn(`Could not fetch subcollection for item ${item.id}:`, subErr);
+        }
+        
+        // Priority 2: Use stored base64 images (legacy - in main doc)
+        if (imagesToAnalyze.length === 0 && item.images_base64?.length > 0) {
           imagesToAnalyze = item.images_base64;
         } 
-        // Priority 2: Check if images are local (not Firebase URLs)
-        else if (item.images?.length > 0) {
+        
+        // Priority 3: Check if images are local (not Firebase URLs)
+        if (imagesToAnalyze.length === 0 && item.images?.length > 0) {
           const firstImg = item.images[0];
           const isFirebaseUrl = typeof firstImg === 'string' && firstImg.includes('firebasestorage.googleapis.com');
           
@@ -6096,13 +6270,15 @@ export default function App() {
             continue; // Skip this item
           }
           imagesToAnalyze = item.images;
-        } else {
-          console.error(`Item ${item.id} has no images`);
+        }
+        
+        if (imagesToAnalyze.length === 0) {
+          console.error(`Item ${item.id} has no analyzable images`);
           failCount++;
           continue;
         }
         
-        console.log(`Analyzing item ${item.id} with ${imagesToAnalyze?.length || 0} images`);
+        console.log(`Analyzing item ${item.id} with ${imagesToAnalyze.length} images`);
         const analysis = await analyzeImagesWithGemini(
           imagesToAnalyze,
           item.userNotes || "",
@@ -6220,8 +6396,14 @@ export default function App() {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     
-    if (mode === 'single' && files.length > 4) {
-      alert("Select up to 4 photos to start. You can add more later on the item page!");
+    if (mode === 'single' && files.length > MAX_IMAGES_SINGLE_UPLOAD) {
+      alert(`Select up to ${MAX_IMAGES_SINGLE_UPLOAD} photos for a single item. Use Bulk Upload for more photos!`);
+      e.target.value = ""; // Reset
+      return;
+    }
+    
+    if (mode === 'bulk' && files.length > MAX_IMAGES_BULK_SESSION) {
+      alert(`Maximum ${MAX_IMAGES_BULK_SESSION} photos per bulk upload session. You can do multiple sessions!`);
       e.target.value = ""; // Reset
       return;
     }
@@ -6296,41 +6478,56 @@ export default function App() {
           imageUrls.push(url);
         }
 
-        // Step 3: ALWAYS generate base64 for AI analysis (first 4 images only)
-        // This avoids CORS issues when analyzing later
-        const base64Images = [];
-        const imagesToConvert = groupFiles.slice(0, 4);
-        for (const file of imagesToConvert) {
-          try {
-            const b64 = await compressImage(file, false); // false = return base64
-            if (b64 && typeof b64 === 'string' && b64.startsWith('data:')) {
-              base64Images.push(b64);
+        // Step 3: For IMMEDIATE AI analysis, use FULL RESOLUTION (details matter!)
+        let analysisBase64 = [];
+        if (shouldAutoAnalyze) {
+          const imagesToAnalyze = groupFiles.slice(0, 4); // Max 4 for API payload
+          for (const file of imagesToAnalyze) {
+            try {
+              const b64 = await imageToBase64FullRes(file); // Full resolution for AI
+              if (b64 && typeof b64 === 'string' && b64.startsWith('data:')) {
+                analysisBase64.push(b64);
+              }
+            } catch (err) {
+              console.error("Failed to convert file to base64:", err);
             }
-          } catch (err) {
-            console.error("Failed to convert file to base64:", err);
           }
         }
 
         // Step 4: Run AI analysis if this is single upload with analyze_now
         let analysisResult = {};
-        if (shouldAutoAnalyze) {
+        if (shouldAutoAnalyze && analysisBase64.length > 0) {
           try {
-            analysisResult = await analyzeImagesWithGemini(base64Images, "");
+            analysisResult = await analyzeImagesWithGemini(analysisBase64, "");
           } catch (aiError) {
             console.error("Auto-analysis failed:", aiError);
             alert(`Item uploaded, but AI analysis failed: ${aiError.message}`);
           }
         }
 
-        // Step 5: Update the document with Storage URLs, base64 for AI, and analysis
+        // Step 5: Update the main document (NO base64 stored here - keeps doc small)
         await updateDoc(docRef, {
           images: imageUrls,
-          images_base64: base64Images, // Store for later AI analysis
           image: imageUrls[0] || "",
           title: analysisResult.title || "",
           ...analysisResult,
           aiLastRun: shouldAutoAnalyze && analysisResult.title ? new Date().toISOString() : null
         });
+
+        // Step 6: Store base64 images in SUBCOLLECTION for later AI analysis
+        // Each image in its own doc to avoid size limits, with moderate compression (1600px)
+        const imagesToStore = groupFiles.slice(0, 4); // Store up to 4 for later analysis
+        for (let i = 0; i < imagesToStore.length; i++) {
+          try {
+            const b64 = await compressImageForBase64Storage(imagesToStore[i]); // 1600px, 85% quality
+            await setDoc(
+              doc(db, "artifacts", appId, "users", user.uid, "inventory", docRef.id, "images_ai", `img_${i}`),
+              { base64: b64, index: i, createdAt: serverTimestamp() }
+            );
+          } catch (err) {
+            console.error(`Failed to store base64 image ${i}:`, err);
+          }
+        }
 
         if (uploadMode === "single" && actionType === "edit_first") {
           setSelectedItem({
@@ -7211,7 +7408,7 @@ export default function App() {
                      </div>
                      <div>
                        <span className="block font-bold text-stone-800">One Item</span>
-                       <span className="text-[11px] text-stone-500">Multiple angles, up to 4 photos</span>
+                       <span className="text-[11px] text-stone-500">Multiple angles, up to 6 photos</span>
                      </div>
                    </button>
                    <button
@@ -8007,7 +8204,7 @@ export default function App() {
                 </div>
                 <div className="text-left">
                   <p className="font-bold text-stone-900">One Item</p>
-                  <p className="text-xs text-stone-500">Multiple angles, up to 4 photos</p>
+                  <p className="text-xs text-stone-500">Multiple angles, up to 6 photos</p>
                 </div>
               </button>
               
@@ -8057,7 +8254,7 @@ export default function App() {
                 </div>
                 <div className="text-left">
                   <p className="font-bold text-stone-900">One Item</p>
-                  <p className="text-xs text-stone-500">Multiple angles, up to 4 photos</p>
+                  <p className="text-xs text-stone-500">Multiple angles, up to 6 photos</p>
                 </div>
               </button>
               
