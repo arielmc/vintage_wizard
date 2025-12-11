@@ -4449,6 +4449,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, value_high, value_low, alpha
   const [contactModalItem, setContactModalItem] = useState(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Determine if this is a "for sale" view (hides prices, shows contact)
   const isForSaleMode = viewMode === 'forsale';
@@ -4628,14 +4629,14 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
               </p>
             </div>
             {/* Search Icon */}
-            <div className="relative">
-              <button 
-                onClick={() => document.getElementById('shared-search')?.focus()}
-                className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className={`p-2 rounded-lg transition-colors ${
+                isSearchOpen ? 'bg-rose-100 text-rose-600' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              {isSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+            </button>
             {/* Create Your Own Link */}
             <a 
               href="/"
@@ -4645,6 +4646,36 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
             </a>
           </div>
         </div>
+        
+        {/* Expandable Search Bar - Above categories when open */}
+        {isSearchOpen && (
+          <div className="border-t border-stone-100 bg-white px-4 py-3 animate-in slide-in-from-top duration-150">
+            <div className="max-w-6xl mx-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-stone-100 border border-transparent focus:border-rose-300 focus:bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-100 transition-all placeholder:text-stone-400"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="text-xs text-stone-500 mt-2">{filteredItems.length} results for "{searchQuery}"</p>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Row 2: Filter Tabs + Value/Sort - Same style as private mobile */}
         {!filterParam && (
@@ -4707,28 +4738,6 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           </div>
         )}
         
-        {/* Search Bar - Expandable */}
-        <div className="px-4 pb-2 max-w-6xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 pointer-events-none" />
-            <input
-              id="shared-search"
-              type="text"
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-8 py-2 text-sm bg-stone-100 border border-transparent focus:border-stone-300 focus:bg-white rounded-lg focus:outline-none transition-all placeholder:text-stone-400"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
       </header>
 
       {/* Grid */}
