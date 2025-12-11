@@ -6119,6 +6119,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false); // For mobile batch status menu
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
   const [showShareModal, setShowShareModal] = useState(false);
@@ -6300,6 +6301,7 @@ export default function App() {
     setBatchProgress({ current: 0, total: 0, message: '' });
     setSelectedIds(new Set());
     setIsSelectionMode(false);
+    setIsStatusDropdownOpen(false);
     playSuccessFeedback();
     
     // Show result toast
@@ -6322,6 +6324,7 @@ export default function App() {
     }
     setSelectedIds(new Set());
     setIsSelectionMode(false);
+    setIsStatusDropdownOpen(false);
     playSuccessFeedback();
   };
 
@@ -6339,6 +6342,7 @@ export default function App() {
     
     setSelectedIds(new Set());
     setIsSelectionMode(false);
+    setIsStatusDropdownOpen(false);
     playSuccessFeedback();
     
     // Show toast
@@ -7749,21 +7753,10 @@ export default function App() {
       {/* --- Batch Action Bar (Fixed Top - Covers header on mobile) --- */}
       {isSelectionMode && (
          <div className="fixed top-0 left-0 right-0 z-50 animate-in slide-in-from-top fade-in duration-200">
-            {/* Mobile: Full overlay panel like add menu */}
-            <div className="md:hidden bg-white rounded-b-3xl p-4 pt-14 shadow-2xl">
-              {/* Header row */}
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-stone-900">Select Items</h3>
-                <button 
-                  onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); }} 
-                  className="p-2 rounded-lg hover:bg-stone-100 text-stone-500"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Selection controls */}
-              <div className="flex items-center gap-2 mb-4">
+            {/* Mobile: Compact top bar */}
+            <div className="md:hidden bg-white px-3 py-2.5 shadow-lg border-b border-stone-100" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+              {/* Row 1: Header with Select All, count, and close */}
+              <div className="flex items-center gap-2 mb-2">
                 <button 
                   onClick={() => {
                     if (selectedIds.size === filteredItems.length) {
@@ -7772,62 +7765,82 @@ export default function App() {
                       setSelectedIds(new Set(filteredItems.map(i => i.id)));
                     }
                   }}
-                  className="px-4 py-2 rounded-xl text-sm font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700"
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700"
                 >
-                  {selectedIds.size === filteredItems.length ? "Deselect All" : "Select All"}
+                  {selectedIds.size === filteredItems.length ? "None" : "All"}
                 </button>
                 <span className="text-sm text-violet-600 font-bold">
                   {selectedIds.size} selected
                 </span>
+                <div className="flex-1" />
+                <button 
+                  onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); setIsStatusDropdownOpen(false); }} 
+                  className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               
-              {/* Action buttons - larger touch targets */}
-              <div className="space-y-2">
-                <div className="flex gap-2">
+              {/* Row 2: Actions - Status dropdown, AI Analyze, Delete */}
+              <div className="flex items-center gap-2">
+                {/* Status Dropdown */}
+                <div className="relative">
                   <button 
-                    onClick={() => handleBatchStatusChange('keep')}
+                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                     disabled={selectedIds.size === 0}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-blue-50 hover:bg-blue-100 text-blue-600 disabled:opacity-30"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
                   >
-                    Mark Keep
+                    <span>Mark As</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <button 
-                    onClick={() => handleBatchStatusChange('sell')}
-                    disabled={selectedIds.size === 0}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-green-50 hover:bg-green-100 text-green-600 disabled:opacity-30"
-                  >
-                    Mark Sell
-                  </button>
-                  <button 
-                    onClick={() => handleBatchStatusChange('TBD')}
-                    disabled={selectedIds.size === 0}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-amber-50 hover:bg-amber-100 text-amber-600 disabled:opacity-30"
-                  >
-                    Mark TBD
-                  </button>
+                  
+                  {isStatusDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 min-w-[120px]">
+                      <button 
+                        onClick={() => { handleBatchStatusChange('keep'); setIsStatusDropdownOpen(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        Keep
+                      </button>
+                      <button 
+                        onClick={() => { handleBatchStatusChange('sell'); setIsStatusDropdownOpen(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        Sell
+                      </button>
+                      <button 
+                        onClick={() => { handleBatchStatusChange('TBD'); setIsStatusDropdownOpen(false); }}
+                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        TBD
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleBatchAnalyze}
-                    disabled={isBatchProcessing || selectedIds.size === 0}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    AI Analyze
-                  </button>
-                  <button 
-                    onClick={handleBatchDelete}
-                    disabled={selectedIds.size === 0}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30 flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
+                {/* AI Analyze Button */}
+                <button 
+                  onClick={handleBatchAnalyze}
+                  disabled={isBatchProcessing || selectedIds.size === 0}
+                  className="flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Analyze
+                </button>
+                
+                {/* Delete Button */}
+                <button 
+                  onClick={handleBatchDelete}
+                  disabled={selectedIds.size === 0}
+                  className="py-2 px-3 rounded-lg text-xs font-bold transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30 flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
               </div>
-              
-              <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mt-4" />
             </div>
             
             {/* Desktop: Slim bar below header */}
