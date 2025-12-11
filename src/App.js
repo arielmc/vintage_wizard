@@ -2784,27 +2784,27 @@ const ListingGenerator = ({ formData, setFormData }) => {
     nerdFactor: formData.tone_nerd ?? 3,
     formality: formData.tone_formality ?? 3,
     includeFunFact: formData.tone_funfact ?? false,
-    includeDadJoke: formData.tone_dadjoke ?? false,
+    includeDadJoke: formData.tone_dadjoke ?? true, // Dad jokes ON by default!
     emojiStyle: formData.tone_emoji ?? 'minimal', // 'none' | 'minimal' | 'full'
   });
   const [isTunerOpen, setIsTunerOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
-  // Category presets
+  // Category presets - Dad jokes ON for all categories! 🤓
   const categoryPresets = {
-    'Books': { salesIntensity: 2, nerdFactor: 5, formality: 4, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
-    'Jewelry & Watches': { salesIntensity: 4, nerdFactor: 2, formality: 3, includeFunFact: false, includeDadJoke: false, emojiStyle: 'minimal' },
-    'Fashion': { salesIntensity: 5, nerdFactor: 1, formality: 2, includeFunFact: false, includeDadJoke: false, emojiStyle: 'full' },
-    'Electronics': { salesIntensity: 2, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
+    'Books': { salesIntensity: 2, nerdFactor: 5, formality: 4, includeFunFact: true, includeDadJoke: true, emojiStyle: 'none' },
+    'Jewelry & Watches': { salesIntensity: 4, nerdFactor: 2, formality: 3, includeFunFact: false, includeDadJoke: true, emojiStyle: 'minimal' },
+    'Fashion': { salesIntensity: 5, nerdFactor: 1, formality: 2, includeFunFact: false, includeDadJoke: true, emojiStyle: 'full' },
+    'Electronics': { salesIntensity: 2, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: true, emojiStyle: 'none' },
     'Collectibles': { salesIntensity: 3, nerdFactor: 5, formality: 3, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' },
-    'Art': { salesIntensity: 3, nerdFactor: 4, formality: 5, includeFunFact: true, includeDadJoke: false, emojiStyle: 'none' },
+    'Art': { salesIntensity: 3, nerdFactor: 4, formality: 5, includeFunFact: true, includeDadJoke: true, emojiStyle: 'none' },
     'Vinyl & Music': { salesIntensity: 3, nerdFactor: 5, formality: 2, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' },
-    'Furniture': { salesIntensity: 3, nerdFactor: 3, formality: 4, includeFunFact: false, includeDadJoke: false, emojiStyle: 'minimal' },
-    'Ceramics & Glass': { salesIntensity: 3, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: false, emojiStyle: 'minimal' },
+    'Furniture': { salesIntensity: 3, nerdFactor: 3, formality: 4, includeFunFact: false, includeDadJoke: true, emojiStyle: 'minimal' },
+    'Ceramics & Glass': { salesIntensity: 3, nerdFactor: 4, formality: 3, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' },
   };
 
   // Get preset for current category
-  const currentPreset = categoryPresets[formData.category] || { salesIntensity: 3, nerdFactor: 3, formality: 3, includeFunFact: false, emojiStyle: 'minimal' };
+  const currentPreset = categoryPresets[formData.category] || { salesIntensity: 3, nerdFactor: 3, formality: 3, includeFunFact: false, includeDadJoke: true, emojiStyle: 'minimal' };
 
   // Apply a preset
   const applyPreset = (presetName) => {
