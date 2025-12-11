@@ -5457,6 +5457,55 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
                 </div>
               )}
               
+              {/* Listing Content Section */}
+              {(item.listing_title || item.listing_description || item.listing_tags) && (
+                <div className="pt-3 mt-3 border-t-2 border-dashed border-stone-200 space-y-3">
+                  <h4 className="text-xs font-bold text-violet-600 uppercase tracking-wider flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> Listing Details
+                  </h4>
+                  
+                  {/* Listing Title */}
+                  {item.listing_title && (
+                    <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] text-violet-500 font-medium uppercase">Listing Title</span>
+                      <p className="text-sm font-semibold text-violet-900">{item.listing_title}</p>
+                    </div>
+                  )}
+                  
+                  {/* Listing Price */}
+                  {(item.listing_price || item.valuation_high > 0) && (
+                    <div className="bg-green-50 border border-green-100 rounded-xl p-3">
+                      <span className="text-[10px] text-green-600 font-medium uppercase block mb-1">Listed Price</span>
+                      <span className="text-lg font-bold text-green-700">
+                        ${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Listing Description (the fun one with dad jokes!) */}
+                  {item.listing_description && (
+                    <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] text-stone-500 font-medium uppercase">Description</span>
+                      <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">{item.listing_description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Listing Tags */}
+                  {item.listing_tags && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.listing_tags.split(/[,\s]+/).filter(t => t.startsWith('#') || t.length > 0).map((tag, idx) => (
+                        <span 
+                          key={idx}
+                          className="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full"
+                        >
+                          {tag.startsWith('#') ? tag : `#${tag}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* Category */}
               {item.category && (
                 <div className="flex items-center gap-2 text-xs text-stone-500 pt-2 border-t border-stone-100">
