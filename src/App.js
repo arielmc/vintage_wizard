@@ -705,6 +705,10 @@ INSTRUCTIONS:
 const MAX_IMAGES_SINGLE_UPLOAD = 6; // Single item upload limit
 const MAX_IMAGES_PER_STACK = 8; // Bulk upload: max per stack/item
 const MAX_IMAGES_BULK_SESSION = 30; // Bulk upload: total photos allowed in session
+const MAX_BASE64_SIZE_BYTES = 900000; // ~900KB to stay safely under Firestore 1MB limit
+
+// Valid image MIME types
+const VALID_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
 
 // --- Image Helper ---
 // Convert image to base64 for AI analysis - FULL RESOLUTION (no compression)
@@ -719,39 +723,74 @@ const imageToBase64FullRes = (file) => {
 };
 
 // Moderate compression for storing base64 in Firestore subcollection
-// 1600px preserves details while staying under 1MB per document
+// Progressively compresses until under MAX_BASE64_SIZE_BYTES
 const compressImageForBase64Storage = (file) => {
   return new Promise((resolve, reject) => {
+    // Validate file type
+    if (!file.type.startsWith('image/') && !VALID_IMAGE_TYPES.includes(file.type)) {
+      reject(new Error(`Invalid file type: ${file.type || file.name}`));
+      return;
+    }
+    
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1600; // Preserve details for AI
-        if (width > height) {
-          if (width > maxDim) {
-            height *= maxDim / width;
-            width = maxDim;
+        // Progressive compression: try larger first, reduce if too big
+        const attempts = [
+          { maxDim: 1600, quality: 0.85 },
+          { maxDim: 1200, quality: 0.75 },
+          { maxDim: 1000, quality: 0.65 },
+          { maxDim: 800, quality: 0.55 },
+        ];
+        
+        for (const { maxDim, quality } of attempts) {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > maxDim) {
+              height *= maxDim / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width *= maxDim / height;
+              height = maxDim;
+            }
           }
-        } else {
-          if (height > maxDim) {
-            width *= maxDim / height;
-            height = maxDim;
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const base64 = canvas.toDataURL("image/jpeg", quality);
+          
+          // Check if under size limit (base64 string length ≈ byte size)
+          if (base64.length < MAX_BASE64_SIZE_BYTES) {
+            resolve(base64);
+            return;
           }
         }
+        
+        // Final fallback: smallest size
+        const canvas = document.createElement("canvas");
+        let width = img.width, height = img.height;
+        const maxDim = 600;
+        if (width > height) { height *= maxDim / width; width = maxDim; }
+        else { width *= maxDim / height; height = maxDim; }
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.85)); // High quality for details
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.5));
       };
-      img.onerror = (err) => reject(err);
+      img.onerror = (err) => reject(new Error(`Failed to load image: ${file.name}`));
     };
-    reader.onerror = (err) => reject(err);
+    reader.onerror = (err) => reject(new Error(`Failed to read file: ${file.name}`));
   });
 };
 
@@ -6397,19 +6436,51 @@ export default function App() {
   }, [user]);
 
   const handleFileSelect = (e, mode) => {
-    const files = Array.from(e.target.files);
+    let files = Array.from(e.target.files);
     if (files.length === 0) return;
     
-    if (mode === 'single' && files.length > MAX_IMAGES_SINGLE_UPLOAD) {
-      alert(`Select up to ${MAX_IMAGES_SINGLE_UPLOAD} photos for a single item. Use Bulk Upload for more photos!`);
-      e.target.value = ""; // Reset
+    // Filter to valid image types only
+    const validFiles = files.filter(f => 
+      f.type.startsWith('image/') || VALID_IMAGE_TYPES.includes(f.type.toLowerCase())
+    );
+    
+    const invalidCount = files.length - validFiles.length;
+    if (invalidCount > 0) {
+      console.warn(`Filtered out ${invalidCount} non-image files`);
+    }
+    
+    files = validFiles;
+    if (files.length === 0) {
+      alert("No valid image files selected. Please select JPG, PNG, GIF, or WEBP files.");
+      e.target.value = "";
       return;
     }
     
+    // Single upload: Accept first N, show friendly message if extras dropped
+    if (mode === 'single' && files.length > MAX_IMAGES_SINGLE_UPLOAD) {
+      const droppedCount = files.length - MAX_IMAGES_SINGLE_UPLOAD;
+      files = files.slice(0, MAX_IMAGES_SINGLE_UPLOAD);
+      // Show toast notification instead of blocking alert
+      setTimeout(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
+        toast.innerHTML = `📷 Using first ${MAX_IMAGES_SINGLE_UPLOAD} photos (${droppedCount} extra not included)`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }, 100);
+    }
+    
+    // Bulk upload: Accept first N with message
     if (mode === 'bulk' && files.length > MAX_IMAGES_BULK_SESSION) {
-      alert(`Maximum ${MAX_IMAGES_BULK_SESSION} photos per bulk upload session. You can do multiple sessions!`);
-      e.target.value = ""; // Reset
-      return;
+      const droppedCount = files.length - MAX_IMAGES_BULK_SESSION;
+      files = files.slice(0, MAX_IMAGES_BULK_SESSION);
+      setTimeout(() => {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
+        toast.innerHTML = `📷 Using first ${MAX_IMAGES_BULK_SESSION} photos (${droppedCount} extra not included)`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }, 100);
     }
 
     setStagingFiles(files);
@@ -6519,17 +6590,26 @@ export default function App() {
         });
 
         // Step 6: Store base64 images in SUBCOLLECTION for later AI analysis
-        // Each image in its own doc to avoid size limits, with moderate compression (1600px)
+        // Each image in its own doc, with progressive compression to stay under 1MB
         const imagesToStore = groupFiles.slice(0, 4); // Store up to 4 for later analysis
+        let storedCount = 0;
         for (let i = 0; i < imagesToStore.length; i++) {
           try {
-            const b64 = await compressImageForBase64Storage(imagesToStore[i]); // 1600px, 85% quality
+            const file = imagesToStore[i];
+            // Skip non-image files
+            if (!file.type.startsWith('image/')) {
+              console.warn(`Skipping non-image file: ${file.name} (${file.type})`);
+              continue;
+            }
+            const b64 = await compressImageForBase64Storage(file);
             await setDoc(
-              doc(db, "artifacts", appId, "users", user.uid, "inventory", docRef.id, "images_ai", `img_${i}`),
-              { base64: b64, index: i, createdAt: serverTimestamp() }
+              doc(db, "artifacts", appId, "users", user.uid, "inventory", docRef.id, "images_ai", `img_${storedCount}`),
+              { base64: b64, index: storedCount, createdAt: serverTimestamp() }
             );
+            storedCount++;
           } catch (err) {
-            console.error(`Failed to store base64 image ${i}:`, err);
+            console.error(`Failed to store base64 image ${i} (${imagesToStore[i]?.name}):`, err);
+            // Continue with other images - don't fail the whole upload
           }
         }
 
