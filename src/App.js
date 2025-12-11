@@ -6604,7 +6604,7 @@ export default function App() {
     return lines;
   };
 
-  // PDF Export for Insurance/Records - Professional Design with Images
+  // PDF Export for Insurance/Records - Clean Catalog Layout
   const handleExportPDF = async () => {
     if (items.length === 0) return;
     setIsGeneratingPDF(true);
@@ -6613,31 +6613,73 @@ export default function App() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 12;
+      const margin = 15;
       const contentWidth = pageWidth - margin * 2;
       
+      // Layout constants
+      const imgColWidth = contentWidth * 0.25; // 25% for images
+      const textColX = margin + imgColWidth + 8; // Text column starts after gap
+      const textColWidth = contentWidth * 0.75 - 8; // 75% for text minus gap
+      
+      // Typography constants
+      const titleSize = 12;
+      const bodySize = 9;
+      const labelSize = 8;
+      const smallSize = 7;
+      const lineHeight = 4;
+      
+      // Colors
+      const black = [28, 25, 23];
+      const grey = [120, 113, 108];
+      const lightGrey = [200, 200, 200];
+      const green = [22, 128, 61];
+      
+      // Status colors (minimal)
+      const statusColors = {
+        keep: { text: [22, 163, 74] },
+        sell: { text: [180, 83, 9] },
+        TBD: { text: [100, 100, 100] },
+        draft: { text: [100, 100, 100] },
+      };
+      
+      // Category order
+      const categoryOrder = ['Jewelry & Watches', 'Books', 'Coins', 'Decor', 'Furniture', 'Vinyl & Music', 'Other'];
+      
+      // Group items by category
+      const groupByCategory = (itemsList) => {
+        const groups = {};
+        itemsList.forEach(item => {
+          let cat = item.category || 'Other';
+          // Normalize category names
+          if (cat.toLowerCase().includes('jewelry') || cat.toLowerCase().includes('watch')) cat = 'Jewelry & Watches';
+          else if (cat.toLowerCase().includes('book')) cat = 'Books';
+          else if (cat.toLowerCase().includes('coin')) cat = 'Coins';
+          else if (cat.toLowerCase().includes('decor')) cat = 'Decor';
+          else if (cat.toLowerCase().includes('furniture')) cat = 'Furniture';
+          else if (cat.toLowerCase().includes('vinyl') || cat.toLowerCase().includes('music')) cat = 'Vinyl & Music';
+          else if (!categoryOrder.includes(cat)) cat = 'Other';
+          
+          if (!groups[cat]) groups[cat] = [];
+          groups[cat].push(item);
+        });
+        return groups;
+      };
+      
       // === COVER PAGE ===
-      // Light header bar (ink-friendly)
-      pdf.setFillColor(245, 245, 244); // stone-100
-      pdf.rect(0, 0, pageWidth, 55, 'F');
-      pdf.setDrawColor(214, 211, 209); // stone-300
-      pdf.line(0, 55, pageWidth, 55);
+      pdf.setFontSize(24);
+      pdf.setTextColor(...black);
+      pdf.text("Collection Inventory", margin, 35);
       
-      // Title
-      pdf.setFontSize(28);
-      pdf.setTextColor(28, 25, 23); // stone-900
-      pdf.text("Vintage Collection", margin, 28);
-      pdf.setFontSize(14);
-      pdf.setTextColor(120, 113, 108); // stone-500
-      pdf.text("Inventory & Valuation Report", margin, 40);
+      pdf.setFontSize(12);
+      pdf.setTextColor(...grey);
+      pdf.text("Valuation & Insurance Report", margin, 45);
       
-      // Owner info
       pdf.setFontSize(10);
-      pdf.setTextColor(87, 83, 78); // stone-600
-      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 50);
+      pdf.setTextColor(...grey);
+      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 60);
       pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-      })}`, pageWidth - margin, 50, { align: 'right' });
+        year: 'numeric', month: 'long', day: 'numeric' 
+      })}`, margin, 68);
       
       // Summary stats
       const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
@@ -6646,309 +6688,264 @@ export default function App() {
       const keepItems = items.filter(i => i.status === 'keep');
       const tbdItems = items.filter(i => i.status !== 'sell' && i.status !== 'keep');
       
-      let yPos = 65;
+      let yPos = 85;
       
-      // Stats cards
-      pdf.setFillColor(255, 255, 255);
-      pdf.setDrawColor(214, 211, 209);
-      pdf.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'FD');
+      // Stats section
+      pdf.setDrawColor(...lightGrey);
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 8;
       
-      pdf.setFontSize(9);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text("TOTAL ITEMS", margin + 8, yPos + 10);
-      pdf.setFontSize(20);
-      pdf.setTextColor(28, 25, 23);
-      pdf.text(`${items.length}`, margin + 8, yPos + 24);
-      
-      pdf.setFontSize(9);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text("ESTIMATED VALUE RANGE", margin + 50, yPos + 10);
-      pdf.setFontSize(16);
-      pdf.setTextColor(180, 83, 9); // amber
-      pdf.text(`$${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, margin + 50, yPos + 24);
-      
-      pdf.setFontSize(9);
-      pdf.setTextColor(120, 113, 108);
-      pdf.text("STATUS", pageWidth - margin - 50, yPos + 10);
       pdf.setFontSize(10);
-      pdf.setTextColor(28, 25, 23);
-      pdf.text(`Keep: ${keepItems.length}  •  Sell: ${sellItems.length}  •  TBD: ${tbdItems.length}`, pageWidth - margin - 50, yPos + 20);
+      pdf.setTextColor(...black);
+      pdf.text(`Total Items: ${items.length}`, margin, yPos);
       
-      yPos += 45;
+      pdf.setFontSize(12);
+      pdf.setTextColor(...green);
+      pdf.text(`Estimated Value: $${totalLow.toLocaleString()} – $${totalHigh.toLocaleString()}`, margin, yPos + 8);
       
-      // === SUMMARY TABLES BY STATUS ===
-      const renderStatusTable = async (statusItems, statusName, statusColor, bgColor) => {
-        if (statusItems.length === 0) return;
-        
-        // Check if we need new page
-        if (yPos > pageHeight - 60) {
+      pdf.setFontSize(9);
+      pdf.setTextColor(...grey);
+      pdf.text(`Keep: ${keepItems.length}   |   Sell: ${sellItems.length}   |   TBD: ${tbdItems.length}`, margin, yPos + 18);
+      
+      yPos += 30;
+      pdf.setDrawColor(...lightGrey);
+      pdf.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 10;
+      
+      // === SUMMARY TABLE ===
+      pdf.setFontSize(11);
+      pdf.setTextColor(...black);
+      pdf.text("Summary", margin, yPos);
+      yPos += 8;
+      
+      // Table header
+      pdf.setFontSize(8);
+      pdf.setTextColor(...grey);
+      pdf.text("ITEM", margin + 18, yPos);
+      pdf.text("CATEGORY", margin + 90, yPos);
+      pdf.text("VALUE", pageWidth - margin, yPos, { align: 'right' });
+      yPos += 5;
+      
+      // Table rows
+      for (const item of items) {
+        if (yPos > pageHeight - 20) {
           pdf.addPage();
           yPos = margin;
         }
         
-        // Section header
-        pdf.setFillColor(...bgColor);
-        pdf.roundedRect(margin, yPos, contentWidth, 10, 2, 2, 'F');
-        pdf.setFontSize(10);
-        pdf.setTextColor(...statusColor);
-        pdf.text(`${statusName.toUpperCase()} (${statusItems.length} items)`, margin + 4, yPos + 7);
+        // Hero thumbnail
+        const heroUrl = item.images?.[0] || item.image;
+        if (heroUrl) {
+          try {
+            const imgData = await loadImageForPDF(heroUrl);
+            if (imgData) {
+              const dims = fitImageToBox(imgData.width, imgData.height, 12, 12);
+              pdf.addImage(imgData.dataUrl, 'JPEG', margin, yPos - 1, dims.width, dims.height, undefined, 'FAST');
+            }
+          } catch (e) {}
+        }
         
-        const statusLow = statusItems.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
-        const statusHigh = statusItems.reduce((sum, i) => sum + (Number(i.valuation_high) || 0), 0);
-        pdf.text(`$${statusLow.toLocaleString()} - $${statusHigh.toLocaleString()}`, pageWidth - margin - 4, yPos + 7, { align: 'right' });
+        // Title
+        pdf.setFontSize(9);
+        pdf.setTextColor(...black);
+        const title = getDisplayTitle(item).substring(0, 40) + (getDisplayTitle(item).length > 40 ? '...' : '');
+        pdf.text(title, margin + 18, yPos + 4);
+        
+        // Category
+        pdf.setFontSize(8);
+        pdf.setTextColor(...grey);
+        pdf.text((item.category || 'Other').substring(0, 20), margin + 90, yPos + 4);
+        
+        // Value
+        if (item.valuation_high > 0) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(...green);
+          pdf.text(`$${item.valuation_low || 0} – $${item.valuation_high}`, pageWidth - margin, yPos + 4, { align: 'right' });
+        }
         
         yPos += 14;
         
-        // Table header
-        pdf.setFontSize(7);
-        pdf.setTextColor(120, 113, 108);
-        pdf.text("PHOTO", margin + 2, yPos);
-        pdf.text("ITEM", margin + 22, yPos);
-        pdf.text("VALUE", pageWidth - margin - 2, yPos, { align: 'right' });
-        yPos += 3;
+        // Light divider
+        pdf.setDrawColor(240, 240, 240);
+        pdf.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+      }
+      
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(...grey);
+      pdf.text("For insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 10, { align: 'center' });
+      
+      // === ITEM DETAIL PAGES BY CATEGORY ===
+      const categoryGroups = groupByCategory(items);
+      let itemIndex = 0;
+      
+      for (const cat of categoryOrder) {
+        const catItems = categoryGroups[cat];
+        if (!catItems || catItems.length === 0) continue;
         
-        // Table rows
-        for (const item of statusItems) {
-          if (yPos > pageHeight - 25) {
+        // New page for each category
+        pdf.addPage();
+        yPos = margin;
+        
+        // Category header
+        pdf.setFontSize(14);
+        pdf.setTextColor(...black);
+        pdf.text(cat, margin, yPos + 5);
+        pdf.setFontSize(9);
+        pdf.setTextColor(...grey);
+        pdf.text(`${catItems.length} item${catItems.length > 1 ? 's' : ''}`, margin + pdf.getTextWidth(cat + '  ') + 5, yPos + 5);
+        yPos += 12;
+        
+        pdf.setDrawColor(...lightGrey);
+        pdf.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 8;
+        
+        // Items in this category
+        for (let i = 0; i < catItems.length; i++) {
+          const item = catItems[i];
+          itemIndex++;
+          
+          // Estimate height needed for this item
+          const itemImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+          const estimatedHeight = 70; // Base estimate
+          
+          // Check if we need new page
+          if (yPos + estimatedHeight > pageHeight - 20) {
             pdf.addPage();
             yPos = margin;
+            
+            // Repeat category header on new page
+            pdf.setFontSize(11);
+            pdf.setTextColor(...grey);
+            pdf.text(`${cat} (continued)`, margin, yPos + 3);
+            yPos += 10;
           }
           
-          const rowHeight = 18;
-          
-          // Row background (alternating)
-          pdf.setFillColor(252, 252, 251);
-          pdf.rect(margin, yPos, contentWidth, rowHeight, 'F');
-          pdf.setDrawColor(240, 240, 240);
-          pdf.line(margin, yPos + rowHeight, pageWidth - margin, yPos + rowHeight);
-          
-          // Hero image thumbnail
-          const heroUrl = item.images?.[0] || item.image;
-          if (heroUrl) {
-            try {
-              const imgData = await loadImageForPDF(heroUrl);
-              if (imgData) {
-                const dims = fitImageToBox(imgData.width, imgData.height, 14, 14);
-                const imgX = margin + 2 + (14 - dims.width) / 2;
-                const imgY = yPos + 2 + (14 - dims.height) / 2;
-                pdf.addImage(imgData.dataUrl, 'JPEG', imgX, imgY, dims.width, dims.height, undefined, 'FAST');
-              }
-            } catch (e) {}
+          // Divider between items (not first)
+          if (i > 0 || yPos > margin + 15) {
+            pdf.setDrawColor(...lightGrey);
+            pdf.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 6;
           }
           
-          // Title (truncated)
-          pdf.setFontSize(9);
-          pdf.setTextColor(28, 25, 23);
-          const title = getDisplayTitle(item).substring(0, 50) + (getDisplayTitle(item).length > 50 ? '...' : '');
-          pdf.text(title, margin + 22, yPos + 8);
+          const itemStartY = yPos;
+          let textY = yPos;
           
-          // Category
-          pdf.setFontSize(7);
-          pdf.setTextColor(120, 113, 108);
-          pdf.text(item.category || 'Other', margin + 22, yPos + 14);
+          // === LEFT COLUMN: Images (25%) ===
+          const loadedImages = await Promise.all(
+            itemImages.slice(0, 4).map(url => loadImageForPDF(url))
+          );
+          const validImages = loadedImages.filter(Boolean);
           
-          // Value
-          if (item.valuation_high > 0) {
-            pdf.setFontSize(9);
-            pdf.setTextColor(21, 128, 61);
-            pdf.text(`$${item.valuation_low || 0} - $${item.valuation_high}`, pageWidth - margin - 2, yPos + 10, { align: 'right' });
-          }
-          
-          yPos += rowHeight;
-        }
-        
-        yPos += 8;
-      };
-      
-      // Render status tables
-      await renderStatusTable(sellItems, 'Sell', [180, 83, 9], [255, 251, 235]); // amber
-      await renderStatusTable(keepItems, 'Keep', [22, 163, 74], [236, 253, 245]); // green
-      await renderStatusTable(tbdItems, 'Undecided / TBD', [59, 130, 246], [239, 246, 255]); // blue
-      
-      // Footer on summary page
-      pdf.setFontSize(8);
-      pdf.setTextColor(168, 162, 158);
-      pdf.text("This report is for insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 10, { align: 'center' });
-      
-      // === ITEM DETAIL PAGES (2 items per page) ===
-      const itemsPerPage = 2;
-      const itemHeight = (pageHeight - margin * 2 - 10) / itemsPerPage; // Height for each item block
-      
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const itemImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
-        
-        // Load images for this item
-        const loadedImages = await Promise.all(
-          itemImages.slice(0, 4).map(url => loadImageForPDF(url))
-        );
-        const validImages = loadedImages.filter(Boolean);
-        
-        // Check if we need a new page (every 2 items or first item)
-        const positionOnPage = i % itemsPerPage;
-        if (positionOnPage === 0) {
-          pdf.addPage();
-        }
-        
-        // Calculate Y position for this item
-        const itemStartY = margin + (positionOnPage * itemHeight);
-        yPos = itemStartY;
-        
-        // Draw separator line between items (not for first item on page)
-        if (positionOnPage > 0) {
-          pdf.setDrawColor(229, 229, 229);
-          pdf.line(margin, itemStartY - 5, pageWidth - margin, itemStartY - 5);
-        }
-        
-        // === ITEM HEADER: Number + Status ===
-        pdf.setFontSize(8);
-        pdf.setTextColor(168, 162, 158);
-        pdf.text(`#${i + 1}`, margin, yPos + 4);
-        
-        // Status badge
-        const statusColors = {
-          keep: { fill: [236, 253, 245], text: [22, 163, 74] },
-          sell: { fill: [255, 251, 235], text: [180, 83, 9] },
-          TBD: { fill: [239, 246, 255], text: [59, 130, 246] },
-          draft: { fill: [250, 250, 249], text: [120, 113, 108] },
-        };
-        const statusStyle = statusColors[item.status] || statusColors.draft;
-        pdf.setFillColor(...statusStyle.fill);
-        pdf.roundedRect(margin + 12, yPos, 14, 6, 1, 1, 'F');
-        pdf.setFontSize(6);
-        pdf.setTextColor(...statusStyle.text);
-        pdf.text((item.status || 'TBD').toUpperCase(), margin + 19, yPos + 4.5, { align: 'center' });
-        
-        yPos += 10;
-        
-        // === LEFT COLUMN: Photo (left-justified) ===
-        const imgColWidth = 45;
-        const imgHeight = 50;
-        
-        if (validImages.length > 0) {
-          // Hero image - LEFT justified, preserve aspect ratio
-          try {
+          let imgEndY = yPos;
+          if (validImages.length > 0) {
+            // Hero image
             const heroImg = validImages[0];
-            const dims = fitImageToBox(heroImg.width, heroImg.height, imgColWidth, imgHeight - (validImages.length > 1 ? 12 : 0));
-            // Left-justified: imgX = margin (no centering)
-            pdf.addImage(heroImg.dataUrl, 'JPEG', margin, yPos, dims.width, dims.height, undefined, 'MEDIUM');
-          } catch (e) {}
-          
-          // Thumbnail strip below hero (up to 3 more)
-          if (validImages.length > 1) {
-            const thumbY = yPos + imgHeight - 10;
-            const thumbSize = 10;
-            const thumbGap = 2;
-            for (let j = 1; j < Math.min(validImages.length, 4); j++) {
-              const thumb = validImages[j];
-              const thumbX = margin + (j - 1) * (thumbSize + thumbGap);
-              try {
-                const tDims = fitImageToBox(thumb.width, thumb.height, thumbSize, thumbSize);
-                pdf.addImage(thumb.dataUrl, 'JPEG', thumbX, thumbY, tDims.width, tDims.height, undefined, 'FAST');
-              } catch (e) {}
+            const heroMaxHeight = 45;
+            const dims = fitImageToBox(heroImg.width, heroImg.height, imgColWidth, heroMaxHeight);
+            try {
+              pdf.addImage(heroImg.dataUrl, 'JPEG', margin, yPos, dims.width, dims.height, undefined, 'MEDIUM');
+              imgEndY = yPos + dims.height + 3;
+            } catch (e) {}
+            
+            // Secondary images stacked below
+            if (validImages.length > 1) {
+              let secondaryY = imgEndY;
+              const secondarySize = 12;
+              for (let j = 1; j < Math.min(validImages.length, 4); j++) {
+                const img = validImages[j];
+                try {
+                  const sDims = fitImageToBox(img.width, img.height, secondarySize, secondarySize);
+                  pdf.addImage(img.dataUrl, 'JPEG', margin + (j - 1) * (secondarySize + 2), secondaryY, sDims.width, sDims.height, undefined, 'FAST');
+                } catch (e) {}
+              }
+              imgEndY = secondaryY + secondarySize + 3;
             }
           }
+          
+          // === RIGHT COLUMN: Text (75%) ===
+          // Title (larger, heavier)
+          pdf.setFontSize(titleSize);
+          pdf.setTextColor(...black);
+          const titleText = getDisplayTitle(item);
+          const titleLines = wrapText(pdf, titleText, textColWidth);
+          titleLines.slice(0, 2).forEach((line, idx) => {
+            pdf.text(line, textColX, textY + 4 + idx * 5);
+          });
+          textY += Math.min(titleLines.length, 2) * 5 + 4;
+          
+          // Status badge (inline with title area)
+          const statusStyle = statusColors[item.status] || statusColors.draft;
+          pdf.setFontSize(7);
+          pdf.setTextColor(...statusStyle.text);
+          pdf.text((item.status || 'TBD').toUpperCase(), textColX + textColWidth, itemStartY + 4, { align: 'right' });
+          
+          // Define field order (consistent for all items)
+          const fieldDefs = [
+            { label: 'Value', value: item.valuation_high > 0 ? `$${item.valuation_low || 0} – $${item.valuation_high}` : null, color: green },
+            { label: 'Maker/Brand', value: item.maker },
+            { label: 'Style/Period', value: item.style },
+            { label: 'Era', value: item.era },
+            { label: 'Materials', value: item.materials },
+            { label: 'Markings', value: item.markings },
+            { label: 'Condition', value: item.condition },
+          ];
+          
+          // Render fields
+          for (const field of fieldDefs) {
+            if (!field.value || field.value.toLowerCase() === 'unknown') continue;
+            
+            pdf.setFontSize(labelSize);
+            pdf.setTextColor(...(field.color || black));
+            
+            if (field.label === 'Value') {
+              // Value gets special treatment
+              pdf.text(field.value, textColX, textY);
+              if (item.confidence) {
+                pdf.setFontSize(smallSize);
+                pdf.setTextColor(...grey);
+                pdf.text(` (${item.confidence} confidence)`, textColX + pdf.getTextWidth(field.value) + 2, textY);
+              }
+            } else {
+              // Standard field: "Label: Value"
+              pdf.setTextColor(...grey);
+              pdf.text(`${field.label}: `, textColX, textY);
+              const labelWidth = pdf.getTextWidth(`${field.label}: `);
+              pdf.setTextColor(...black);
+              const valueText = field.value.length > 60 ? field.value.substring(0, 60) + '...' : field.value;
+              pdf.text(valueText, textColX + labelWidth, textY);
+            }
+            textY += lineHeight + 1;
+          }
+          
+          // Description (paragraph form)
+          if (item.sales_blurb) {
+            textY += 2;
+            pdf.setFontSize(smallSize);
+            pdf.setTextColor(...grey);
+            pdf.text('Description:', textColX, textY);
+            textY += lineHeight;
+            
+            pdf.setTextColor(60, 60, 60);
+            const descLines = wrapText(pdf, item.sales_blurb, textColWidth);
+            descLines.slice(0, 4).forEach((line, idx) => {
+              pdf.text(line, textColX, textY + idx * 3.5);
+            });
+            textY += Math.min(descLines.length, 4) * 3.5;
+          }
+          
+          // Calculate final Y position (max of image column and text column)
+          yPos = Math.max(imgEndY, textY) + 8;
         }
-        
-        // === RIGHT COLUMN: Title + Value + Details ===
-        const detailsX = margin + imgColWidth + 6;
-        const detailsWidth = contentWidth - imgColWidth - 6;
-        let detailY = yPos;
-        
-        // Title (bold, larger)
-        pdf.setFontSize(11);
-        pdf.setTextColor(28, 25, 23);
-        const titleLines = wrapText(pdf, getDisplayTitle(item), detailsWidth);
-        titleLines.slice(0, 2).forEach((line, idx) => {
-          pdf.text(line, detailsX, detailY + 4 + idx * 4.5);
-        });
-        detailY += Math.min(titleLines.length, 2) * 4.5 + 6;
-        
-        // Category & Era (smaller, grey)
+      }
+      
+      // Page numbers
+      const totalPages = pdf.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
         pdf.setFontSize(8);
-        pdf.setTextColor(120, 113, 108);
-        const metaText = [item.category, item.era].filter(Boolean).join(' • ');
-        pdf.text(metaText || 'Uncategorized', detailsX, detailY);
-        detailY += 6;
-        
-        // === VALUATION LINE (inline, no box) ===
-        if (item.valuation_high > 0) {
-          pdf.setFontSize(11);
-          pdf.setTextColor(21, 128, 61); // green
-          pdf.text(`$${item.valuation_low || 0} — $${item.valuation_high}`, detailsX, detailY + 1);
-          
-          // Confidence inline
-          if (item.confidence) {
-            const confColors = { high: [22, 163, 74], medium: [217, 119, 6], low: [220, 38, 38] };
-            const color = confColors[item.confidence] || confColors.medium;
-            pdf.setFontSize(7);
-            pdf.setTextColor(...color);
-            const valWidth = pdf.getTextWidth(`$${item.valuation_low || 0} — $${item.valuation_high}`);
-            pdf.text(`(${item.confidence})`, detailsX + valWidth + 3, detailY + 1);
-          }
-          detailY += 6;
-          
-          // Confidence reasoning (smaller, below value)
-          if (item.confidence_reason) {
-            pdf.setFontSize(7);
-            pdf.setTextColor(120, 113, 108);
-            const reasonLines = wrapText(pdf, item.confidence_reason, detailsWidth);
-            pdf.text(reasonLines[0] || '', detailsX, detailY);
-            detailY += 4;
-          }
-        }
-        
-        detailY += 2;
-        
-        // === DETAILS (no grey box, compact grid) ===
-        const fields = [
-          { label: 'Maker', value: item.maker },
-          { label: 'Style', value: item.style },
-          { label: 'Materials', value: item.materials },
-          { label: 'Markings', value: item.markings },
-        ].filter(f => f.value && f.value.toLowerCase() !== 'unknown');
-        
-        // Details inline (no grey box, compact)
-        if (fields.length > 0) {
-          pdf.setFontSize(7);
-          pdf.setTextColor(120, 113, 108);
-          // Show fields inline: "Maker: X • Materials: Y"
-          const fieldStrings = fields.slice(0, 4).map(f => `${f.label}: ${f.value.substring(0, 25)}${f.value.length > 25 ? '...' : ''}`);
-          const fieldLine = fieldStrings.join(' • ');
-          const fieldLines = wrapText(pdf, fieldLine, detailsWidth);
-          fieldLines.slice(0, 2).forEach((line, idx) => {
-            pdf.text(line, detailsX, detailY + idx * 3.5);
-          });
-          detailY += Math.min(fieldLines.length, 2) * 3.5 + 2;
-        }
-        
-        // Condition (compact, inline)
-        if (item.condition) {
-          pdf.setFontSize(7);
-          pdf.setTextColor(168, 162, 158);
-          const condText = `Cond: ${item.condition.substring(0, 70)}${item.condition.length > 70 ? '...' : ''}`;
-          const condLines = wrapText(pdf, condText, detailsWidth);
-          pdf.text(condLines[0] || '', detailsX, detailY);
-          detailY += 4;
-        }
-        
-        // Description (compact, 2 lines max)
-        if (item.sales_blurb || item.reasoning) {
-          const blurbText = item.sales_blurb || item.reasoning;
-          pdf.setFontSize(7);
-          pdf.setTextColor(87, 83, 78);
-          const blurbLines = wrapText(pdf, blurbText, detailsWidth);
-          blurbLines.slice(0, 2).forEach((line, idx) => {
-            pdf.text(line, detailsX, detailY + idx * 3.5);
-          });
-        }
-        
-        // Page footer only on bottom of page (after last item on page)
-        if (positionOnPage === itemsPerPage - 1 || i === items.length - 1) {
-          pdf.setFontSize(7);
-          pdf.setTextColor(168, 162, 158);
-          pdf.text(`Page ${pdf.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-        }
+        pdf.setTextColor(...grey);
+        pdf.text(`Page ${p} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       
       // Save
