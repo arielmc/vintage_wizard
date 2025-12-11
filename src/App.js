@@ -3799,14 +3799,45 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
   const handleAddPhoto = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    const newImages = [];
-    for (const file of files) {
-      newImages.push(await compressImage(file));
+    
+    // Show loading state
+    setIsAnalyzing(true); // Reuse analyzing state for loading indicator
+    
+    try {
+      const newImageUrls = [];
+      const newBase64ForAI = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Upload to Firebase Storage to get URL (not base64 in document)
+        const imageIndex = formData.images.length + i;
+        const url = await uploadImageToStorage(file, user.uid, formData.id, imageIndex);
+        newImageUrls.push(url);
+        
+        // Also store base64 for AI in subcollection
+        try {
+          const b64 = await compressImageForBase64Storage(file);
+          await setDoc(
+            doc(db, "artifacts", appId, "users", user.uid, "inventory", formData.id, "images_ai", `img_${imageIndex}`),
+            { base64: b64, index: imageIndex, createdAt: serverTimestamp() }
+          );
+          newBase64ForAI.push(b64);
+        } catch (err) {
+          console.error("Failed to store base64 for AI:", err);
+        }
+      }
+      
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...newImageUrls],
+      }));
+    } catch (err) {
+      console.error("Failed to add photos:", err);
+      alert("Failed to add photos: " + err.message);
+    } finally {
+      setIsAnalyzing(false);
     }
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...newImages],
-    }));
   };
 
   // Chat about item handler
@@ -6641,19 +6672,22 @@ export default function App() {
   };
 
   const handleUpdateItem = async (updatedItem) => {
-    if (user)
+    if (user) {
+      // Exclude large fields that should NOT be in main document (stored in subcollection instead)
+      const { id, images_base64, ...safeData } = updatedItem;
+      
+      // Also ensure images array doesn't contain base64 strings (only URLs)
+      if (safeData.images && Array.isArray(safeData.images)) {
+        safeData.images = safeData.images.filter(img => 
+          typeof img === 'string' && !img.startsWith('data:')
+        );
+      }
+      
       await updateDoc(
-        doc(
-          db,
-          "artifacts",
-          appId,
-          "users",
-          user.uid,
-          "inventory",
-          updatedItem.id
-        ),
-        (({ id, ...data }) => data)(updatedItem)
+        doc(db, "artifacts", appId, "users", user.uid, "inventory", updatedItem.id),
+        safeData
       );
+    }
   };
   const handleDeleteItem = async (itemId) => {
     if (user)
