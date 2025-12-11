@@ -6670,13 +6670,9 @@ export default function App() {
       pdf.setTextColor(...black);
       pdf.text("Collection Inventory", margin, 35);
       
-      pdf.setFontSize(12);
-      pdf.setTextColor(...grey);
-      pdf.text("Valuation & Insurance Report", margin, 45);
-      
       pdf.setFontSize(10);
       pdf.setTextColor(...grey);
-      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 60);
+      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 50);
       pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
         year: 'numeric', month: 'long', day: 'numeric' 
       })}`, margin, 68);
@@ -6787,18 +6783,11 @@ export default function App() {
         pdf.addPage();
         yPos = margin;
         
-        // Category header
-        pdf.setFontSize(14);
+        // Category header - simple format: "category, # items"
+        pdf.setFontSize(11);
         pdf.setTextColor(...black);
-        pdf.text(cat, margin, yPos + 5);
-        pdf.setFontSize(9);
-        pdf.setTextColor(...grey);
-        pdf.text(`${catItems.length} item${catItems.length > 1 ? 's' : ''}`, margin + pdf.getTextWidth(cat + '  ') + 5, yPos + 5);
-        yPos += 12;
-        
-        pdf.setDrawColor(...lightGrey);
-        pdf.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 8;
+        pdf.text(`${cat.toLowerCase()}, ${catItems.length} item${catItems.length > 1 ? 's' : ''}`, margin, yPos + 5);
+        yPos += 14;
         
         // Items in this category
         for (let i = 0; i < catItems.length; i++) {
@@ -6874,15 +6863,31 @@ export default function App() {
           });
           textY += Math.min(titleLines.length, 2) * 5 + 4;
           
-          // Status badge (inline with title area)
-          const statusStyle = statusColors[item.status] || statusColors.draft;
-          pdf.setFontSize(7);
-          pdf.setTextColor(...statusStyle.text);
-          pdf.text((item.status || 'TBD').toUpperCase(), textColX + textColWidth, itemStartY + 4, { align: 'right' });
+          // Status + Value line: "Keep: $50-$75, medium confidence"
+          if (item.valuation_high > 0) {
+            const statusText = (item.status || 'TBD').charAt(0).toUpperCase() + (item.status || 'tbd').slice(1).toLowerCase();
+            const statusStyle = statusColors[item.status] || statusColors.draft;
+            const valueText = `$${item.valuation_low || 0} – $${item.valuation_high}`;
+            
+            pdf.setFontSize(labelSize);
+            pdf.setTextColor(...statusStyle.text);
+            pdf.text(`${statusText}: `, textColX, textY);
+            const statusWidth = pdf.getTextWidth(`${statusText}: `);
+            
+            pdf.setTextColor(...green);
+            pdf.text(valueText, textColX + statusWidth, textY);
+            
+            if (item.confidence) {
+              const valWidth = pdf.getTextWidth(valueText);
+              pdf.setFontSize(smallSize);
+              pdf.setTextColor(...grey);
+              pdf.text(`, ${item.confidence} confidence`, textColX + statusWidth + valWidth, textY);
+            }
+            textY += lineHeight + 2;
+          }
           
           // Define field order (consistent for all items)
           const fieldDefs = [
-            { label: 'Value', value: item.valuation_high > 0 ? `$${item.valuation_low || 0} – $${item.valuation_high}` : null, color: green },
             { label: 'Maker/Brand', value: item.maker },
             { label: 'Style/Period', value: item.style },
             { label: 'Era', value: item.era },
@@ -6896,25 +6901,12 @@ export default function App() {
             if (!field.value || field.value.toLowerCase() === 'unknown') continue;
             
             pdf.setFontSize(labelSize);
-            pdf.setTextColor(...(field.color || black));
-            
-            if (field.label === 'Value') {
-              // Value gets special treatment
-              pdf.text(field.value, textColX, textY);
-              if (item.confidence) {
-                pdf.setFontSize(smallSize);
-                pdf.setTextColor(...grey);
-                pdf.text(` (${item.confidence} confidence)`, textColX + pdf.getTextWidth(field.value) + 2, textY);
-              }
-            } else {
-              // Standard field: "Label: Value"
-              pdf.setTextColor(...grey);
-              pdf.text(`${field.label}: `, textColX, textY);
-              const labelWidth = pdf.getTextWidth(`${field.label}: `);
-              pdf.setTextColor(...black);
-              const valueText = field.value.length > 60 ? field.value.substring(0, 60) + '...' : field.value;
-              pdf.text(valueText, textColX + labelWidth, textY);
-            }
+            pdf.setTextColor(...grey);
+            pdf.text(`${field.label}: `, textColX, textY);
+            const labelWidth = pdf.getTextWidth(`${field.label}: `);
+            pdf.setTextColor(...black);
+            const valueText = field.value.length > 60 ? field.value.substring(0, 60) + '...' : field.value;
+            pdf.text(valueText, textColX + labelWidth, textY);
             textY += lineHeight + 1;
           }
           
