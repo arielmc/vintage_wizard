@@ -7835,8 +7835,9 @@ export default function App() {
          <div className="fixed top-0 left-0 right-0 z-50 animate-in slide-in-from-top fade-in duration-200">
             {/* Mobile: Compact top bar */}
             <div className="md:hidden bg-white px-3 py-2.5 shadow-lg border-b border-stone-100" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-              {/* Row 1: Header with Select All, count, and close */}
+              {/* Row 1: "Select Item(s):" + All checkbox + count + close */}
               <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-bold text-stone-900">Select Item(s):</span>
                 <button 
                   onClick={() => {
                     if (selectedIds.size === filteredItems.length) {
@@ -7845,9 +7846,18 @@ export default function App() {
                       setSelectedIds(new Set(filteredItems.map(i => i.id)));
                     }
                   }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all hover:bg-stone-100 text-stone-600"
                 >
-                  {selectedIds.size === filteredItems.length ? "None" : "All"}
+                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                    selectedIds.size === filteredItems.length && filteredItems.length > 0
+                      ? 'bg-violet-500 border-violet-500' 
+                      : 'border-stone-300 bg-white'
+                  }`}>
+                    {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
+                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    )}
+                  </div>
+                  All
                 </button>
                 <span className="text-sm text-violet-600 font-bold">
                   {selectedIds.size} selected
@@ -7861,14 +7871,16 @@ export default function App() {
                 </button>
               </div>
               
-              {/* Row 2: Actions - Status dropdown, AI Analyze, Delete */}
+              {/* Row 2: "Action:" + Status dropdown + AI Analyze + Delete icon */}
               <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-stone-500">Action:</span>
+                
                 {/* Status Dropdown */}
                 <div className="relative">
                   <button 
                     onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
                     disabled={selectedIds.size === 0}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
                   >
                     <span>Mark As</span>
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
@@ -7905,20 +7917,20 @@ export default function App() {
                 <button 
                   onClick={handleBatchAnalyze}
                   disabled={isBatchProcessing || selectedIds.size === 0}
-                  className="flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   AI Analyze
                 </button>
                 
-                {/* Delete Button */}
+                {/* Delete Button - Icon only */}
                 <button 
                   onClick={handleBatchDelete}
                   disabled={selectedIds.size === 0}
-                  className="py-2 px-3 rounded-lg text-xs font-bold transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30 flex items-center justify-center gap-1.5"
+                  className="p-2 rounded-lg transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30"
+                  title="Delete selected"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
