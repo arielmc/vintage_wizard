@@ -5923,7 +5923,8 @@ export default function App() {
   const bulkInputRef = useRef(null);
   
   // Add menu dropdown state
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false); // Top dropdown
+  const [isBottomAddMenuOpen, setIsBottomAddMenuOpen] = useState(false); // Bottom slide-up
   const addMenuRef = useRef(null);
   
   // Profile page state
@@ -7708,7 +7709,7 @@ export default function App() {
           
           {/* Add - Prominent center button */}
           <button
-            onClick={() => setIsAddMenuOpen(true)}
+            onClick={() => setIsBottomAddMenuOpen(true)}
             className="p-1"
           >
             <div className="w-12 h-12 -mt-6 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors">
@@ -7853,6 +7854,54 @@ export default function App() {
             </button>
             
             <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mt-2" />
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Add Modal - Bottom (slides up from bottom nav) */}
+      {isBottomAddMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsBottomAddMenuOpen(false)}>
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-200 safe-area-pb"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-6" />
+            <h3 className="text-lg font-bold text-stone-900 mb-4">Add Items</h3>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => { singleInputRef.current?.click(); setIsBottomAddMenuOpen(false); }}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-rose-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">One Item</p>
+                  <p className="text-xs text-stone-500">Multiple angles, up to 4 photos</p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => { bulkInputRef.current?.click(); setIsBottomAddMenuOpen(false); }}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
+                  <Images className="w-6 h-6 text-violet-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-stone-900">Multiple Items</p>
+                  <p className="text-xs text-stone-500">Up to 10 items, 4 photos each</p>
+                </div>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setIsBottomAddMenuOpen(false)}
+              className="w-full mt-4 py-3 text-stone-500 font-medium"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
