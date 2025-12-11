@@ -4637,12 +4637,13 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
             >
               {isSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </button>
-            {/* Create Your Own Link */}
+            {/* Get Your Own CTA */}
             <a 
               href="/"
-              className="hidden sm:flex text-xs font-semibold text-rose-600 hover:text-rose-700 items-center gap-1 whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold rounded-full shadow-sm hover:shadow transition-all whitespace-nowrap"
             >
-              Create yours <ArrowRight className="w-3 h-3" />
+              <Sparkles className="w-3 h-3" />
+              Get Vintage Wizard
             </a>
           </div>
         </div>
