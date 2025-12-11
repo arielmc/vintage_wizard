@@ -7031,14 +7031,6 @@ export default function App() {
           
           {/* Mobile Top Right Buttons */}
           <div className="md:hidden flex items-center gap-1">
-            {/* Add Button */}
-            <button
-              onClick={() => setIsAddMenuOpen(true)}
-              className="p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-all"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-            
             {/* Select Button */}
             <button
               onClick={() => setIsSelectionMode(!isSelectionMode)}
@@ -7049,6 +7041,14 @@ export default function App() {
               }`}
             >
               <CheckSquare className="w-5 h-5" />
+            </button>
+            
+            {/* Add Button */}
+            <button
+              onClick={() => setIsAddMenuOpen(true)}
+              className="p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-all"
+            >
+              <Plus className="w-5 h-5" />
             </button>
           </div>
           
@@ -7440,7 +7440,17 @@ export default function App() {
          <div className="fixed top-14 left-0 right-0 z-40 animate-in slide-in-from-top-2 fade-in duration-200">
             <div className="bg-white border-b border-stone-200 shadow-md">
               <div className="max-w-7xl mx-auto px-3 py-2">
-                {/* Clean single row layout */}
+                {/* Helper text row - mobile only */}
+                <div className="md:hidden flex items-center justify-between mb-2 pb-2 border-b border-stone-100">
+                  <span className="text-xs text-stone-500">
+                    Select items to apply actions:
+                  </span>
+                  <span className="text-xs font-bold text-violet-600">
+                    {selectedIds.size} selected
+                  </span>
+                </div>
+                
+                {/* Action row */}
                 <div className="flex items-center gap-2">
                    {/* Cancel button */}
                    <button 
@@ -7798,14 +7808,13 @@ export default function App() {
         </div>
       )}
       
-      {/* Mobile Add Modal */}
+      {/* Mobile Add Modal - Drops from top */}
       {isAddMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsAddMenuOpen(false)}>
           <div 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-200 safe-area-pb"
+            className="absolute top-0 left-0 right-0 bg-white rounded-b-3xl p-6 pt-16 shadow-2xl animate-in slide-in-from-top duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-6" />
             <h3 className="text-lg font-bold text-stone-900 mb-4">Add Items</h3>
             
             <div className="space-y-3">
@@ -7842,6 +7851,8 @@ export default function App() {
             >
               Cancel
             </button>
+            
+            <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mt-2" />
           </div>
         </div>
       )}
