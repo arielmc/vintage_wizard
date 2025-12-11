@@ -1,12 +1,10 @@
 /**
  * Firebase Cloud Functions for Vintage Wizard
  * 
- * Contact Seller Email Flow:
- * 1. Buyer submits contact form → document created in 'contact_requests'
- * 2. This function triggers on new document
- * 3. Looks up seller info from share document
- * 4. Sends email to seller via SMTP (Gmail, SendGrid, etc.)
- * 5. Updates document status to 'sent'
+ * Email sending via 'mail' collection:
+ * 1. App writes to 'mail' collection with to, replyTo, message fields
+ * 2. This function triggers and sends email via Gmail SMTP
+ * 3. Updates document with delivery status
  */
 
 const functions = require("firebase-functions");
@@ -17,218 +15,98 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // ============================================
-// CONFIGURATION - Update these values!
+// CONFIGURATION
 // ============================================
+// Set your Gmail credentials using Firebase config:
+// firebase functions:config:set gmail.email="your@gmail.com" gmail.password="your-app-password"
 
-// Option 1: Gmail (for testing/small volume)
-// Enable "Less secure app access" or use App Password
-// https://myaccount.google.com/apppasswords
-
-// Option 2: SendGrid (recommended for production)
-// Sign up at https://sendgrid.com and get API key
-
-// Set these in Firebase config:
-// firebase functions:config:set email.service="gmail" email.user="your@gmail.com" email.pass="your-app-password"
-// OR
-// firebase functions:config:set email.service="sendgrid" email.api_key="your-sendgrid-api-key"
-
-const getEmailConfig = () => {
-  const config = functions.config().email || {};
+const getTransporter = () => {
+  const config = functions.config().gmail || {};
   
-  if (config.service === "sendgrid") {
-    return {
-      host: "smtp.sendgrid.net",
-      port: 587,
-      secure: false,
-      auth: {
-        user: "apikey",
-        pass: config.api_key,
-      },
-    };
-  }
-  
-  // Default to Gmail
-  return {
+  return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: config.user,
-      pass: config.pass,
+      user: config.email,
+      pass: config.password,
     },
-  };
+  });
 };
 
-// Your app ID (from Firebase Data Connect or your app config)
-const APP_ID = "default"; // Change this if you use a different appId
-
 // ============================================
-// CLOUD FUNCTION: Send Contact Email
+// CLOUD FUNCTION: Process Mail Collection
 // ============================================
 
-exports.sendContactEmail = functions.firestore
-  .document(`artifacts/${APP_ID}/contact_requests/{requestId}`)
+exports.processMailQueue = functions.firestore
+  .document("mail/{mailId}")
   .onCreate(async (snap, context) => {
-    const requestData = snap.data();
-    const requestId = context.params.requestId;
+    const mailData = snap.data();
+    const mailId = context.params.mailId;
     
-    console.log(`Processing contact request: ${requestId}`);
+    console.log(`Processing mail: ${mailId}`);
+    console.log(`To: ${mailData.to}`);
     
     try {
-      // 1. Get the share document to find the seller
-      const shareDoc = await db
-        .collection("artifacts")
-        .doc(APP_ID)
-        .collection("shares")
-        .doc(requestData.shareId)
-        .get();
+      const transporter = getTransporter();
       
-      if (!shareDoc.exists) {
-        console.error("Share document not found:", requestData.shareId);
-        await updateRequestStatus(requestId, "error", "Share not found");
-        return;
-      }
-      
-      const shareData = shareDoc.data();
-      const sellerUserId = shareData.userId;
-      const sellerName = shareData.ownerName || "A collector";
-      
-      // 2. Get the seller's email from Firebase Auth
-      let sellerEmail;
-      try {
-        const userRecord = await admin.auth().getUser(sellerUserId);
-        sellerEmail = userRecord.email;
-      } catch (authErr) {
-        console.error("Failed to get seller email:", authErr);
-        await updateRequestStatus(requestId, "error", "Seller email not found");
-        return;
-      }
-      
-      if (!sellerEmail) {
-        console.error("Seller has no email:", sellerUserId);
-        await updateRequestStatus(requestId, "error", "Seller has no email");
-        return;
-      }
-      
-      // 3. Build the public item URL
-      const itemUrl = `https://your-app-domain.com/?share=${requestData.shareId}&token=${shareData.token}&mode=forsale`;
-      
-      // 4. Compose the email
-      const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #f43f5e, #ec4899); padding: 20px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">🧙 Vintage Wizard</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Someone is interested in your item!</p>
-          </div>
-          
-          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
-            <h2 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px;">
-              Inquiry about: ${requestData.itemTitle}
-            </h2>
-            
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-              <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${requestData.message}</p>
-            </div>
-            
-            <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
-              <strong>From:</strong> ${requestData.buyerEmail}
-            </p>
-            
-            <a href="mailto:${requestData.buyerEmail}?subject=Re: ${encodeURIComponent(requestData.itemTitle)}" 
-               style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-              Reply to Buyer
-            </a>
-          </div>
-          
-          <div style="padding: 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
-            <p style="margin: 0; color: #64748b; font-size: 12px;">
-              This message was sent via Vintage Wizard. Reply directly to respond to the buyer.
-            </p>
-            <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 11px;">
-              Item: ${requestData.itemTitle} • ID: ${requestData.itemId?.substring(0, 8).toUpperCase()}
-            </p>
-          </div>
-        </div>
-      `;
-      
-      const emailText = `
-Someone is interested in your item!
-
-Inquiry about: ${requestData.itemTitle}
-
-Message:
-${requestData.message}
-
-From: ${requestData.buyerEmail}
-
----
-Reply directly to this email to respond to the buyer.
-
-Item: ${requestData.itemTitle}
-ID: ${requestData.itemId?.substring(0, 8).toUpperCase()}
-
-Sent via Vintage Wizard
-      `;
-      
-      // 5. Send the email
-      const transporter = nodemailer.createTransport(getEmailConfig());
-      
+      // Send the email
       await transporter.sendMail({
-        from: '"Vintage Wizard" <noreply@vintagewizard.app>',
-        to: sellerEmail,
-        replyTo: requestData.buyerEmail,
-        subject: `Inquiry about: ${requestData.itemTitle}`,
-        text: emailText,
-        html: emailHtml,
+        from: `"Vintage Wizard" <${functions.config().gmail?.email || 'noreply@vintagewizard.app'}>`,
+        to: mailData.to,
+        replyTo: mailData.replyTo || undefined,
+        subject: mailData.message?.subject || "Message from Vintage Wizard",
+        text: mailData.message?.text || "",
+        html: mailData.message?.html || "",
       });
       
-      console.log(`Email sent successfully to ${sellerEmail}`);
+      console.log(`✅ Email sent successfully to ${mailData.to}`);
       
-      // 6. Update request status
-      await updateRequestStatus(requestId, "sent");
+      // Update document with success status
+      await snap.ref.update({
+        delivery: {
+          state: "SUCCESS",
+          attempts: 1,
+          endTime: admin.firestore.FieldValue.serverTimestamp(),
+          info: {
+            messageId: mailId,
+            accepted: [mailData.to],
+          },
+        },
+      });
       
       return { success: true };
       
     } catch (error) {
-      console.error("Error processing contact request:", error);
-      await updateRequestStatus(requestId, "error", error.message);
-      throw error;
+      console.error("❌ Email send failed:", error.message);
+      
+      // Update document with error status
+      await snap.ref.update({
+        delivery: {
+          state: "ERROR",
+          attempts: 1,
+          endTime: admin.firestore.FieldValue.serverTimestamp(),
+          error: error.message,
+        },
+      });
+      
+      // Don't throw - we've logged the error
+      return { success: false, error: error.message };
     }
   });
 
-// Helper to update request status
-async function updateRequestStatus(requestId, status, errorMessage = null) {
-  const updateData = {
-    status,
-    processedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-  
-  if (errorMessage) {
-    updateData.errorMessage = errorMessage;
-  }
-  
-  await db
-    .collection("artifacts")
-    .doc(APP_ID)
-    .collection("contact_requests")
-    .doc(requestId)
-    .update(updateData);
-}
-
 // ============================================
-// OPTIONAL: Callable function for testing
+// OPTIONAL: Test email config (callable)
 // ============================================
 
 exports.testEmailConfig = functions.https.onCall(async (data, context) => {
-  // Only allow authenticated admins to test
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Must be logged in");
   }
   
   try {
-    const transporter = nodemailer.createTransport(getEmailConfig());
+    const transporter = getTransporter();
     await transporter.verify();
-    return { success: true, message: "Email configuration is valid" };
+    return { success: true, message: "Gmail configuration is valid!" };
   } catch (error) {
     return { success: false, message: error.message };
   }
 });
-

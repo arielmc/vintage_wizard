@@ -7026,20 +7026,31 @@ export default function App() {
             </h1>
           </div>
           
-          {/* Spacer to push select button right on mobile */}
+          {/* Spacer to push buttons right on mobile */}
           <div className="flex-1 md:hidden" />
           
-          {/* Mobile Select Button - Far right on mobile */}
-          <button
-            onClick={() => setIsSelectionMode(!isSelectionMode)}
-            className={`md:hidden p-2 rounded-lg transition-all ${
-              isSelectionMode 
-                ? "bg-violet-100 text-violet-700" 
-                : "text-stone-500 hover:bg-stone-100"
-            }`}
-          >
-            <CheckSquare className="w-5 h-5" />
-          </button>
+          {/* Mobile Top Right Buttons */}
+          <div className="md:hidden flex items-center gap-1">
+            {/* Add Button */}
+            <button
+              onClick={() => setIsAddMenuOpen(true)}
+              className="p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            
+            {/* Select Button */}
+            <button
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={`p-2 rounded-lg transition-all ${
+                isSelectionMode 
+                  ? "bg-violet-100 text-violet-700" 
+                  : "text-stone-600 hover:bg-stone-100"
+              }`}
+            >
+              <CheckSquare className="w-5 h-5" />
+            </button>
+          </div>
           
           {/* Search Bar - Desktop only (mobile uses bottom nav) */}
           <div className="hidden md:flex flex-1 max-w-xs relative">
@@ -7673,42 +7684,52 @@ export default function App() {
       )}
       
       {/* === MOBILE BOTTOM NAVIGATION === */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-40 safe-area-pb">
-        <div className="flex items-center justify-around h-14 px-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-50/95 backdrop-blur-sm border-t border-stone-200 z-40 safe-area-pb">
+        <div className="flex items-center justify-around h-14 px-4">
           {/* Search */}
           <button
             onClick={() => setIsMobileSearchOpen(true)}
             className={`p-3 rounded-xl transition-all ${
-              isMobileSearchOpen ? 'text-rose-600 bg-rose-50' : 'text-stone-500'
+              isMobileSearchOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-700 hover:bg-stone-100'
             }`}
           >
             <Search className="w-6 h-6" />
           </button>
           
-          {/* Add */}
+          {/* Add - Prominent center button */}
           <button
             onClick={() => setIsAddMenuOpen(true)}
-            className="p-1 text-stone-500"
+            className="p-1"
           >
-            <div className="w-12 h-12 -mt-6 bg-stone-900 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 -mt-6 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors">
               <Plus className="w-6 h-6 text-white" />
             </div>
           </button>
           
-          {/* Profile */}
-          <button
-            onClick={() => setShowProfilePage(true)}
-            className="p-3 rounded-xl text-stone-500"
-          >
-            <User className="w-6 h-6" />
-          </button>
-          
-          {/* Export */}
+          {/* Export/Share */}
           <button
             onClick={() => setMobileExportOpen(true)}
-            className="p-3 rounded-xl text-stone-500"
+            className="p-3 rounded-xl text-stone-700 hover:bg-stone-100 transition-all"
           >
-            <Upload className="w-6 h-6" />
+            <Share2 className="w-6 h-6" />
+          </button>
+          
+          {/* Profile - Far right with avatar */}
+          <button
+            onClick={() => setShowProfilePage(true)}
+            className="p-2 rounded-xl hover:bg-stone-100 transition-all"
+          >
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Profile" 
+                className="w-7 h-7 rounded-full object-cover ring-2 ring-stone-200"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
+                <User className="w-4 h-4 text-stone-600" />
+              </div>
+            )}
           </button>
         </div>
       </nav>
