@@ -3510,7 +3510,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
   );
 };
 
-const EditModal = ({ item, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev }) => {
+const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev }) => {
   const [formData, setFormData] = useState({
     ...item,
     images: item.images || (item.image ? [item.image] : []),
@@ -8069,6 +8069,7 @@ export default function App() {
       {selectedItem && (
         <EditModal
           item={selectedItem}
+          user={user}
           onClose={() => setSelectedItem(null)}
           onSave={handleUpdateItem}
           onDelete={handleDeleteItem}
