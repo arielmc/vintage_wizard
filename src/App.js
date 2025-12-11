@@ -6918,24 +6918,89 @@ export default function App() {
             textY += lineHeight + 1;
           }
           
-          // Description (paragraph form)
-          if (item.sales_blurb) {
-            textY += 2;
+          // Helper to render a text block
+          const renderTextBlock = (label, text, maxLines = 6) => {
+            if (!text) return;
+            textY += 3;
             pdf.setFontSize(smallSize);
             pdf.setTextColor(...grey);
-            pdf.text('Description:', textColX, textY);
+            pdf.text(`${label}:`, textColX, textY);
             textY += lineHeight;
             
             pdf.setTextColor(60, 60, 60);
-            const descLines = wrapText(pdf, item.sales_blurb, textColWidth);
-            descLines.slice(0, 4).forEach((line, idx) => {
+            const lines = wrapText(pdf, text, textColWidth);
+            lines.slice(0, maxLines).forEach((line, idx) => {
               pdf.text(line, textColX, textY + idx * 3.5);
             });
-            textY += Math.min(descLines.length, 4) * 3.5;
+            textY += Math.min(lines.length, maxLines) * 3.5;
+          };
+          
+          // AI Description / Sales Blurb
+          renderTextBlock('Description', item.sales_blurb, 4);
+          
+          // AI Reasoning
+          renderTextBlock('AI Reasoning', item.reasoning, 4);
+          
+          // Confidence Reason
+          if (item.confidence_reason) {
+            renderTextBlock('Valuation Notes', item.confidence_reason, 2);
+          }
+          
+          // User Notes
+          const userNotes = item.userNotes || item.provenance?.user_story;
+          renderTextBlock('Owner Notes', userNotes, 3);
+          
+          // === LISTING SECTION ===
+          if (item.listing_title || item.listing_description || item.listing_tags) {
+            textY += 4;
+            pdf.setDrawColor(...lightGrey);
+            pdf.line(textColX, textY, textColX + textColWidth, textY);
+            textY += 5;
+            
+            pdf.setFontSize(labelSize);
+            pdf.setTextColor(...grey);
+            pdf.text('LISTING DETAILS', textColX, textY);
+            textY += lineHeight + 2;
+            
+            // Listing Price
+            const listingPrice = item.listing_price || (item.valuation_high > 0 ? Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6) : null);
+            if (listingPrice) {
+              pdf.setFontSize(labelSize);
+              pdf.setTextColor(...grey);
+              pdf.text('Listed Price: ', textColX, textY);
+              pdf.setTextColor(...green);
+              pdf.text(`$${listingPrice}`, textColX + pdf.getTextWidth('Listed Price: '), textY);
+              textY += lineHeight + 1;
+            }
+            
+            // Listing Title
+            if (item.listing_title) {
+              pdf.setFontSize(labelSize);
+              pdf.setTextColor(...grey);
+              pdf.text('Title: ', textColX, textY);
+              pdf.setTextColor(...black);
+              const ltText = item.listing_title.length > 70 ? item.listing_title.substring(0, 70) + '...' : item.listing_title;
+              pdf.text(ltText, textColX + pdf.getTextWidth('Title: '), textY);
+              textY += lineHeight + 1;
+            }
+            
+            // Listing Description (the one with dad jokes!)
+            renderTextBlock('Listing Copy', item.listing_description, 8);
+            
+            // Listing Tags
+            if (item.listing_tags) {
+              pdf.setFontSize(smallSize);
+              pdf.setTextColor(...grey);
+              pdf.text('Tags: ', textColX, textY + 3);
+              pdf.setTextColor(59, 130, 246); // blue
+              const tagsText = item.listing_tags.length > 100 ? item.listing_tags.substring(0, 100) + '...' : item.listing_tags;
+              pdf.text(tagsText, textColX + pdf.getTextWidth('Tags: '), textY + 3);
+              textY += lineHeight + 2;
+            }
           }
           
           // Calculate final Y position (max of image column and text column)
-          yPos = Math.max(imgEndY, textY) + 8;
+          yPos = Math.max(imgEndY, textY) + 10;
         }
       }
       
