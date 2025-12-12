@@ -7492,7 +7492,7 @@ export default function App() {
           <div className="flex-1 md:hidden" />
           
           {/* Mobile Top Right Buttons */}
-          <div className="md:hidden flex items-center gap-1">
+          <div className="md:hidden flex items-center gap-2">
             {/* Select Button */}
             <button
               onClick={() => setIsSelectionMode(!isSelectionMode)}
@@ -7505,12 +7505,12 @@ export default function App() {
               <CheckSquare className="w-5 h-5" />
             </button>
             
-            {/* Add Button */}
+            {/* Add Button - Large circular like footer */}
             <button
               onClick={() => setIsAddMenuOpen(true)}
-              className="p-2 rounded-lg text-stone-600 hover:bg-stone-100 transition-all"
+              className="w-12 h-12 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors active:scale-95"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-6 h-6 text-white" />
             </button>
           </div>
           
@@ -8245,51 +8245,52 @@ export default function App() {
       
       {/* === MOBILE BOTTOM NAVIGATION === */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-50/95 backdrop-blur-sm border-t border-stone-200 z-40 safe-area-pb">
-        <div className="flex items-center justify-around h-14 px-4">
-          {/* Search */}
-          <button
-            onClick={() => setIsMobileSearchOpen(true)}
-            className={`p-3 rounded-xl transition-all ${
-              isMobileSearchOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-700 hover:bg-stone-100'
-            }`}
-          >
-            <Search className="w-6 h-6" />
-          </button>
+        <div className="flex items-center justify-between h-14 px-4">
+          {/* Left side buttons */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <button
+              onClick={() => setIsMobileSearchOpen(true)}
+              className={`p-3 rounded-xl transition-all ${
+                isMobileSearchOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              <Search className="w-6 h-6" />
+            </button>
+            
+            {/* Export/Share */}
+            <button
+              onClick={() => setMobileExportOpen(true)}
+              className="p-3 rounded-xl text-stone-700 hover:bg-stone-100 transition-all"
+            >
+              <Share2 className="w-6 h-6" />
+            </button>
+            
+            {/* Profile with avatar */}
+            <button
+              onClick={() => setShowProfilePage(true)}
+              className="p-2 rounded-xl hover:bg-stone-100 transition-all"
+            >
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="Profile" 
+                  className="w-7 h-7 rounded-full object-cover ring-2 ring-stone-200"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
+                  <User className="w-4 h-4 text-stone-600" />
+                </div>
+              )}
+            </button>
+          </div>
           
-          {/* Add - Prominent center button */}
+          {/* Add Button - Far right */}
           <button
             onClick={() => setIsBottomAddMenuOpen(true)}
-            className="p-1"
+            className="w-12 h-12 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors active:scale-95"
           >
-            <div className="w-12 h-12 -mt-6 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors">
-              <Plus className="w-6 h-6 text-white" />
-            </div>
-          </button>
-          
-          {/* Export/Share */}
-          <button
-            onClick={() => setMobileExportOpen(true)}
-            className="p-3 rounded-xl text-stone-700 hover:bg-stone-100 transition-all"
-          >
-            <Share2 className="w-6 h-6" />
-          </button>
-          
-          {/* Profile - Far right with avatar */}
-          <button
-            onClick={() => setShowProfilePage(true)}
-            className="p-2 rounded-xl hover:bg-stone-100 transition-all"
-          >
-            {user?.photoURL ? (
-              <img 
-                src={user.photoURL} 
-                alt="Profile" 
-                className="w-7 h-7 rounded-full object-cover ring-2 ring-stone-200"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
-                <User className="w-4 h-4 text-stone-600" />
-              </div>
-            )}
+            <Plus className="w-6 h-6 text-white" />
           </button>
         </div>
       </nav>
