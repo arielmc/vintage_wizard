@@ -3005,33 +3005,44 @@ const ListingGenerator = ({ formData, setFormData }) => {
     setIsRegenerating(true);
     
     const emojiInstructions = {
-      'none': `EMOJI STYLE: NONE
-- Do NOT use ANY emojis anywhere in the title or description
-- Zero emojis. Not a single one.`,
-      'minimal': `EMOJI STYLE: MINIMAL
-- Use 2-3 emojis ONLY for section headers like "🏷️ DETAILS:" or "✨ CONDITION:"
-- No emojis in title
-- No emojis in body text, only as section markers`,
-      'full': `EMOJI STYLE: MAXIMUM EMOJIS 🎉 (MANDATORY - YOU MUST FOLLOW THIS)
-⚠️ THIS IS THE MOST IMPORTANT INSTRUCTION - ADD LOTS OF EMOJIS TO EVERY PARAGRAPH
+      'none': `=== EMOJI STYLE: NONE ===
+- Do NOT use ANY emojis anywhere - not in title, not in description, nowhere
+- Use plain text section headers like "DETAILS:" and "CONDITION:" (no emojis)
+- Zero emojis total. This is critical.`,
+
+      'minimal': `=== EMOJI STYLE: MINIMAL (Section Headers Only) ===
+- NO emojis in title
+- NO emojis in body paragraph text
+- ONLY use emojis as section header markers, like this:
+  🏷️ DETAILS:
+  ✨ CONDITION:
+  📏 MEASUREMENTS:
+- Total emojis: exactly 2-4, only at start of section headers
+- The body text after each header should be plain text with no emojis`,
+
+      'full': `=== EMOJI STYLE: MAXIMUM EMOJIS 🎉 (CRITICAL - MUST FOLLOW) ===
 
 TITLE: Start with a relevant emoji (e.g., "🏺 Vintage Vase..." or "📚 Rare First Edition...")
 
-DESCRIPTION BODY TEXT - MUST INCLUDE 10-20 EMOJIS SCATTERED THROUGHOUT:
-- Add an emoji after EVERY major point or detail
-- Example opening: "Stunning vintage piece ✨ that captures the essence of mid-century design 🎨"
-- Example details: "Crafted from solid brass 🔩 with hand-painted florals 🌸 circa 1960s 📅"
-- Example condition: "Excellent vintage condition 💎 with minor wear consistent with age ⏳"
-- Example measurements: "Measures 8 inches tall 📏 and weighs 2 lbs ⚖️"
+SECTION HEADERS - ALWAYS include emoji markers:
+  🏷️ DETAILS:
+  ✨ CONDITION:  
+  📏 MEASUREMENTS:
 
-EMOJI PLACEMENT RULES:
-✅ After adjectives: "beautiful ✨", "rare 💎", "stunning 🌟"
-✅ After materials: "brass 🔩", "ceramic 🏺", "glass 🔮", "wood 🪵"
-✅ After time references: "1960s 📅", "vintage ⏳", "antique 🏛️"  
-✅ After condition words: "mint 💯", "excellent 👌", "pristine ✨"
-✅ After features: "hand-painted 🎨", "signed ✍️", "original 🏷️"
+BODY TEXT - ADD 15-25 EMOJIS throughout the paragraphs:
+Every sentence should have 1-3 emojis inline. Examples:
 
-The description should look FUN and visually engaging - like a social media post, NOT a dry catalog entry.`
+"This stunning ✨ vintage piece showcases the artistry 🎨 of mid-century design 📅"
+"Crafted from solid brass 🔩 with delicate hand-painted florals 🌸 in vibrant colors 🌈"
+"Excellent condition 💎 with gorgeous patina ✨ that adds character 🏛️"
+"Measures 8" tall 📏 by 4" wide 📐 and weighs approximately 2 lbs ⚖️"
+
+EMOJI CHEAT SHEET - use liberally:
+✨🌟💫 = beauty/quality | 🎨🖼️ = art/design | 📅⏳🏛️ = age/vintage
+💎👌💯 = condition | 🔩🪵🏺 = materials | 📏📐⚖️ = measurements
+🌸🌺🌻 = florals | 💝🎁 = gifting | 🏠🪑 = home/furniture
+
+Make it look like an enthusiastic social media post with emojis scattered EVERYWHERE in the text.`
     };
 
     const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
@@ -3089,7 +3100,9 @@ DESCRIPTION FORMATTING:
 - Structure: Opening hook\\n\\nDetails section\\n\\nCondition\\n\\n[Tidbit if enabled]\\n\\n[Dad joke if enabled]
 - 120-200 words max
 - NO call to action at the end
-${toneSettings.emojiStyle === 'full' ? '- REMINDER: Add emojis throughout EVERY paragraph of the description, not just in headers or special sections' : ''}
+${toneSettings.emojiStyle === 'none' ? '- Use plain text headers like "DETAILS:" "CONDITION:" (no emojis anywhere)' : ''}
+${toneSettings.emojiStyle === 'minimal' ? '- Use emoji section headers (🏷️ DETAILS:, ✨ CONDITION:) but NO emojis in body text' : ''}
+${toneSettings.emojiStyle === 'full' ? '- Use emoji section headers (🏷️ DETAILS:, ✨ CONDITION:) AND scatter 15-25 emojis throughout ALL body paragraphs' : ''}
 
 OUTPUT FORMAT - Generate a JSON response:
 {
