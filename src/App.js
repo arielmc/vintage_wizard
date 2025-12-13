@@ -6135,7 +6135,7 @@ const TipJar = () => {
           {/* Desktop hover tooltip */}
           {!isMobile && isHovered && (
             <div className="absolute bottom-full left-0 mb-2 p-3 bg-stone-800 text-white rounded-xl text-xs leading-relaxed max-w-[280px] shadow-xl animate-in fade-in duration-150">
-              <strong>Built by Ariel McNichol</strong>—a middle-aged lady who builds AI products, not just asks her kids to fix the WiFi.
+              Built by Ariel, a middle-aged lady.
               <div className="absolute -bottom-1.5 left-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-stone-800" />
             </div>
           )}
@@ -6165,7 +6165,7 @@ const TipJar = () => {
           <div className="text-4xl mb-4">🫙</div>
 
           <p className="text-base leading-relaxed text-stone-800 mb-5">
-            <strong>Built by Ariel McNichol</strong>—a middle-aged lady who builds AI products, not just asks her kids to fix the WiFi.
+            Built by Ariel, a middle-aged lady.
           </p>
 
           <a
