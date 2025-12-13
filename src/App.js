@@ -3012,14 +3012,26 @@ const ListingGenerator = ({ formData, setFormData }) => {
 - Use 2-3 emojis ONLY for section headers like "🏷️ DETAILS:" or "✨ CONDITION:"
 - No emojis in title
 - No emojis in body text, only as section markers`,
-      'full': `EMOJI STYLE: LOTS OF EMOJIS (THIS IS CRITICAL - FOLLOW EXACTLY)
-- Start the TITLE with a relevant emoji (e.g., "🏺 Vintage Vase..." or "📚 Rare First Edition...")
-- Use 8-15 emojis throughout the description
-- Add emojis to emphasize key points: "✨ Excellent condition" "🎨 Hand-painted" "📏 Measures 8 inches"
-- Use emojis for section breaks and visual interest
-- Match emojis to content: 💎 for jewelry, 📚 for books, 🎵 for music, 🏺 for ceramics, 👗 for fashion
-- Example: "Beautiful piece ✨ from the 1960s 📅 featuring hand-painted florals 🌸 in mint condition 💯"
-- Make the listing FUN and visually engaging with emojis scattered throughout`
+      'full': `EMOJI STYLE: MAXIMUM EMOJIS 🎉 (MANDATORY - YOU MUST FOLLOW THIS)
+⚠️ THIS IS THE MOST IMPORTANT INSTRUCTION - ADD LOTS OF EMOJIS TO EVERY PARAGRAPH
+
+TITLE: Start with a relevant emoji (e.g., "🏺 Vintage Vase..." or "📚 Rare First Edition...")
+
+DESCRIPTION BODY TEXT - MUST INCLUDE 10-20 EMOJIS SCATTERED THROUGHOUT:
+- Add an emoji after EVERY major point or detail
+- Example opening: "Stunning vintage piece ✨ that captures the essence of mid-century design 🎨"
+- Example details: "Crafted from solid brass 🔩 with hand-painted florals 🌸 circa 1960s 📅"
+- Example condition: "Excellent vintage condition 💎 with minor wear consistent with age ⏳"
+- Example measurements: "Measures 8 inches tall 📏 and weighs 2 lbs ⚖️"
+
+EMOJI PLACEMENT RULES:
+✅ After adjectives: "beautiful ✨", "rare 💎", "stunning 🌟"
+✅ After materials: "brass 🔩", "ceramic 🏺", "glass 🔮", "wood 🪵"
+✅ After time references: "1960s 📅", "vintage ⏳", "antique 🏛️"  
+✅ After condition words: "mint 💯", "excellent 👌", "pristine ✨"
+✅ After features: "hand-painted 🎨", "signed ✍️", "original 🏷️"
+
+The description should look FUN and visually engaging - like a social media post, NOT a dry catalog entry.`
     };
 
     const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
@@ -3077,6 +3089,7 @@ DESCRIPTION FORMATTING:
 - Structure: Opening hook\\n\\nDetails section\\n\\nCondition\\n\\n[Tidbit if enabled]\\n\\n[Dad joke if enabled]
 - 120-200 words max
 - NO call to action at the end
+${toneSettings.emojiStyle === 'full' ? '- REMINDER: Add emojis throughout EVERY paragraph of the description, not just in headers or special sections' : ''}
 
 OUTPUT FORMAT - Generate a JSON response:
 {
