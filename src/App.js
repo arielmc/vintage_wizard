@@ -3246,9 +3246,6 @@ Return ONLY valid JSON, no markdown or extra text.`;
     </div>
   );
 
-  // Emoji style labels
-  const emojiLabels = { none: 'No emoji', minimal: 'Minimal', full: 'Full emoji' };
-
   return (
     <div className="space-y-4 p-1 pb-6">
       {/* === LISTING TUNER PANEL === */}
@@ -3268,8 +3265,9 @@ Return ONLY valid JSON, no markdown or extra text.`;
               {!isTunerOpen && (
                 <span className="text-[10px] text-stone-500">
                   Sales {toneSettings.salesIntensity}/5 · Nerd {toneSettings.nerdFactor}/5
-                  {toneSettings.includeFunFact && ' · 💡 Tidbit'}
-                  {toneSettings.includeDadJoke && ' · 🤓 Joke'}
+                  {toneSettings.includeFunFact && ' · 💡'}
+                  {toneSettings.includeDadJoke && ' · 🤓'}
+                  {' · '}{toneSettings.emojiStyle === 'none' ? '🚫' : toneSettings.emojiStyle === 'minimal' ? '✨' : '🎉'}
                 </span>
               )}
               {isTunerOpen && (
@@ -3333,10 +3331,15 @@ Return ONLY valid JSON, no markdown or extra text.`;
             <div className="flex flex-wrap gap-3 pt-2">
               {/* Fun Fact Toggle */}
               <button
-                onClick={() => setToneSettings(prev => ({ ...prev, includeFunFact: !prev.includeFunFact }))}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setToneSettings(prev => ({ ...prev, includeFunFact: !prev.includeFunFact }));
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
                   toneSettings.includeFunFact
-                    ? 'bg-amber-50 border-amber-300 text-amber-700'
+                    ? 'bg-amber-100 border-amber-400 text-amber-700'
                     : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
                 }`}
               >
@@ -3347,10 +3350,15 @@ Return ONLY valid JSON, no markdown or extra text.`;
 
               {/* Dad Joke Toggle */}
               <button
-                onClick={() => setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke }))}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke }));
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
                   toneSettings.includeDadJoke
-                    ? 'bg-purple-50 border-purple-300 text-purple-700'
+                    ? 'bg-purple-100 border-purple-400 text-purple-700'
                     : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
                 }`}
               >
@@ -3364,14 +3372,19 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 {['none', 'minimal', 'full'].map((style) => (
                   <button
                     key={style}
-                    onClick={() => setToneSettings(prev => ({ ...prev, emojiStyle: style }))}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setToneSettings(prev => ({ ...prev, emojiStyle: style }));
+                    }}
                     className={`px-2.5 py-1.5 text-[10px] font-medium rounded-md transition-all ${
                       toneSettings.emojiStyle === style
-                        ? 'bg-rose-100 text-rose-700 shadow-sm'
-                        : 'text-stone-500 hover:bg-stone-50'
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'text-stone-500 hover:bg-stone-100'
                     }`}
                   >
-                    {style === 'none' ? '🚫 No Emoji' : style === 'minimal' ? '✨ Minimal' : '🎉 Full'}
+                    {style === 'none' ? '🚫 None' : style === 'minimal' ? '✨ Some' : '🎉 Lots'}
                   </button>
                 ))}
               </div>
@@ -7852,84 +7865,84 @@ export default function App() {
               </div>
             ) : (
               /* Normal Mode: Value + Sort Row */
-              <div className="flex items-center justify-between pt-2">
-                {/* Value on left */}
-                {filterStats[filter].high > 0 && (
-                  <span className="text-sm font-bold text-emerald-600">
-                    ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
-                  </span>
-                )}
-                {!filterStats[filter].high && <span />}
-                
-                {/* Multi-select + Sort on right */}
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between pt-2">
+              {/* Value on left */}
+              {filterStats[filter].high > 0 && (
+                <span className="text-sm font-bold text-emerald-600">
+                  ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
+                </span>
+              )}
+              {!filterStats[filter].high && <span />}
+              
+              {/* Multi-select + Sort on right */}
+              <div className="flex items-center gap-3">
                   {/* Multi-select Button - Both mobile and desktop now */}
-                  <button
-                    onClick={() => setIsSelectionMode(!isSelectionMode)}
+                <button
+                  onClick={() => setIsSelectionMode(!isSelectionMode)}
                     className={`flex items-center gap-1.5 text-xs transition-all ${
-                      isSelectionMode 
-                        ? "text-violet-700" 
-                        : "text-stone-500 hover:text-stone-700"
-                    }`}
-                  >
-                    <CheckSquare className="w-4 h-4" />
+                    isSelectionMode 
+                      ? "text-violet-700" 
+                      : "text-stone-500 hover:text-stone-700"
+                  }`}
+                >
+                  <CheckSquare className="w-4 h-4" />
                     <span className="hidden md:inline">Select</span>
-                  </button>
+                </button>
                   
                   {/* Divider - desktop only */}
                   <div className="hidden md:block w-px h-4 bg-stone-200" />
-                  
-                  {/* Sort */}
-                  <div className="relative group/sort">
-                    <button 
-                      onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                      disabled={dataLoading}
-                      className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
-                    >
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                      {/* Hide text on mobile, show on desktop */}
-                      <span className="hidden md:inline">
-                        {{
-                          "date-desc": "Newest",
-                          "date-asc": "Oldest",
-                          "value-desc": "High $",
-                          "value-asc": "Low $",
-                          "alpha-asc": "A-Z",
-                          "category-asc": "Category"
-                        }[sortBy]}
-                      </span>
-                    </button>
-                  
-                  {/* Sort Menu Dropdown */}
-                  {isSortMenuOpen && (
-                    <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
-                  )}
-                  {isSortMenuOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
-                      <div className="p-1">
-                        {[
-                          { label: "Newest First", value: "date-desc" },
-                          { label: "Oldest First", value: "date-asc" },
-                          { label: "High → Low $", value: "value-desc" },
-                          { label: "Low → High $", value: "value-asc" },
-                          { label: "A → Z", value: "alpha-asc" },
-                          { label: "By Category", value: "category-asc" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
-                          >
-                            {opt.label}
-                            {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
-                          </button>
-                        ))}
-                      </div>
+                
+                {/* Sort */}
+                <div className="relative group/sort">
+                  <button 
+                    onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                    disabled={dataLoading}
+                    className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    {/* Hide text on mobile, show on desktop */}
+                    <span className="hidden md:inline">
+                      {{
+                        "date-desc": "Newest",
+                        "date-asc": "Oldest",
+                        "value-desc": "High $",
+                        "value-asc": "Low $",
+                        "alpha-asc": "A-Z",
+                        "category-asc": "Category"
+                      }[sortBy]}
+                    </span>
+                  </button>
+                
+                {/* Sort Menu Dropdown */}
+                {isSortMenuOpen && (
+                  <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
+                )}
+                {isSortMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-1">
+                      {[
+                        { label: "Newest First", value: "date-desc" },
+                        { label: "Oldest First", value: "date-asc" },
+                        { label: "High → Low $", value: "value-desc" },
+                        { label: "Low → High $", value: "value-asc" },
+                        { label: "A → Z", value: "alpha-asc" },
+                        { label: "By Category", value: "category-asc" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                        >
+                          {opt.label}
+                          {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      ))}
                     </div>
-                  )}
                   </div>
+                )}
                 </div>
               </div>
+            </div>
             )}
           </div>
         </div>
