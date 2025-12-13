@@ -7493,24 +7493,24 @@ export default function App() {
           
           {/* Mobile Top Right Buttons */}
           <div className="md:hidden flex items-center gap-2">
-            {/* Select Button */}
+            {/* Share Button - triggers dropdown */}
             <button
-              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              onClick={() => setMobileExportOpen(!mobileExportOpen)}
               className={`p-2 rounded-lg transition-all ${
-                isSelectionMode 
-                  ? "bg-violet-100 text-violet-700" 
+                mobileExportOpen 
+                  ? "bg-rose-100 text-rose-700" 
                   : "text-stone-600 hover:bg-stone-100"
               }`}
             >
-              <CheckSquare className="w-5 h-5" />
+              <Share2 className="w-5 h-5" />
             </button>
             
-            {/* Add Button - Large circular like footer */}
+            {/* Add Button - Smaller circular */}
             <button
               onClick={() => setIsAddMenuOpen(true)}
-              className="w-12 h-12 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors active:scale-95"
+              className="w-9 h-9 bg-stone-900 rounded-full flex items-center justify-center shadow-md hover:bg-stone-800 transition-colors active:scale-95"
             >
-              <Plus className="w-6 h-6 text-white" />
+              <Plus className="w-5 h-5 text-white" />
             </button>
           </div>
           
@@ -7775,25 +7775,40 @@ export default function App() {
               )}
               {!filterStats[filter].high && <span />}
               
-              {/* Sort on right */}
-              <div className="relative group/sort">
-                <button 
-                  onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                  disabled={dataLoading}
-                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+              {/* Multi-select + Sort on right */}
+              <div className="flex items-center gap-3">
+                {/* Multi-select Button - Mobile only in items panel */}
+                <button
+                  onClick={() => setIsSelectionMode(!isSelectionMode)}
+                  className={`md:hidden flex items-center gap-1 text-xs transition-all ${
+                    isSelectionMode 
+                      ? "text-violet-700" 
+                      : "text-stone-500 hover:text-stone-700"
+                  }`}
                 >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span>
-                    {{
-                      "date-desc": "Newest",
-                      "date-asc": "Oldest",
-                      "value-desc": "High $",
-                      "value-asc": "Low $",
-                      "alpha-asc": "A-Z",
-                      "category-asc": "Category"
-                    }[sortBy]}
-                  </span>
+                  <CheckSquare className="w-4 h-4" />
                 </button>
+                
+                {/* Sort */}
+                <div className="relative group/sort">
+                  <button 
+                    onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                    disabled={dataLoading}
+                    className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    {/* Hide text on mobile, show on desktop */}
+                    <span className="hidden md:inline">
+                      {{
+                        "date-desc": "Newest",
+                        "date-asc": "Oldest",
+                        "value-desc": "High $",
+                        "value-asc": "Low $",
+                        "alpha-asc": "A-Z",
+                        "category-asc": "Category"
+                      }[sortBy]}
+                    </span>
+                  </button>
                 
                 {/* Sort Menu Dropdown */}
                 {isSortMenuOpen && (
@@ -7822,6 +7837,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -7897,113 +7913,116 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- Batch Action Bar (Fixed Top - Covers header on mobile) --- */}
+      {/* --- Batch Action Bar --- */}
       {isSelectionMode && (
-         <div className="fixed top-0 left-0 right-0 z-50 animate-in slide-in-from-top fade-in duration-200">
-            {/* Mobile: Compact top bar */}
-            <div className="md:hidden bg-white px-3 py-2.5 shadow-lg border-b border-stone-100" style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-              {/* Row 1: "Select Item(s):" + All checkbox + count + close */}
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-bold text-stone-900">Select Item(s):</span>
-                <button 
-                  onClick={() => {
-                    if (selectedIds.size === filteredItems.length) {
-                      setSelectedIds(new Set());
-                    } else {
-                      setSelectedIds(new Set(filteredItems.map(i => i.id)));
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all hover:bg-stone-100 text-stone-600"
-                >
-                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                    selectedIds.size === filteredItems.length && filteredItems.length > 0
-                      ? 'bg-violet-500 border-violet-500' 
-                      : 'border-stone-300 bg-white'
-                  }`}>
-                    {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
-                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                    )}
+         <>
+            {/* Mobile: Bottom Sheet */}
+            <div className="md:hidden fixed bottom-16 left-0 right-0 z-50 animate-in slide-in-from-bottom fade-in duration-200 safe-area-pb">
+              <div className="bg-white mx-3 rounded-2xl shadow-2xl border border-stone-200 p-4" style={{ boxShadow: '0 -4px 30px rgba(0,0,0,0.2)' }}>
+                {/* Header Row: count + select all + close */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-violet-600">
+                      {selectedIds.size}
+                    </span>
+                    <span className="text-sm text-stone-600">selected</span>
                   </div>
-                  All
-                </button>
-                <span className="text-sm text-violet-600 font-bold">
-                  {selectedIds.size} selected
-                </span>
-                <div className="flex-1" />
-                <button 
-                  onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); setIsStatusDropdownOpen(false); }} 
-                  className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Row 2: "Action:" + Status dropdown + AI Analyze + Delete icon */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-stone-500">Action:</span>
-                
-                {/* Status Dropdown */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                    disabled={selectedIds.size === 0}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
-                  >
-                    <span>Mark As</span>
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {isStatusDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 min-w-[120px]">
-                      <button 
-                        onClick={() => { handleBatchStatusChange('keep'); setIsStatusDropdownOpen(false); }}
-                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        Keep
-                      </button>
-                      <button 
-                        onClick={() => { handleBatchStatusChange('sell'); setIsStatusDropdownOpen(false); }}
-                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-green-600 hover:bg-green-50 flex items-center gap-2"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        Sell
-                      </button>
-                      <button 
-                        onClick={() => { handleBatchStatusChange('TBD'); setIsStatusDropdownOpen(false); }}
-                        className="w-full px-4 py-2.5 text-left text-sm font-semibold text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                      >
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        TBD
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        if (selectedIds.size === filteredItems.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(filteredItems.map(i => i.id)));
+                        }
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all bg-stone-100 hover:bg-stone-200 text-stone-600"
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                        selectedIds.size === filteredItems.length && filteredItems.length > 0
+                          ? 'bg-violet-500 border-violet-500' 
+                          : 'border-stone-300 bg-white'
+                      }`}>
+                        {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
+                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                        )}
+                      </div>
+                      All
+                    </button>
+                    <button 
+                      onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); setIsStatusDropdownOpen(false); }} 
+                      className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
                 
-                {/* AI Analyze Button */}
-                <button 
-                  onClick={handleBatchAnalyze}
-                  disabled={isBatchProcessing || selectedIds.size === 0}
-                  className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI Analyze
-                </button>
-                
-                {/* Delete Button - Icon only */}
-                <button 
-                  onClick={handleBatchDelete}
-                  disabled={selectedIds.size === 0}
-                  className="p-2 rounded-lg transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30"
-                  title="Delete selected"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Action Buttons Row */}
+                <div className="flex items-center gap-2">
+                  {/* Status Dropdown */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                      disabled={selectedIds.size === 0}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
+                    >
+                      <span>Mark As</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isStatusDropdownOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 min-w-[120px]">
+                        <button 
+                          onClick={() => { handleBatchStatusChange('keep'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          Keep
+                        </button>
+                        <button 
+                          onClick={() => { handleBatchStatusChange('sell'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          Sell
+                        </button>
+                        <button 
+                          onClick={() => { handleBatchStatusChange('TBD'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          TBD
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* AI Analyze Button */}
+                  <button 
+                    onClick={handleBatchAnalyze}
+                    disabled={isBatchProcessing || selectedIds.size === 0}
+                    className="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    AI Analyze
+                  </button>
+                  
+                  {/* Delete Button */}
+                  <button 
+                    onClick={handleBatchDelete}
+                    disabled={selectedIds.size === 0}
+                    className="p-2.5 rounded-xl transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30"
+                    title="Delete selected"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
             
             {/* Desktop: Slim bar below header */}
-            <div className="hidden md:block bg-white border-b border-stone-200 shadow-md">
+            <div className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-200 shadow-md animate-in slide-in-from-top duration-200">
               <div className="max-w-7xl mx-auto px-3 py-2">
                 <div className="flex items-center gap-2">
                    <button 
@@ -8076,7 +8095,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-         </div>
+         </>
       )}
 
       {/* --- Mobile FAB removed for cleaner mobile UI --- */}
@@ -8245,52 +8264,61 @@ export default function App() {
       
       {/* === MOBILE BOTTOM NAVIGATION === */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-50/95 backdrop-blur-sm border-t border-stone-200 z-40 safe-area-pb">
-        <div className="flex items-center justify-between h-14 px-4">
-          {/* Left side buttons */}
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <button
-              onClick={() => setIsMobileSearchOpen(true)}
-              className={`p-3 rounded-xl transition-all ${
-                isMobileSearchOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-700 hover:bg-stone-100'
-              }`}
-            >
-              <Search className="w-6 h-6" />
-            </button>
-            
-            {/* Export/Share */}
-            <button
-              onClick={() => setMobileExportOpen(true)}
-              className="p-3 rounded-xl text-stone-700 hover:bg-stone-100 transition-all"
-            >
-              <Share2 className="w-6 h-6" />
-            </button>
-            
-            {/* Profile with avatar */}
-            <button
-              onClick={() => setShowProfilePage(true)}
-              className="p-2 rounded-xl hover:bg-stone-100 transition-all"
-            >
-              {user?.photoURL ? (
-                <img 
-                  src={user.photoURL} 
-                  alt="Profile" 
-                  className="w-7 h-7 rounded-full object-cover ring-2 ring-stone-200"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-stone-300 flex items-center justify-center">
-                  <User className="w-4 h-4 text-stone-600" />
-                </div>
-              )}
-            </button>
-          </div>
+        <div className="flex items-center justify-around h-16 px-2">
+          {/* Search */}
+          <button
+            onClick={() => setIsMobileSearchOpen(true)}
+            className={`p-2.5 rounded-xl transition-all ${
+              isMobileSearchOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-600 hover:bg-stone-100'
+            }`}
+          >
+            <Search className="w-6 h-6" />
+          </button>
           
-          {/* Add Button - Far right */}
+          {/* Multi-select */}
+          <button
+            onClick={() => setIsSelectionMode(!isSelectionMode)}
+            className={`p-2.5 rounded-xl transition-all ${
+              isSelectionMode ? 'text-violet-600 bg-violet-100' : 'text-stone-600 hover:bg-stone-100'
+            }`}
+          >
+            <CheckSquare className="w-6 h-6" />
+          </button>
+          
+          {/* Add Button - Bigger, prominent */}
           <button
             onClick={() => setIsBottomAddMenuOpen(true)}
-            className="w-12 h-12 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors active:scale-95"
+            className="w-14 h-14 -mt-4 bg-stone-900 rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors active:scale-95"
           >
-            <Plus className="w-6 h-6 text-white" />
+            <Plus className="w-7 h-7 text-white" />
+          </button>
+          
+          {/* Share/Export */}
+          <button
+            onClick={() => setMobileExportOpen(true)}
+            className={`p-2.5 rounded-xl transition-all ${
+              mobileExportOpen ? 'text-rose-600 bg-rose-100' : 'text-stone-600 hover:bg-stone-100'
+            }`}
+          >
+            <Share2 className="w-6 h-6" />
+          </button>
+          
+          {/* Profile/Avatar */}
+          <button
+            onClick={() => setShowProfilePage(true)}
+            className="p-1.5 rounded-xl hover:bg-stone-100 transition-all"
+          >
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Profile" 
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-stone-200"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-stone-300 flex items-center justify-center">
+                <User className="w-5 h-5 text-stone-600" />
+              </div>
+            )}
           </button>
         </div>
       </nav>
