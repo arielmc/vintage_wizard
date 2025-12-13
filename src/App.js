@@ -6092,12 +6092,10 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
 
 // --- TIP JAR COMPONENT ---
 const TipJar = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
-  const venmoUsername = 'Arielmcnichol';
-  const venmoUrl = `https://venmo.com/${venmoUsername}`;
+  const venmoUrl = 'https://venmo.com/Arielmcnichol';
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -6107,78 +6105,31 @@ const TipJar = () => {
   }, []);
 
   return (
-    <>
-      {/* Backdrop */}
-      {isExpanded && (
-        <div
-          onClick={() => setIsExpanded(false)}
-          className="fixed inset-0 bg-black/40 z-[998] animate-in fade-in duration-200"
-        />
-      )}
+    <div
+      className="fixed z-[999] group"
+      style={{ bottom: isMobile ? '90px' : '24px', left: '16px' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Icon button with "tip" overlay */}
+      <a
+        href={venmoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative flex items-center justify-center w-12 h-12 bg-white border border-stone-200 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all"
+      >
+        <span className="text-2xl">🫙</span>
+        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-stone-500 uppercase tracking-wide">tip</span>
+      </a>
 
-      {/* Floating Button */}
-      {!isExpanded && (
-        <div
-          className="fixed z-[999]"
-          style={{ bottom: isMobile ? '90px' : '24px', left: '16px' }}
-          onMouseEnter={() => !isMobile && setIsHovered(true)}
-          onMouseLeave={() => !isMobile && setIsHovered(false)}
-        >
-          <button
-            onClick={() => setIsExpanded(true)}
-            className={`flex items-center gap-2 px-3.5 py-2.5 bg-white border border-stone-200 rounded-full shadow-lg text-sm font-medium text-stone-700 transition-transform ${isHovered ? 'scale-105' : ''}`}
-          >
-            <span className="text-lg">🫙</span>
-            <span>Tip Ariel</span>
-          </button>
-
-          {/* Desktop hover tooltip */}
-          {!isMobile && isHovered && (
-            <div className="absolute bottom-full left-0 mb-2 p-3 bg-stone-800 text-white rounded-xl text-xs leading-relaxed max-w-[280px] shadow-xl animate-in fade-in duration-150">
-              Built by Ariel, a middle-aged lady.
-              <div className="absolute -bottom-1.5 left-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-stone-800" />
-            </div>
-          )}
+      {/* Hover tooltip */}
+      {isHovered && (
+        <div className="absolute bottom-full left-0 mb-2 p-3 bg-stone-800 text-white rounded-xl text-xs leading-relaxed whitespace-nowrap shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+          Built by Ariel, a middle-aged lady.
+          <div className="absolute -bottom-1.5 left-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-stone-800" />
         </div>
       )}
-
-      {/* Expanded Card */}
-      {isExpanded && (
-        <div
-          className="fixed z-[999] bg-white rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 fade-in duration-200"
-          style={{ 
-            bottom: isMobile ? '90px' : '24px', 
-            left: '16px',
-            right: isMobile ? '16px' : 'auto',
-            width: isMobile ? 'auto' : '360px',
-            maxWidth: '360px'
-          }}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setIsExpanded(false)}
-            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-stone-100 hover:bg-stone-200 rounded-full text-stone-500 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-
-          <div className="text-4xl mb-4">🫙</div>
-
-          <p className="text-base leading-relaxed text-stone-800 mb-5">
-            Built by Ariel, a middle-aged lady.
-          </p>
-
-          <a
-            href={venmoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#008CFF] hover:bg-[#0074D4] text-white font-semibold rounded-xl transition-colors"
-          >
-            Tip her for the audacity →
-          </a>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
