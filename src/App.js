@@ -5795,7 +5795,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
 };
 
 // --- SHARE MODAL (Two Share Modes) ---
-const ShareModal = ({ user, items, onClose }) => {
+const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
   const [shareData, setShareData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null); // 'library' | 'forsale' | null
@@ -5865,10 +5865,19 @@ const ShareModal = ({ user, items, onClose }) => {
     setShareData({ ...shareData, token: newToken });
   };
 
+  // Animation classes based on origin
+  const containerClass = origin === 'top' 
+    ? "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-20 md:pt-24 p-4"
+    : "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-4";
+  
+  const modalClass = origin === 'top'
+    ? "bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in slide-in-from-top-4 fade-in duration-200"
+    : "bg-white rounded-t-2xl md:rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 md:zoom-in-95 fade-in duration-200";
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <div className={containerClass} onClick={onClose}>
       <div 
-        className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+        className={modalClass}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -6226,6 +6235,7 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
   const [showShareModal, setShowShareModal] = useState(false);
+  const [shareOrigin, setShareOrigin] = useState('bottom'); // 'top' | 'bottom' - controls animation direction
   // Quick Action Menu state
   const [contextMenu, setContextMenu] = useState(null); // { item, position: { x, y } }
   // Mobile search expand state
@@ -7578,20 +7588,6 @@ export default function App() {
                )}
              </div>
 
-             {/* Select Button */}
-             <button
-               onClick={() => setIsSelectionMode(!isSelectionMode)}
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border hover:shadow-md hover:scale-[1.02] active:scale-95 ${
-                 isSelectionMode 
-                   ? "bg-violet-100 text-violet-700 border-violet-200 shadow-sm" 
-                   : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50"
-               }`}
-             >
-               <span>Select</span>
-             </button>
-
-             {/* Divider */}
-             <div className="w-px h-6 bg-stone-200 mx-1" />
 
              {/* Export Dropdown */}
              <div className="relative" ref={exportMenuRef}>
@@ -7616,7 +7612,7 @@ export default function App() {
                    </div>
                     
                    <button
-                     onClick={() => { setShowShareModal(true); setIsExportMenuOpen(false); }}
+                     onClick={() => { setShareOrigin('top'); setShowShareModal(true); setIsExportMenuOpen(false); }}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
                      <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
@@ -7718,18 +7714,6 @@ export default function App() {
              </div>
           </div>
           
-          {/* Mobile: Just show Select button if in selection mode */}
-          <div className="flex md:hidden items-center gap-2">
-            {isSelectionMode && (
-              <button
-                onClick={() => setIsSelectionMode(false)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 border border-violet-200"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Cancel</span>
-              </button>
-            )}
-          </div>
         </div>
         
         {/* Row 2: Filter Tabs + Value/Sort Row */}
@@ -7765,81 +7749,188 @@ export default function App() {
               })}
             </div>
             
-            {/* Value + Sort Row */}
-            <div className="flex items-center justify-between pt-2">
-              {/* Value on left */}
-              {filterStats[filter].high > 0 && (
-                <span className="text-sm font-bold text-emerald-600">
-                  ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
-                </span>
-              )}
-              {!filterStats[filter].high && <span />}
-              
-              {/* Multi-select + Sort on right */}
-              <div className="flex items-center gap-3">
-                {/* Multi-select Button - Mobile only in items panel */}
-                <button
-                  onClick={() => setIsSelectionMode(!isSelectionMode)}
-                  className={`md:hidden flex items-center gap-1 text-xs transition-all ${
-                    isSelectionMode 
-                      ? "text-violet-700" 
-                      : "text-stone-500 hover:text-stone-700"
-                  }`}
-                >
-                  <CheckSquare className="w-4 h-4" />
-                </button>
-                
-                {/* Sort */}
-                <div className="relative group/sort">
+            {/* Value + Sort Row OR Selection Actions Row */}
+            {isSelectionMode ? (
+              /* Selection Mode: Inline Action Bar (Mobile Web) */
+              <div className="md:hidden flex items-center gap-2 pt-2 animate-in fade-in duration-150">
+                {/* Count & Select All */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-violet-600">{selectedIds.size}</span>
+                  <span className="text-xs text-stone-500">selected</span>
                   <button 
-                    onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                    disabled={dataLoading}
-                    className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                    onClick={() => {
+                      if (selectedIds.size === filteredItems.length) {
+                        setSelectedIds(new Set());
+                      } else {
+                        setSelectedIds(new Set(filteredItems.map(i => i.id)));
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all bg-stone-100 hover:bg-stone-200 text-stone-600"
                   >
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    {/* Hide text on mobile, show on desktop */}
-                    <span className="hidden md:inline">
-                      {{
-                        "date-desc": "Newest",
-                        "date-asc": "Oldest",
-                        "value-desc": "High $",
-                        "value-asc": "Low $",
-                        "alpha-asc": "A-Z",
-                        "category-asc": "Category"
-                      }[sortBy]}
-                    </span>
-                  </button>
-                
-                {/* Sort Menu Dropdown */}
-                {isSortMenuOpen && (
-                  <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
-                )}
-                {isSortMenuOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-1">
-                      {[
-                        { label: "Newest First", value: "date-desc" },
-                        { label: "Oldest First", value: "date-asc" },
-                        { label: "High → Low $", value: "value-desc" },
-                        { label: "Low → High $", value: "value-asc" },
-                        { label: "A → Z", value: "alpha-asc" },
-                        { label: "By Category", value: "category-asc" },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
-                        >
-                          {opt.label}
-                          {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                      ))}
+                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                      selectedIds.size === filteredItems.length && filteredItems.length > 0
+                        ? 'bg-violet-500 border-violet-500' 
+                        : 'border-stone-300 bg-white'
+                    }`}>
+                      {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
+                        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                      )}
                     </div>
+                    All
+                  </button>
+                </div>
+                
+                <div className="flex-1" />
+                
+                {/* Quick Actions */}
+                <div className="flex items-center gap-1">
+                  {/* Status dropdown */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                      disabled={selectedIds.size === 0}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
+                    >
+                      <span>Mark</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isStatusDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 min-w-[100px]">
+                        <button 
+                          onClick={() => { handleBatchStatusChange('keep'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          Keep
+                        </button>
+                        <button 
+                          onClick={() => { handleBatchStatusChange('sell'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          Sell
+                        </button>
+                        <button 
+                          onClick={() => { handleBatchStatusChange('TBD'); setIsStatusDropdownOpen(false); }}
+                          className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          TBD
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                  
+                  {/* AI Analyze */}
+                  <button 
+                    onClick={handleBatchAnalyze}
+                    disabled={isBatchProcessing || selectedIds.size === 0}
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 text-white disabled:opacity-40"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>AI</span>
+                  </button>
+                  
+                  {/* Delete */}
+                  <button 
+                    onClick={handleBatchDelete}
+                    disabled={selectedIds.size === 0}
+                    className="p-1.5 rounded-lg transition-all text-red-500 hover:bg-red-50 disabled:opacity-30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  
+                  {/* Cancel */}
+                  <button 
+                    onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); setIsStatusDropdownOpen(false); }} 
+                    className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Normal Mode: Value + Sort Row */
+              <div className="flex items-center justify-between pt-2">
+                {/* Value on left */}
+                {filterStats[filter].high > 0 && (
+                  <span className="text-sm font-bold text-emerald-600">
+                    ${filterStats[filter].low.toLocaleString()} – ${filterStats[filter].high.toLocaleString()}
+                  </span>
+                )}
+                {!filterStats[filter].high && <span />}
+                
+                {/* Multi-select + Sort on right */}
+                <div className="flex items-center gap-3">
+                  {/* Multi-select Button - Both mobile and desktop now */}
+                  <button
+                    onClick={() => setIsSelectionMode(!isSelectionMode)}
+                    className={`flex items-center gap-1.5 text-xs transition-all ${
+                      isSelectionMode 
+                        ? "text-violet-700" 
+                        : "text-stone-500 hover:text-stone-700"
+                    }`}
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    <span className="hidden md:inline">Select</span>
+                  </button>
+                  
+                  {/* Divider - desktop only */}
+                  <div className="hidden md:block w-px h-4 bg-stone-200" />
+                  
+                  {/* Sort */}
+                  <div className="relative group/sort">
+                    <button 
+                      onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                      disabled={dataLoading}
+                      className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                    >
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+                      {/* Hide text on mobile, show on desktop */}
+                      <span className="hidden md:inline">
+                        {{
+                          "date-desc": "Newest",
+                          "date-asc": "Oldest",
+                          "value-desc": "High $",
+                          "value-asc": "Low $",
+                          "alpha-asc": "A-Z",
+                          "category-asc": "Category"
+                        }[sortBy]}
+                      </span>
+                    </button>
+                  
+                  {/* Sort Menu Dropdown */}
+                  {isSortMenuOpen && (
+                    <div className="fixed inset-0 z-[60]" onClick={() => setIsSortMenuOpen(false)} />
+                  )}
+                  {isSortMenuOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-44 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
+                      <div className="p-1">
+                        {[
+                          { label: "Newest First", value: "date-desc" },
+                          { label: "Oldest First", value: "date-asc" },
+                          { label: "High → Low $", value: "value-desc" },
+                          { label: "Low → High $", value: "value-asc" },
+                          { label: "A → Z", value: "alpha-asc" },
+                          { label: "By Category", value: "category-asc" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setSortBy(opt.value); setIsSortMenuOpen(false); }}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all ${sortBy === opt.value ? "bg-rose-50 text-rose-700" : "text-stone-600 hover:bg-stone-50"}`}
+                          >
+                            {opt.label}
+                            {sortBy === opt.value && <Check className="w-3.5 h-3.5" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -7913,114 +8004,9 @@ export default function App() {
         </div>
       </main>
 
-      {/* --- Batch Action Bar --- */}
+      {/* --- Batch Action Bar (Desktop Only - mobile uses inline bar in header) --- */}
       {isSelectionMode && (
          <>
-            {/* Mobile: Bottom Sheet */}
-            <div className="md:hidden fixed bottom-16 left-0 right-0 z-50 animate-in slide-in-from-bottom fade-in duration-200 safe-area-pb">
-              <div className="bg-white mx-3 rounded-2xl shadow-2xl border border-stone-200 p-4" style={{ boxShadow: '0 -4px 30px rgba(0,0,0,0.2)' }}>
-                {/* Header Row: count + select all + close */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-violet-600">
-                      {selectedIds.size}
-                    </span>
-                    <span className="text-sm text-stone-600">selected</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => {
-                        if (selectedIds.size === filteredItems.length) {
-                          setSelectedIds(new Set());
-                        } else {
-                          setSelectedIds(new Set(filteredItems.map(i => i.id)));
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all bg-stone-100 hover:bg-stone-200 text-stone-600"
-                    >
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
-                        selectedIds.size === filteredItems.length && filteredItems.length > 0
-                          ? 'bg-violet-500 border-violet-500' 
-                          : 'border-stone-300 bg-white'
-                      }`}>
-                        {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
-                          <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                        )}
-                      </div>
-                      All
-                    </button>
-                    <button 
-                      onClick={() => { setSelectedIds(new Set()); setIsSelectionMode(false); setIsStatusDropdownOpen(false); }} 
-                      className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Action Buttons Row */}
-                <div className="flex items-center gap-2">
-                  {/* Status Dropdown */}
-                  <div className="relative">
-                    <button 
-                      onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                      disabled={selectedIds.size === 0}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-stone-100 hover:bg-stone-200 text-stone-700 disabled:opacity-30"
-                    >
-                      <span>Mark As</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {isStatusDropdownOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-xl border border-stone-100 overflow-hidden z-50 min-w-[120px]">
-                        <button 
-                          onClick={() => { handleBatchStatusChange('keep'); setIsStatusDropdownOpen(false); }}
-                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-blue-500" />
-                          Keep
-                        </button>
-                        <button 
-                          onClick={() => { handleBatchStatusChange('sell'); setIsStatusDropdownOpen(false); }}
-                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-green-600 hover:bg-green-50 flex items-center gap-2"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
-                          Sell
-                        </button>
-                        <button 
-                          onClick={() => { handleBatchStatusChange('TBD'); setIsStatusDropdownOpen(false); }}
-                          className="w-full px-4 py-2.5 text-left text-sm font-semibold text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                        >
-                          <div className="w-2 h-2 rounded-full bg-amber-500" />
-                          TBD
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* AI Analyze Button */}
-                  <button 
-                    onClick={handleBatchAnalyze}
-                    disabled={isBatchProcessing || selectedIds.size === 0}
-                    className="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    AI Analyze
-                  </button>
-                  
-                  {/* Delete Button */}
-                  <button 
-                    onClick={handleBatchDelete}
-                    disabled={selectedIds.size === 0}
-                    className="p-2.5 rounded-xl transition-all bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-30"
-                    title="Delete selected"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-            
             {/* Desktop: Slim bar below header */}
             <div className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-200 shadow-md animate-in slide-in-from-top duration-200">
               <div className="max-w-7xl mx-auto px-3 py-2">
@@ -8182,6 +8168,7 @@ export default function App() {
           user={user}
           items={items}
           onClose={() => setShowShareModal(false)}
+          origin={shareOrigin}
         />
       )}
       
@@ -8496,7 +8483,7 @@ export default function App() {
             
             <div className="space-y-2">
               <button
-                onClick={() => { setShowShareModal(true); setMobileExportOpen(false); }}
+                onClick={() => { setShareOrigin('bottom'); setShowShareModal(true); setMobileExportOpen(false); }}
                 disabled={items.length === 0}
                 className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
               >
