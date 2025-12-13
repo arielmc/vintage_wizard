@@ -3005,9 +3005,21 @@ const ListingGenerator = ({ formData, setFormData }) => {
     setIsRegenerating(true);
     
     const emojiInstructions = {
-      'none': 'Do NOT use any emojis in the title or description.',
-      'minimal': 'Use emojis sparingly in description only (like 🏷️ DETAILS:). No emojis in title.',
-      'full': 'Use emojis throughout description to add personality. Optionally 1 emoji at start of title if appropriate.'
+      'none': `EMOJI STYLE: NONE
+- Do NOT use ANY emojis anywhere in the title or description
+- Zero emojis. Not a single one.`,
+      'minimal': `EMOJI STYLE: MINIMAL
+- Use 2-3 emojis ONLY for section headers like "🏷️ DETAILS:" or "✨ CONDITION:"
+- No emojis in title
+- No emojis in body text, only as section markers`,
+      'full': `EMOJI STYLE: LOTS OF EMOJIS (THIS IS CRITICAL - FOLLOW EXACTLY)
+- Start the TITLE with a relevant emoji (e.g., "🏺 Vintage Vase..." or "📚 Rare First Edition...")
+- Use 8-15 emojis throughout the description
+- Add emojis to emphasize key points: "✨ Excellent condition" "🎨 Hand-painted" "📏 Measures 8 inches"
+- Use emojis for section breaks and visual interest
+- Match emojis to content: 💎 for jewelry, 📚 for books, 🎵 for music, 🏺 for ceramics, 👗 for fashion
+- Example: "Beautiful piece ✨ from the 1960s 📅 featuring hand-painted florals 🌸 in mint condition 💯"
+- Make the listing FUN and visually engaging with emojis scattered throughout`
     };
 
     const prompt = `You are an expert marketplace listing copywriter. Generate BOTH a compelling title AND description for this vintage item.
@@ -3030,7 +3042,9 @@ ${toneSettings.nerdFactor === 3 ? `LEVEL 3 - MODERATE: Include relevant context 
 ${toneSettings.nerdFactor === 4 ? `LEVEL 4 - COLLECTOR-FOCUSED: Include details collectors care about: edition points, variations, provenance clues, market context.` : ''}
 ${toneSettings.nerdFactor === 5 ? `LEVEL 5 - DEEP EXPERTISE: Full geek mode. Reference specific variations, printings, maker histories, obscure details. Assume reader is a fellow expert who appreciates deep knowledge.` : ''}
 
-- ${emojiInstructions[toneSettings.emojiStyle]}
+${emojiInstructions[toneSettings.emojiStyle]}
+
+ADDITIONAL FEATURES:
 ${toneSettings.includeFunFact ? '- Include a "💡 Tidbit:" with a genuinely interesting/obscure fact about this specific item, maker, era, or category.' : '- Do NOT include trivia or fun facts.'}
 ${toneSettings.includeDadJoke ? `- End with a hilarious dad joke related to this specific item. Use unique features or specifics that add delight. The best jokes reference something SPECIFIC - the maker name, a visual detail, the era, or a quirky feature. Generic jokes are boring. Format as: "🤓 [your dad joke]" at the very end.` : ''}
 
