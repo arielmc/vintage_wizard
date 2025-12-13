@@ -6090,6 +6090,98 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
   );
 };
 
+// --- TIP JAR COMPONENT ---
+const TipJar = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const venmoUsername = 'Arielmcnichol';
+  const venmoUrl = `https://venmo.com/${venmoUsername}`;
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isExpanded && (
+        <div
+          onClick={() => setIsExpanded(false)}
+          className="fixed inset-0 bg-black/40 z-[998] animate-in fade-in duration-200"
+        />
+      )}
+
+      {/* Floating Button */}
+      {!isExpanded && (
+        <div
+          className="fixed z-[999]"
+          style={{ bottom: isMobile ? '90px' : '24px', left: '16px' }}
+          onMouseEnter={() => !isMobile && setIsHovered(true)}
+          onMouseLeave={() => !isMobile && setIsHovered(false)}
+        >
+          <button
+            onClick={() => setIsExpanded(true)}
+            className={`flex items-center gap-2 px-3.5 py-2.5 bg-white border border-stone-200 rounded-full shadow-lg text-sm font-medium text-stone-700 transition-transform ${isHovered ? 'scale-105' : ''}`}
+          >
+            <span className="text-lg">🫙</span>
+            <span>Tip Ariel</span>
+          </button>
+
+          {/* Desktop hover tooltip */}
+          {!isMobile && isHovered && (
+            <div className="absolute bottom-full left-0 mb-2 p-3 bg-stone-800 text-white rounded-xl text-xs leading-relaxed max-w-[280px] shadow-xl animate-in fade-in duration-150">
+              <strong>Built by Ariel McNichol</strong>—a middle-aged lady who builds AI products, not just asks her kids to fix the WiFi.
+              <div className="absolute -bottom-1.5 left-5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-stone-800" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Expanded Card */}
+      {isExpanded && (
+        <div
+          className="fixed z-[999] bg-white rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 fade-in duration-200"
+          style={{ 
+            bottom: isMobile ? '90px' : '24px', 
+            left: '16px',
+            right: isMobile ? '16px' : 'auto',
+            width: isMobile ? 'auto' : '360px',
+            maxWidth: '360px'
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-stone-100 hover:bg-stone-200 rounded-full text-stone-500 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="text-4xl mb-4">🫙</div>
+
+          <p className="text-base leading-relaxed text-stone-800 mb-5">
+            <strong>Built by Ariel McNichol</strong>—a middle-aged lady who builds AI products, not just asks her kids to fix the WiFi.
+          </p>
+
+          <a
+            href={venmoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#008CFF] hover:bg-[#0074D4] text-white font-semibold rounded-xl transition-colors"
+          >
+            Tip her for the audacity →
+          </a>
+        </div>
+      )}
+    </>
+  );
+};
+
 // --- PROFILE PAGE ---
 const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -8623,6 +8715,9 @@ export default function App() {
           }}
         />
       )}
+      
+      {/* Tip Jar */}
+      <TipJar />
     </div>
   );
 }
