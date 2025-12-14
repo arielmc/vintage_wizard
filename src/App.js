@@ -4073,7 +4073,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               onClick={() => setActiveTab("details")}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all font-bold ${
                 activeTab === "details" 
-                  ? "bg-stone-800 text-white shadow-md" 
+                  ? "bg-rose-500 text-white shadow-md" 
                   : "bg-white/60 text-stone-400 hover:bg-white hover:text-stone-600"
               }`}
             >
@@ -4281,7 +4281,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 />
               </div>
 
-              {/* Improve Valuation - collapsible questions */}
+              {/* Improve Analysis - collapsible questions */}
               {formData.questions && formData.questions.length > 0 && (
                 <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden shadow-sm">
                   <div 
@@ -4291,7 +4291,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     <div className="flex items-center gap-2">
                       <HelpCircle className="w-4 h-4 text-rose-600" />
                       <span className="text-sm font-bold text-rose-900">
-                        Improve Valuation
+                        Improve Analysis
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
