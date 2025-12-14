@@ -4631,9 +4631,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
         </div>
           
-        {/* STICKY BOTTOM BAR: Trash | Triage | Save */}
-        <div className="p-3 bg-white border-t border-stone-200 shrink-0 flex items-center gap-2">
-          {/* Trash Button */}
+        {/* ELEVATED FOOTER: Floats above content */}
+        <div 
+          className="bg-white shrink-0 px-4 py-3 flex items-center gap-3"
+          style={{ boxShadow: '0 -8px 30px rgba(0,0,0,0.12)' }}
+        >
+          {/* Trash Button - Far left with spacing */}
           <button
             onClick={() => {
               if (confirm("Delete this item permanently? This cannot be undone.")) {
@@ -4641,67 +4644,63 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onClose();
               }
             }}
-            className="p-2.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-95"
+            className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all mr-2"
             title="Delete item"
           >
             <Trash2 className="w-5 h-5" />
           </button>
           
-          {/* Divider */}
-          <div className="w-px h-8 bg-stone-200" />
-          
-          {/* Triage Controls */}
-          <div className="flex-1 flex items-center justify-center gap-1">
-            <button
-              onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "keep" 
-                  ? "bg-blue-100 text-blue-700 border-2 border-blue-400" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-blue-50 hover:text-blue-600"
-              }`}
-            >
-              <Lock size={14} />
-              Keep
-            </button>
-            <button
-              onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "sell" 
-                  ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-400" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-emerald-50 hover:text-emerald-600"
-              }`}
-            >
-              <Tag size={14} />
-              Sell
-            </button>
-            <button
-              onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                formData.status === "TBD" || !formData.status || formData.status === "draft"
-                  ? "bg-amber-100 text-amber-700 border-2 border-amber-400" 
-                  : "bg-stone-50 text-stone-500 border-2 border-transparent hover:bg-amber-50 hover:text-amber-600"
-              }`}
-            >
-              <HelpCircle size={14} />
-              TBD
-            </button>
+          {/* Status Segmented Control - Clean tab-bar style */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="inline-flex bg-stone-100 rounded-xl p-1">
+              <button
+                onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  formData.status === "keep" 
+                    ? "bg-white text-blue-600 shadow-sm" 
+                    : "text-stone-500 hover:text-blue-600"
+                }`}
+              >
+                <Lock size={13} />
+                Keep
+              </button>
+              <button
+                onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  formData.status === "sell" 
+                    ? "bg-white text-emerald-600 shadow-sm" 
+                    : "text-stone-500 hover:text-emerald-600"
+                }`}
+              >
+                <Tag size={13} />
+                Sell
+              </button>
+              <button
+                onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  formData.status === "TBD" || !formData.status || formData.status === "draft"
+                    ? "bg-white text-amber-600 shadow-sm" 
+                    : "text-stone-500 hover:text-amber-600"
+                }`}
+              >
+                <HelpCircle size={13} />
+                TBD
+              </button>
+            </div>
           </div>
-          
-          {/* Divider */}
-          <div className="w-px h-8 bg-stone-200" />
 
-          {/* Save Button */}
+          {/* Save Button - Primary action */}
           <button
             onClick={handleSaveAndClose}
             disabled={!hasUnsavedChanges}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
               hasUnsavedChanges
-                ? "bg-stone-900 hover:bg-stone-800 text-white shadow-md"
-                : "bg-stone-100 text-stone-400 cursor-not-allowed"
+                ? "bg-stone-900 hover:bg-black text-white shadow-lg"
+                : "bg-stone-200 text-stone-400 cursor-not-allowed"
             }`}
           >
             <Check className="w-4 h-4" />
-            <span className="hidden sm:inline">Save</span>
+            <span>Save</span>
           </button>
         </div>
       </div>
