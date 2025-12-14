@@ -4055,44 +4055,46 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* HEADER: Back Arrow + Tabs */}
-        <div className="px-3 py-2.5 border-b border-stone-200 bg-white flex items-center gap-3 shrink-0 sticky top-0 z-10">
-          {/* Back Arrow */}
-          <button
-            onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-            className="p-2 -ml-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          {/* Tab Switcher - Centered */}
-          <div className="flex-1 flex justify-center">
-            <div className="flex p-1 bg-stone-100 rounded-xl">
-              <button
-                onClick={() => setActiveTab("details")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  activeTab === "details" 
-                    ? "bg-white text-stone-800 shadow-sm" 
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                Details
-              </button>
-              <button
-                onClick={() => setActiveTab("listing")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1 ${
-                  activeTab === "listing" 
-                    ? "bg-white text-rose-600 shadow-sm" 
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                Listing
-              </button>
-            </div>
+        {/* HEADER: Back Arrow + Prominent Tabs */}
+        <div className="border-b border-stone-200 bg-white shrink-0 sticky top-0 z-10">
+          {/* Top row with back button */}
+          <div className="px-3 py-2 flex items-center">
+            <button
+              onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+              className="p-2 -ml-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <span className="ml-2 text-sm font-medium text-stone-600 truncate flex-1">
+              {formData.title || "Item Details"}
+            </span>
           </div>
           
-          {/* Spacer for balance */}
-          <div className="w-9" />
+          {/* Prominent Tab Bar - Full Width */}
+          <div className="flex border-t border-stone-100">
+            <button
+              onClick={() => setActiveTab("details")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all border-b-2 ${
+                activeTab === "details" 
+                  ? "border-stone-800 text-stone-900 bg-stone-50" 
+                  : "border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              <Archive className="w-4 h-4" />
+              Details
+            </button>
+            <button
+              onClick={() => setActiveTab("listing")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all border-b-2 ${
+                activeTab === "listing" 
+                  ? "border-rose-500 text-rose-600 bg-rose-50/50" 
+                  : "border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+              }`}
+            >
+              <Tag className="w-4 h-4" />
+              Listing
+            </button>
+          </div>
         </div>
         
         {/* === SINGLE SCROLLABLE CONTENT AREA === */}
@@ -4237,24 +4239,22 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
             <div className="flex flex-col gap-3">
-              {/* Analyze Button - Always rose/pink AI color */}
+              {/* AI Analyze - Subtle secondary action */}
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || formData.images.length === 0}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium transition-all border ${
                   isAnalyzing 
-                    ? "bg-rose-100 text-rose-400 cursor-wait" 
-                    : "bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-600 hover:to-pink-600 shadow-md hover:shadow-lg active:scale-[0.98]"
-                } disabled:opacity-50`}
+                    ? "bg-stone-50 text-stone-400 border-stone-200 cursor-wait" 
+                    : "bg-white text-stone-600 border-stone-200 hover:bg-stone-50 hover:border-stone-300 active:scale-[0.99]"
+                } disabled:opacity-40`}
               >
                 {isAnalyzing ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : formData.aiLastRun ? (
-                  <RefreshCw className="w-4 h-4" />
+                  <Loader className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-3.5 h-3.5 text-rose-500" />
                 )}
-                {isAnalyzing ? "Analyzing..." : formData.aiLastRun ? "Re-analyze with AI" : "Analyze with AI"}
+                {isAnalyzing ? "Analyzing..." : formData.aiLastRun ? "Re-run AI Analysis" : "Run AI Analysis"}
               </button>
               
               {/* TITLE - Single line */}
