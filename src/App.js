@@ -6111,14 +6111,14 @@ const TipJar = () => {
       {isExpanded && (
         <div
           onClick={() => setIsExpanded(false)}
-          className="fixed inset-0 bg-black/40 z-[998] animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/40 z-30 animate-in fade-in duration-200"
         />
       )}
 
       {/* Floating Icon Button */}
       {!isExpanded && (
         <div
-          className="fixed z-[999]"
+          className="fixed z-30"
           style={{ bottom: isMobile ? '90px' : '24px', left: '16px' }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -6144,7 +6144,7 @@ const TipJar = () => {
       {/* Expanded Panel */}
       {isExpanded && (
         <div
-          className="fixed z-[999] bg-white rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 fade-in duration-200"
+          className="fixed z-30 bg-white rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{ 
             bottom: isMobile ? '90px' : '24px', 
             left: '16px',
