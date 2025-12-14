@@ -4056,48 +4056,49 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* HEADER: Primary Tab Navigation */}
-        <div className="border-b border-stone-200 bg-white shrink-0 sticky top-0 z-10">
-          {/* Tab Bar - PRIMARY NAVIGATION (44pt+ touch targets) */}
-          <div className="flex">
-            {/* Back button integrated into tab row */}
-            <button
-              onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-              className="px-4 flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-colors border-r border-stone-100"
-              style={{ minHeight: '52px' }}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            
+        {/* HEADER: Material Design Tab Navigation */}
+        <div className="bg-white shrink-0 sticky top-0 z-10 shadow-sm">
+          {/* Close button - Top Right */}
+          <button
+            onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+            className="absolute top-2 right-2 z-20 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          {/* Tab Bar - Full Width, High Contrast */}
+          <div className="flex pt-1">
             {/* Details Tab */}
             <button
               onClick={() => setActiveTab("details")}
-              className={`flex-1 flex items-center justify-center gap-2.5 text-sm font-bold transition-all border-b-3 ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all relative ${
                 activeTab === "details" 
-                  ? "border-b-[3px] border-stone-800 text-stone-900 bg-white" 
-                  : "border-b-[3px] border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "text-stone-900" 
+                  : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
               }`}
-              style={{ minHeight: '52px' }}
             >
-              <Archive className="w-5 h-5" />
-              <span>Details</span>
+              <Archive className={`w-6 h-6 ${activeTab === "details" ? "text-stone-800" : ""}`} />
+              <span className={`text-xs font-bold uppercase tracking-wide ${activeTab === "details" ? "text-stone-900" : ""}`}>Details</span>
+              {/* Active indicator bar */}
+              {activeTab === "details" && (
+                <span className="absolute bottom-0 left-4 right-4 h-[3px] bg-stone-800 rounded-full" />
+              )}
             </button>
             
-            {/* Listing Tab with "new content" indicator */}
+            {/* Listing Tab */}
             <button
               onClick={() => setActiveTab("listing")}
-              className={`flex-1 flex items-center justify-center gap-2.5 text-sm font-bold transition-all relative ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all relative ${
                 activeTab === "listing" 
-                  ? "border-b-[3px] border-rose-500 text-rose-600 bg-rose-50/30" 
-                  : "border-b-[3px] border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "text-rose-600" 
+                  : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
               }`}
-              style={{ minHeight: '52px' }}
             >
-              <Tag className="w-5 h-5" />
-              <span>Listing</span>
-              {/* New content indicator - shows when AI has run but user hasn't visited Listing tab */}
-              {formData.aiLastRun && activeTab !== "listing" && formData.sales_blurb && (
-                <span className="absolute top-2 right-4 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse" />
+              <Tag className={`w-6 h-6 ${activeTab === "listing" ? "text-rose-500" : ""}`} />
+              <span className={`text-xs font-bold uppercase tracking-wide ${activeTab === "listing" ? "text-rose-600" : ""}`}>Listing</span>
+              {/* Active indicator bar */}
+              {activeTab === "listing" && (
+                <span className="absolute bottom-0 left-4 right-4 h-[3px] bg-rose-500 rounded-full" />
               )}
             </button>
           </div>
