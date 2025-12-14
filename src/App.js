@@ -570,13 +570,14 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - search_terms_broad: A simplified 2-4 word query for most sites. Example: "Olatunji Drums Passion"
     - search_terms_discogs: FOR MUSIC ONLY - Artist name + Album/Title ONLY, no format/year/label. Example: "Olatunji Drums of Passion" (NOT "Olatunji Drums of Passion vinyl 1960 Columbia")
     - search_terms_auction: For auction sites - Maker/Artist + Object type + era. Example: "Columbia Records 1960s vinyl" or "Tiffany Art Nouveau lamp"
-    - sales_blurb: A detailed description (4-6 sentences) that serves multiple purposes:
+    - sales_blurb: A detailed description (5-7 sentences) that serves multiple purposes:
       1. IDENTIFICATION: What this item is, its origin, maker, and period
       2. CONTEXT: Historical significance, cultural context, or interesting background
       3. DETAILS: Notable features, materials, craftsmanship, or unique characteristics
       4. TRANSLATIONS: If there is text in another language (Hebrew, French, Japanese, etc.), provide a translation or explain what it says
       5. SALES APPEAL: Why a collector or buyer would want this item
-      Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points.
+      6. DAD JOKE (REQUIRED): End with a clever, punny dad joke related to THIS SPECIFIC item. The joke should reference something unique about the item - the maker name, a visual detail, the era, the category, or a quirky feature. Format as: "🤓 [your dad joke]" at the very end.
+      Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points (except in the dad joke if needed for effect).
     - questions: Array of strings (max 3) for critical missing info.
     
     WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response. When you see text in non-English languages, translate or explain it.
