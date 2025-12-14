@@ -4057,49 +4057,41 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
       >
         
         {/* HEADER: Material Design Tab Navigation */}
-        <div className="bg-white shrink-0 sticky top-0 z-10 shadow-sm">
+        <div className="bg-stone-100 shrink-0 sticky top-0 z-10 shadow-sm">
           {/* Close button - Top Right */}
           <button
             onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-            className="absolute top-2 right-2 z-20 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-all"
+            className="absolute top-2.5 right-2.5 z-20 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-200 rounded-full transition-all"
           >
             <X className="w-5 h-5" />
           </button>
           
-          {/* Tab Bar - Full Width, High Contrast */}
-          <div className="flex pt-1">
+          {/* Tab Bar - Pill Style Active State */}
+          <div className="flex gap-2 p-2 pr-12">
             {/* Details Tab */}
             <button
               onClick={() => setActiveTab("details")}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all relative ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all font-bold ${
                 activeTab === "details" 
-                  ? "text-stone-900" 
-                  : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "bg-stone-800 text-white shadow-md" 
+                  : "bg-white/60 text-stone-400 hover:bg-white hover:text-stone-600"
               }`}
             >
-              <Archive className={`w-6 h-6 ${activeTab === "details" ? "text-stone-800" : ""}`} />
-              <span className={`text-xs font-bold uppercase tracking-wide ${activeTab === "details" ? "text-stone-900" : ""}`}>Details</span>
-              {/* Active indicator bar */}
-              {activeTab === "details" && (
-                <span className="absolute bottom-0 left-4 right-4 h-[3px] bg-stone-800 rounded-full" />
-              )}
+              <Archive className="w-5 h-5" />
+              <span className="text-sm">Details</span>
             </button>
             
             {/* Listing Tab */}
             <button
               onClick={() => setActiveTab("listing")}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-all relative ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all font-bold ${
                 activeTab === "listing" 
-                  ? "text-rose-600" 
-                  : "text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "bg-rose-500 text-white shadow-md" 
+                  : "bg-white/60 text-stone-400 hover:bg-white hover:text-stone-600"
               }`}
             >
-              <Tag className={`w-6 h-6 ${activeTab === "listing" ? "text-rose-500" : ""}`} />
-              <span className={`text-xs font-bold uppercase tracking-wide ${activeTab === "listing" ? "text-rose-600" : ""}`}>Listing</span>
-              {/* Active indicator bar */}
-              {activeTab === "listing" && (
-                <span className="absolute bottom-0 left-4 right-4 h-[3px] bg-rose-500 rounded-full" />
-              )}
+              <Tag className="w-5 h-5" />
+              <span className="text-sm">Listing</span>
             </button>
           </div>
         </div>
