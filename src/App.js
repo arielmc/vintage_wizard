@@ -7028,42 +7028,100 @@ export default function App() {
   };
 
   // Helper: Load image as base64 for PDF (preserves aspect ratio)
-  const loadImageForPDF = (url) => {
-    return new Promise((resolve) => {
-      if (!url) { resolve(null); return; }
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const maxSize = 300;
-          let width = img.width;
-          let height = img.height;
-          // Scale down while preserving aspect ratio
-          if (width > maxSize || height > maxSize) {
-            if (width > height) {
-              height = (height / width) * maxSize;
-              width = maxSize;
-            } else {
-              width = (width / height) * maxSize;
-              height = maxSize;
+  // Uses fetch to avoid CORS issues with Firebase Storage URLs
+  const loadImageForPDF = async (url) => {
+    if (!url) return null;
+    
+    try {
+      // Method 1: Try fetch (works better with Firebase Storage CORS)
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) throw new Error('Fetch failed');
+      
+      const blob = await response.blob();
+      
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const maxSize = 300;
+              let width = img.width;
+              let height = img.height;
+              if (width > maxSize || height > maxSize) {
+                if (width > height) {
+                  height = (height / width) * maxSize;
+                  width = maxSize;
+                } else {
+                  width = (width / height) * maxSize;
+                  height = maxSize;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve({
+                dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+                width: img.width,
+                height: img.height
+              });
+            } catch (e) {
+              console.warn('Canvas draw failed:', e);
+              resolve(null);
             }
+          };
+          img.onerror = () => resolve(null);
+          img.src = reader.result;
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (fetchErr) {
+      // Method 2: Fallback to Image element with crossOrigin
+      console.warn('Fetch failed, trying Image element:', fetchErr.message);
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const maxSize = 300;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxSize || height > maxSize) {
+              if (width > height) {
+                height = (height / width) * maxSize;
+                width = maxSize;
+              } else {
+                width = (width / height) * maxSize;
+                height = maxSize;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve({
+              dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+              width: img.width,
+              height: img.height
+            });
+          } catch (e) {
+            console.warn('Image element canvas draw failed:', e);
+            resolve(null);
           }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          // Return both data URL and dimensions for aspect ratio
-          resolve({
-            dataUrl: canvas.toDataURL('image/jpeg', 0.8),
-            width: img.width,
-            height: img.height
-          });
-        } catch (e) { resolve(null); }
-      };
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
+        };
+        img.onerror = () => {
+          console.warn('Image element load failed for:', url.substring(0, 50));
+          resolve(null);
+        };
+        // Add timeout to prevent hanging
+        setTimeout(() => resolve(null), 5000);
+        img.src = url;
+      });
+    }
   };
 
   // Helper: Calculate image dimensions preserving aspect ratio
