@@ -4055,44 +4055,49 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* HEADER: Back Arrow + Prominent Tabs */}
+        {/* HEADER: Primary Tab Navigation */}
         <div className="border-b border-stone-200 bg-white shrink-0 sticky top-0 z-10">
-          {/* Top row with back button */}
-          <div className="px-3 py-2 flex items-center">
+          {/* Tab Bar - PRIMARY NAVIGATION (44pt+ touch targets) */}
+          <div className="flex">
+            {/* Back button integrated into tab row */}
             <button
               onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-              className="p-2 -ml-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+              className="px-4 flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-colors border-r border-stone-100"
+              style={{ minHeight: '52px' }}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <span className="ml-2 text-sm font-medium text-stone-600 truncate flex-1">
-              {formData.title || "Item Details"}
-            </span>
-          </div>
-          
-          {/* Prominent Tab Bar - Full Width */}
-          <div className="flex border-t border-stone-100">
+            
+            {/* Details Tab */}
             <button
               onClick={() => setActiveTab("details")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all border-b-2 ${
+              className={`flex-1 flex items-center justify-center gap-2.5 text-sm font-bold transition-all border-b-3 ${
                 activeTab === "details" 
-                  ? "border-stone-800 text-stone-900 bg-stone-50" 
-                  : "border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "border-b-[3px] border-stone-800 text-stone-900 bg-white" 
+                  : "border-b-[3px] border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
               }`}
+              style={{ minHeight: '52px' }}
             >
-              <Archive className="w-4 h-4" />
-              Details
+              <Archive className="w-5 h-5" />
+              <span>Details</span>
             </button>
+            
+            {/* Listing Tab with "new content" indicator */}
             <button
               onClick={() => setActiveTab("listing")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-all border-b-2 ${
+              className={`flex-1 flex items-center justify-center gap-2.5 text-sm font-bold transition-all relative ${
                 activeTab === "listing" 
-                  ? "border-rose-500 text-rose-600 bg-rose-50/50" 
-                  : "border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
+                  ? "border-b-[3px] border-rose-500 text-rose-600 bg-rose-50/30" 
+                  : "border-b-[3px] border-transparent text-stone-400 hover:text-stone-600 hover:bg-stone-50"
               }`}
+              style={{ minHeight: '52px' }}
             >
-              <Tag className="w-4 h-4" />
-              Listing
+              <Tag className="w-5 h-5" />
+              <span>Listing</span>
+              {/* New content indicator - shows when AI has run but user hasn't visited Listing tab */}
+              {formData.aiLastRun && activeTab !== "listing" && formData.sales_blurb && (
+                <span className="absolute top-2 right-4 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse" />
+              )}
             </button>
           </div>
         </div>
