@@ -1190,6 +1190,20 @@ const ProcessingOverlay = () => {
   );
 };
 
+// --- URL CACHE (Persists across component unmounts/remounts) ---
+const fileUrlCache = new WeakMap(); // Key: File object, Value: object URL string
+
+// Helper to get or create URL for a File object
+const getFileUrl = (file) => {
+  if (!file) return null;
+  if (fileUrlCache.has(file)) {
+    return fileUrlCache.get(file);
+  }
+  const url = URL.createObjectURL(file);
+  fileUrlCache.set(file, url);
+  return url;
+};
+
 // --- STACK CARD COMPONENT (Memoized - defined outside to prevent remounting) ---
 const StackCard = React.memo(({ 
   stack, 
@@ -1208,54 +1222,22 @@ const StackCard = React.memo(({
   fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard',message:'StackCard RENDER',data:{stackId:stack.id,index,isSelected},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
   // #endregion
   const isMulti = stack.files.length > 1;
-  const [coverUrl, setCoverUrl] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const isBeingDragged = draggedIdx === index;
   const isDropTarget = draggedIdx !== null && draggedIdx !== index;
   const isActiveDropTarget = isDragOverTarget === index;
   const cardRef = useRef(null);
 
-  // Memoize coverFile to prevent unnecessary useEffect runs
-  const coverFile = useMemo(() => stack.files[0], [stack.files[0]]);
-  const coverFileRef = useRef(null);
+  // Get cached URL for File object (persists across unmounts/remounts)
+  const coverFile = stack.files[0];
+  const coverUrl = getFileUrl(coverFile);
   
   // #region agent log
-  const fileChanged = coverFileRef.current !== coverFile;
-  if (fileChanged && coverFile) {
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+  const wasCached = coverFile && fileUrlCache.has(coverFile);
+  if (coverFile) {
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:getUrl',message:'Getting URL for file',data:{stackId:stack.id,index,fileName:coverFile?.name,wasCached},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
   }
   // #endregion
-  
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED',data:{stackId:stack.id,index,fileName:coverFile?.name,fileChanged},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
-    
-    // Only create URL if File object actually changed
-    if (coverFileRef.current === coverFile) {
-      return; // File hasn't changed, keep existing URL
-    }
-    
-    if (!coverFile) {
-      coverFileRef.current = null;
-      setCoverUrl(null);
-      return;
-    }
-    
-    // Revoke old URL if exists
-    if (coverFileRef.current) {
-      // Old URL was already revoked in cleanup, just update ref
-    }
-    
-    // Create new URL
-    const url = URL.createObjectURL(coverFile);
-    coverFileRef.current = coverFile;
-    setCoverUrl(url);
-    
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [coverFile]); // Only run when File object reference changes
 
   const handleClick = () => {
     onSelect(stack.id);
