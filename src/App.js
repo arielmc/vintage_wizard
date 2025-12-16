@@ -1218,9 +1218,6 @@ const StackCard = React.memo(({
   isSelectionMode,
   onDrop
 }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard',message:'StackCard RENDER',data:{stackId:stack.id,index,isSelected},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
-  // #endregion
   const isMulti = stack.files.length > 1;
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef(null);
@@ -1240,22 +1237,12 @@ const StackCard = React.memo(({
       if (img.complete && img.naturalHeight !== 0) {
         // Image already loaded (from cache)
         setImageLoaded(true);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:imageAlreadyLoaded',message:'Image already loaded from cache',data:{stackId:stack.id,index},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
       } else {
         // Image not loaded yet, wait for onLoad
         setImageLoaded(false);
       }
     }
   }, [coverUrl, stack.id]);
-  
-  // #region agent log
-  const wasCached = coverFile && fileUrlCache.has(coverFile);
-  if (coverFile) {
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:getUrl',message:'Getting URL for file',data:{stackId:stack.id,index,fileName:coverFile?.name,wasCached},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-  }
-  // #endregion
 
   const handleClick = () => {
     onSelect(stack.id);
@@ -1352,12 +1339,7 @@ const StackCard = React.memo(({
             src={coverUrl} 
             className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             alt="stack cover"
-            onLoad={() => {
-              setImageLoaded(true);
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:onLoad',message:'Image onLoad fired',data:{stackId:stack.id,index},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-              // #endregion
-            }}
+            onLoad={() => setImageLoaded(true)}
             draggable={false}
           />
         )}
@@ -1394,36 +1376,21 @@ const StackCard = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // #region agent log
-  const stackIdSame = prevProps.stack.id === nextProps.stack.id;
-  const fileRefSame = prevProps.stack.files[0] === nextProps.stack.files[0];
-  const indexSame = prevProps.index === nextProps.index;
-  const isSelectedSame = prevProps.isSelected === nextProps.isSelected;
-  const draggedIdxSame = prevProps.draggedIdx === nextProps.draggedIdx;
-  const isDragOverTargetSame = prevProps.isDragOverTarget === nextProps.isDragOverTarget;
-  const isSelectionModeSame = prevProps.isSelectionMode === nextProps.isSelectionMode;
-  
-  const shouldSkip = (
-    stackIdSame &&
-    fileRefSame && // Compare File object reference (critical!)
-    indexSame &&
-    isSelectedSame &&
-    draggedIdxSame &&
-    isDragOverTargetSame &&
-    isSelectionModeSame
-  );
-  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:memoCompare',message:'React.memo COMPARISON',data:{stackId:prevProps.stack.id,shouldSkip,stackRefChanged:!stackIdSame,fileRefChanged:!fileRefSame,indexChanged:!indexSame,isSelectedChanged:!isSelectedSame,draggedIdxChanged:!draggedIdxSame},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F,G'})}).catch(()=>{});
-  // #endregion
   // Custom comparison - compare by stack.id and File object reference (not stack object reference)
   // Function props (onSelect, onDrop, etc.) are stable via useCallback, so we don't need to compare them
-  return shouldSkip;
+  return (
+    prevProps.stack.id === nextProps.stack.id &&
+    prevProps.stack.files[0] === nextProps.stack.files[0] && // Compare File object reference (critical!)
+    prevProps.index === nextProps.index &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.draggedIdx === nextProps.draggedIdx &&
+    prevProps.isDragOverTarget === nextProps.isDragOverTarget &&
+    prevProps.isSelectionMode === nextProps.isSelectionMode
+  );
 });
 
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
 const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingBatch = false }) => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StagingArea',message:'StagingArea RENDER',data:{filesCount:files?.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
   const [expandedStackIdx, setExpandedStackIdx] = useState(null); // For refining stacks
@@ -1620,9 +1587,6 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
   // Toggle Selection - memoized to prevent prop changes
   const toggleSelect = useCallback((id) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:toggleSelect',message:'toggleSelect CALLED',data:{id,currentSize:selectedStackIds.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       setSelectedStackIds(prev => {
         const newSet = new Set(prev);
         if (newSet.has(id)) {
@@ -1636,9 +1600,6 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
   // Stack Selected Items
   const handleStackSelected = () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:handleStackSelected',message:'handleStackSelected CALLED',data:{selectedCount:selectedStackIds.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       if (selectedStackIds.size < 2) return;
 
       const filesToStack = [];
