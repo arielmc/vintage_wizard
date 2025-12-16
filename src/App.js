@@ -1192,6 +1192,9 @@ const ProcessingOverlay = () => {
 
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
 const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingBatch = false }) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StagingArea',message:'StagingArea RENDER',data:{filesCount:files?.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
   const [draggedStackIdx, setDraggedStackIdx] = useState(null);
@@ -1384,6 +1387,9 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
   // Toggle Selection
   const toggleSelect = (id) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:toggleSelect',message:'toggleSelect CALLED',data:{id,currentSize:selectedStackIds.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       const newSet = new Set(selectedStackIds);
       if (newSet.has(id)) {
           newSet.delete(id);
@@ -1395,6 +1401,9 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
   // Stack Selected Items
   const handleStackSelected = () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:handleStackSelected',message:'handleStackSelected CALLED',data:{selectedCount:selectedStackIds.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (selectedStackIds.size < 2) return;
 
       const filesToStack = [];
@@ -1625,6 +1634,9 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   // - Debounces drag over events for better performance
   
   const StackCard = ({ stack, index, isSelected, onSelect, onRemove, draggedIdx }) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard',message:'StackCard RENDER',data:{stackId:stack.id,index,isSelected},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
     const isMulti = stack.files.length > 1;
     const [coverUrl, setCoverUrl] = useState(null);
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -1635,7 +1647,17 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
     // Create stable object URL - use File object reference (stable) not array reference (unstable)
     const coverFile = stack.files[0];
+    // #region agent log
+    const coverFileRef = useRef(coverFile);
+    if (coverFileRef.current !== coverFile) {
+      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name,sameFile:coverFileRef.current===coverFile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+      coverFileRef.current = coverFile;
+    }
+    // #endregion
     useEffect(() => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED - creating URL',data:{stackId:stack.id,index,fileName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       if (!coverFile) return;
       const url = URL.createObjectURL(coverFile);
       setCoverUrl(url);
