@@ -1190,6 +1190,192 @@ const ProcessingOverlay = () => {
   );
 };
 
+// --- STACK CARD COMPONENT (Memoized - defined outside to prevent remounting) ---
+const StackCard = React.memo(({ 
+  stack, 
+  index, 
+  isSelected, 
+  onSelect, 
+  draggedIdx,
+  isDragOverTarget,
+  setIsDragOverTarget,
+  setDraggedStackIdx,
+  setExpandedStackIdx,
+  isSelectionMode,
+  onDrop
+}) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard',message:'StackCard RENDER',data:{stackId:stack.id,index,isSelected},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+  // #endregion
+  const isMulti = stack.files.length > 1;
+  const [coverUrl, setCoverUrl] = useState(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const isBeingDragged = draggedIdx === index;
+  const isDropTarget = draggedIdx !== null && draggedIdx !== index;
+  const isActiveDropTarget = isDragOverTarget === index;
+  const cardRef = useRef(null);
+
+  // Create stable object URL - use File object reference (stable)
+  const coverFile = stack.files[0];
+  // #region agent log
+  const coverFileRef = useRef(coverFile);
+  if (coverFileRef.current !== coverFile) {
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name,sameFile:coverFileRef.current===coverFile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    coverFileRef.current = coverFile;
+  }
+  // #endregion
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED - creating URL',data:{stackId:stack.id,index,fileName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    if (!coverFile) return;
+    const url = URL.createObjectURL(coverFile);
+    setCoverUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+
+  const handleClick = () => {
+    onSelect(stack.id);
+  };
+  
+  const handleDoubleClick = () => {
+    if (isMulti) {
+      setExpandedStackIdx(index);
+    }
+  };
+
+  const onDragStartHandler = (e) => {
+    if (isSelectionMode) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData("text/plain", index.toString());
+    e.dataTransfer.setData("application/json", JSON.stringify({ index, stackId: stack.id }));
+    e.dataTransfer.effectAllowed = "move";
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      e.dataTransfer.setDragImage(cardRef.current, rect.width / 2, rect.height / 2);
+    }
+    setTimeout(() => setDraggedStackIdx(index), 0);
+  };
+
+  const onDragOverHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedIdx !== null && draggedIdx !== index && isDragOverTarget !== index) {
+      setIsDragOverTarget(index);
+    }
+  };
+
+  const onDragLeaveHandler = (e) => {
+    e.preventDefault();
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (rect) {
+      const { clientX, clientY } = e;
+      if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+        if (isDragOverTarget === index) {
+          setIsDragOverTarget(null);
+        }
+      }
+    }
+  };
+
+  const onDropHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (!isNaN(sourceIdx) && sourceIdx !== index) {
+      onDrop(e, index);
+    }
+    setIsDragOverTarget(null);
+  };
+
+  const onDragEndHandler = () => {
+    setDraggedStackIdx(null);
+    setIsDragOverTarget(null);
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      className={`relative aspect-square group transition-all duration-200 select-none cursor-pointer ${
+        isSelected ? "scale-95" : "hover:scale-[1.02]"
+      }`}
+    >
+      {isMulti && (
+        <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm z-[5] pointer-events-none" />
+      )}
+      {stack.files.length > 2 && (
+        <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm pointer-events-none" />
+      )}
+
+      <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 transition-all duration-150 ${
+        isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : 
+        isActiveDropTarget ? "border-emerald-400 ring-4 ring-emerald-400/40 scale-105" : 
+        "border-stone-200"
+      }`}>
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center">
+            <Loader className="w-5 h-5 text-stone-300 animate-spin" />
+          </div>
+        )}
+        
+        {coverUrl && (
+          <img 
+            src={coverUrl} 
+            className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            alt="stack cover"
+            onLoad={() => setImageLoaded(true)}
+            draggable={false}
+          />
+        )}
+        
+        <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors shadow-sm ${
+          isSelected ? "bg-rose-500 border-rose-500" : "bg-white/90 border-stone-300"
+        }`}>
+          {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
+        </div>
+
+        <div className={`absolute bottom-2 right-2 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none ${
+          stack.files.length >= MAX_IMAGES_PER_STACK ? 'bg-red-600' : 
+          stack.files.length >= MAX_IMAGES_PER_STACK - 2 ? 'bg-amber-600' : 
+          'bg-black/70'
+        }`}>
+          {stack.files.length} {stack.files.length === 1 ? 'photo' : 'photos'}
+          {stack.files.length >= MAX_IMAGES_PER_STACK && ' (MAX)'}
+        </div>
+        
+        {isMulti && (
+          <>
+            <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 pointer-events-none shadow-sm">
+              <Layers size={10} /> {stack.files.length}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpandedStackIdx(index); }}
+              className="absolute bottom-2 left-2 bg-white/90 hover:bg-white text-stone-700 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+            >
+              <Eye size={10} /> Open
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if these specific props change
+  return (
+    prevProps.stack === nextProps.stack &&
+    prevProps.index === nextProps.index &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.draggedIdx === nextProps.draggedIdx &&
+    prevProps.isDragOverTarget === nextProps.isDragOverTarget &&
+    prevProps.isSelectionMode === nextProps.isSelectionMode
+  );
+});
+
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
 const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingBatch = false }) => {
   // #region agent log
@@ -1624,204 +1810,8 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
      );
   };
 
-  // Stack Card Component with Improved Drag/Drop
+  // Drag/Drop state
   const [isDragOverTarget, setIsDragOverTarget] = useState(null);
-  
-  // IMPROVED: Drag & Drop Best Practices
-  // - Uses native HTML5 Drag & Drop with proper event handling
-  // - Stores index in dataTransfer for cross-component communication
-  // - Adds explicit drop zone highlighting
-  // - Debounces drag over events for better performance
-  
-  const StackCard = ({ stack, index, isSelected, onSelect, onRemove, draggedIdx }) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard',message:'StackCard RENDER',data:{stackId:stack.id,index,isSelected},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
-    // #endregion
-    const isMulti = stack.files.length > 1;
-    const [coverUrl, setCoverUrl] = useState(null);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const isBeingDragged = draggedIdx === index;
-    const isDropTarget = draggedIdx !== null && draggedIdx !== index;
-    const isActiveDropTarget = isDragOverTarget === index;
-    const cardRef = useRef(null);
-
-    // Create stable object URL - use File object reference (stable) not array reference (unstable)
-    const coverFile = stack.files[0];
-    // #region agent log
-    const coverFileRef = useRef(coverFile);
-    if (coverFileRef.current !== coverFile) {
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name,sameFile:coverFileRef.current===coverFile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      coverFileRef.current = coverFile;
-    }
-    // #endregion
-    useEffect(() => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED - creating URL',data:{stackId:stack.id,index,fileName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      if (!coverFile) return;
-      const url = URL.createObjectURL(coverFile);
-      setCoverUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }, [coverFile]);
-
-    const handleClick = () => {
-        // Always toggle selection on tap
-        onSelect(stack.id);
-    };
-    
-    // Double-tap to open stack (if multi-photo)
-    const handleDoubleClick = () => {
-        if (isMulti) {
-            setExpandedStackIdx(index);
-        }
-    };
-
-    // Proper drag start handler
-    const onDragStartHandler = (e) => {
-        if (isSelectionMode) {
-            e.preventDefault();
-            return;
-        }
-        
-        // Store index in multiple formats for broader compatibility
-        e.dataTransfer.setData("text/plain", index.toString());
-        e.dataTransfer.setData("application/json", JSON.stringify({ index, stackId: stack.id }));
-        e.dataTransfer.effectAllowed = "move";
-        
-        // Use the actual element as drag image (more reliable than custom Image)
-        if (cardRef.current) {
-            const rect = cardRef.current.getBoundingClientRect();
-            e.dataTransfer.setDragImage(cardRef.current, rect.width / 2, rect.height / 2);
-        }
-        
-        // Update state after a micro-task to ensure dataTransfer is set
-        setTimeout(() => setDraggedStackIdx(index), 0);
-    };
-
-    // Proper drag over handler with debouncing
-    const onDragOverHandler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.dataTransfer.dropEffect = "move";
-        
-        // Only update if we're actually over a different card
-        if (draggedIdx !== null && draggedIdx !== index && isDragOverTarget !== index) {
-            setIsDragOverTarget(index);
-        }
-    };
-
-    // Drag leave with target check
-    const onDragLeaveHandler = (e) => {
-        e.preventDefault();
-        // Only clear if we're actually leaving this element (not entering a child)
-        const rect = cardRef.current?.getBoundingClientRect();
-        if (rect) {
-            const { clientX, clientY } = e;
-            if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
-                if (isDragOverTarget === index) {
-                    setIsDragOverTarget(null);
-                }
-            }
-        }
-    };
-
-    // Drop handler
-    const onDropHandler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const sourceIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
-        if (!isNaN(sourceIdx) && sourceIdx !== index) {
-            handleDrop(e, index);
-        }
-        setIsDragOverTarget(null);
-    };
-
-    // Drag end cleanup
-    const onDragEndHandler = () => {
-        setDraggedStackIdx(null);
-        setIsDragOverTarget(null);
-    };
-
-    return (
-      <div
-        ref={cardRef}
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
-        className={`relative aspect-square group transition-all duration-200 select-none cursor-pointer ${
-          isSelected ? "scale-95" : "hover:scale-[1.02]"
-        }`}
-      >
-
-        {/* Stack Effect (Underneath layers) */}
-        {isMulti && (
-           <div className="absolute inset-0 bg-stone-200 rounded-xl rotate-6 scale-95 border border-stone-300 shadow-sm z-[5] pointer-events-none" />
-        )}
-        {stack.files.length > 2 && (
-           <div className="absolute inset-0 bg-stone-300 rounded-xl -rotate-3 scale-95 border border-stone-400 shadow-sm pointer-events-none" />
-        )}
-
-        {/* Main Card */}
-        <div className={`absolute inset-0 bg-white rounded-xl shadow-md border overflow-hidden z-10 transition-all duration-150 ${
-            isSelected ? "border-rose-500 ring-4 ring-rose-500/30" : 
-            isActiveDropTarget ? "border-emerald-400 ring-4 ring-emerald-400/40 scale-105" : 
-            "border-stone-200"
-        }`}>
-           {/* Loading skeleton */}
-           {!imageLoaded && (
-             <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center">
-               <Loader className="w-5 h-5 text-stone-300 animate-spin" />
-             </div>
-           )}
-           
-           {coverUrl && (
-             <img 
-               src={coverUrl} 
-               className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-               alt="stack cover"
-               onLoad={() => setImageLoaded(true)}
-               draggable={false}
-             />
-           )}
-           
-           {/* Selection Checkmark Overlay */}
-           {(
-               <div className={`absolute top-2 right-2 h-6 w-6 rounded-full flex items-center justify-center border-2 transition-colors shadow-sm ${
-                   isSelected ? "bg-rose-500 border-rose-500" : "bg-white/90 border-stone-300"
-               }`}>
-                   {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
-               </div>
-           )}
-
-
-           {/* Badge - shows warning if near/at limit */}
-           <div className={`absolute bottom-2 right-2 backdrop-blur-md text-white text-xs font-bold px-2 py-1 rounded-full pointer-events-none ${
-             stack.files.length >= MAX_IMAGES_PER_STACK ? 'bg-red-600' : 
-             stack.files.length >= MAX_IMAGES_PER_STACK - 2 ? 'bg-amber-600' : 
-             'bg-black/70'
-           }`}>
-              {stack.files.length} {stack.files.length === 1 ? 'photo' : 'photos'}
-              {stack.files.length >= MAX_IMAGES_PER_STACK && ' (MAX)'}
-           </div>
-           
-           {/* Stack indicator + Open button for multi-photo stacks */}
-           {isMulti && (
-             <>
-               <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 pointer-events-none shadow-sm">
-                 <Layers size={10} /> {stack.files.length}
-               </div>
-               <button
-                 onClick={(e) => { e.stopPropagation(); setExpandedStackIdx(index); }}
-                 className="absolute bottom-2 left-2 bg-white/90 hover:bg-white text-stone-700 text-[10px] font-bold px-2 py-1 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-               >
-                 <Eye size={10} /> Open
-               </button>
-             </>
-           )}
-        </div>
-      </div>
-    );
-  };
 
   // Handle Deleting a Stack/Photo from Staging Area
   const handleRemoveStack = (index) => {
@@ -1948,8 +1938,13 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                     stack={stack}
                     isSelected={selectedStackIds.has(stack.id)}
                     onSelect={toggleSelect}
-                    onRemove={handleRemoveStack}
                     draggedIdx={draggedStackIdx}
+                    isDragOverTarget={isDragOverTarget}
+                    setIsDragOverTarget={setIsDragOverTarget}
+                    setDraggedStackIdx={setDraggedStackIdx}
+                    setExpandedStackIdx={setExpandedStackIdx}
+                    isSelectionMode={isSelectionMode}
+                    onDrop={handleDrop}
                  />
               ))}
            </div>
