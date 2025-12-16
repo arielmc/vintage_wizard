@@ -1633,12 +1633,14 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     const isActiveDropTarget = isDragOverTarget === index;
     const cardRef = useRef(null);
 
-    // Create stable object URL
+    // Create stable object URL - use File object reference (stable) not array reference (unstable)
+    const coverFile = stack.files[0];
     useEffect(() => {
-      const url = URL.createObjectURL(stack.files[0]);
+      if (!coverFile) return;
+      const url = URL.createObjectURL(coverFile);
       setCoverUrl(url);
       return () => URL.revokeObjectURL(url);
-    }, [stack.files]);
+    }, [coverFile]);
 
     const handleClick = () => {
         // Always toggle selection on tap
