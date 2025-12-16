@@ -1215,24 +1215,47 @@ const StackCard = React.memo(({
   const isActiveDropTarget = isDragOverTarget === index;
   const cardRef = useRef(null);
 
-  // Create stable object URL - use File object reference (stable)
-  const coverFile = stack.files[0];
+  // Memoize coverFile to prevent unnecessary useEffect runs
+  const coverFile = useMemo(() => stack.files[0], [stack.files[0]]);
+  const coverFileRef = useRef(null);
+  
   // #region agent log
-  const coverFileRef = useRef(coverFile);
-  if (coverFileRef.current !== coverFile) {
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name,sameFile:coverFileRef.current===coverFile},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-    coverFileRef.current = coverFile;
+  const fileChanged = coverFileRef.current !== coverFile;
+  if (fileChanged && coverFile) {
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:coverFileChanged',message:'coverFile REFERENCE CHANGED',data:{stackId:stack.id,index,oldName:coverFileRef.current?.name,newName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
   }
   // #endregion
+  
   useEffect(() => {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED - creating URL',data:{stackId:stack.id,index,fileName:coverFile?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:useEffect',message:'useEffect TRIGGERED',data:{stackId:stack.id,index,fileName:coverFile?.name,fileChanged},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
     // #endregion
-    if (!coverFile) return;
+    
+    // Only create URL if File object actually changed
+    if (coverFileRef.current === coverFile) {
+      return; // File hasn't changed, keep existing URL
+    }
+    
+    if (!coverFile) {
+      coverFileRef.current = null;
+      setCoverUrl(null);
+      return;
+    }
+    
+    // Revoke old URL if exists
+    if (coverFileRef.current) {
+      // Old URL was already revoked in cleanup, just update ref
+    }
+    
+    // Create new URL
     const url = URL.createObjectURL(coverFile);
+    coverFileRef.current = coverFile;
     setCoverUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [coverFile]);
+    
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [coverFile]); // Only run when File object reference changes
 
   const handleClick = () => {
     onSelect(stack.id);
