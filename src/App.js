@@ -1365,15 +1365,29 @@ const StackCard = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison - only re-render if these specific props change
-  return (
-    prevProps.stack === nextProps.stack &&
-    prevProps.index === nextProps.index &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.draggedIdx === nextProps.draggedIdx &&
-    prevProps.isDragOverTarget === nextProps.isDragOverTarget &&
-    prevProps.isSelectionMode === nextProps.isSelectionMode
+  // #region agent log
+  const stackIdSame = prevProps.stack.id === nextProps.stack.id;
+  const fileRefSame = prevProps.stack.files[0] === nextProps.stack.files[0];
+  const indexSame = prevProps.index === nextProps.index;
+  const isSelectedSame = prevProps.isSelected === nextProps.isSelected;
+  const draggedIdxSame = prevProps.draggedIdx === nextProps.draggedIdx;
+  const isDragOverTargetSame = prevProps.isDragOverTarget === nextProps.isDragOverTarget;
+  const isSelectionModeSame = prevProps.isSelectionMode === nextProps.isSelectionMode;
+  
+  const shouldSkip = (
+    stackIdSame &&
+    fileRefSame && // Compare File object reference (critical!)
+    indexSame &&
+    isSelectedSame &&
+    draggedIdxSame &&
+    isDragOverTargetSame &&
+    isSelectionModeSame
   );
+  fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:memoCompare',message:'React.memo COMPARISON',data:{stackId:prevProps.stack.id,shouldSkip,stackRefChanged:!stackIdSame,fileRefChanged:!fileRefSame,indexChanged:!indexSame,isSelectedChanged:!isSelectedSame,draggedIdxChanged:!draggedIdxSame},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F,G'})}).catch(()=>{});
+  // #endregion
+  // Custom comparison - compare by stack.id and File object reference (not stack object reference)
+  // Function props (onSelect, onDrop, etc.) are stable via useCallback, so we don't need to compare them
+  return shouldSkip;
 });
 
 // --- STAGING AREA COMPONENT (Smart Stacker) ---
@@ -1383,7 +1397,6 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   // #endregion
   // Each stack is { id: string, files: File[] }
   const [stacks, setStacks] = useState([]);
-  const [draggedStackIdx, setDraggedStackIdx] = useState(null);
   const [expandedStackIdx, setExpandedStackIdx] = useState(null); // For refining stacks
   
   // Selection Mode State - Default ON (no drag-drop, simpler UX)
@@ -1544,46 +1557,53 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e, dropIndex) => {
+  const handleDrop = useCallback((e, dropIndex) => {
     e.preventDefault();
-    if (draggedStackIdx === null || draggedStackIdx === dropIndex) return;
-
-    const newStacks = [...stacks];
-    const sourceStack = newStacks[draggedStackIdx];
-    const targetStack = newStacks[dropIndex];
-
-    // Check if merging would exceed limit
-    const mergedCount = sourceStack.files.length + targetStack.files.length;
-    if (mergedCount > MAX_IMAGES_PER_STACK) {
-      setGroupingFeedback(`⚠️ Max ${MAX_IMAGES_PER_STACK} photos per item! This merge would create ${mergedCount}.`);
-      setTimeout(() => setGroupingFeedback(null), 4000);
-      setDraggedStackIdx(null);
-      return;
-    }
-
-    // Merge source into target
-    targetStack.files = [...targetStack.files, ...sourceStack.files];
+    const sourceIdx = draggedStackIdxRef.current;
+    if (sourceIdx === null || sourceIdx === dropIndex) return;
     
-    // Remove source
-    newStacks.splice(draggedStackIdx, 1);
-    
-    setStacks(newStacks);
+    setStacks(prevStacks => {
+      const newStacks = [...prevStacks];
+      const sourceStack = newStacks[sourceIdx];
+      const targetStack = newStacks[dropIndex];
+
+      // Check if merging would exceed limit
+      const mergedCount = sourceStack.files.length + targetStack.files.length;
+      if (mergedCount > MAX_IMAGES_PER_STACK) {
+        setGroupingFeedback(`⚠️ Max ${MAX_IMAGES_PER_STACK} photos per item! This merge would create ${mergedCount}.`);
+        setTimeout(() => setGroupingFeedback(null), 4000);
+        draggedStackIdxRef.current = null;
+        setDraggedStackIdx(null);
+        return prevStacks;
+      }
+
+      // Merge source into target
+      targetStack.files = [...targetStack.files, ...sourceStack.files];
+      
+      // Remove source
+      newStacks.splice(sourceIdx, 1);
+      
+      return newStacks;
+    });
+    draggedStackIdxRef.current = null;
     setDraggedStackIdx(null);
-  };
+  }, []); // Stable - uses ref instead of state
 
-  // Toggle Selection
-  const toggleSelect = (id) => {
+  // Toggle Selection - memoized to prevent prop changes
+  const toggleSelect = useCallback((id) => {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:toggleSelect',message:'toggleSelect CALLED',data:{id,currentSize:selectedStackIds.size},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
-      const newSet = new Set(selectedStackIds);
-      if (newSet.has(id)) {
+      setSelectedStackIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
           newSet.delete(id);
-      } else {
+        } else {
           newSet.add(id);
-      }
-      setSelectedStackIds(newSet);
-  };
+        }
+        return newSet;
+      });
+  }, []); // Empty deps - uses functional setState
 
   // Stack Selected Items
   const handleStackSelected = () => {
@@ -1812,6 +1832,14 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 
   // Drag/Drop state
   const [isDragOverTarget, setIsDragOverTarget] = useState(null);
+  const draggedStackIdxRef = useRef(null); // Use ref to avoid closure issues in useCallback
+  const [draggedStackIdx, setDraggedStackIdxState] = useState(null);
+  
+  // Helper to update both ref and state
+  const setDraggedStackIdx = useCallback((value) => {
+    draggedStackIdxRef.current = value;
+    setDraggedStackIdxState(value);
+  }, []);
 
   // Handle Deleting a Stack/Photo from Staging Area
   const handleRemoveStack = (index) => {
