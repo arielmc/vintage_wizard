@@ -1223,6 +1223,7 @@ const StackCard = React.memo(({
   // #endregion
   const isMulti = stack.files.length > 1;
   const [imageLoaded, setImageLoaded] = useState(false);
+  const imageRef = useRef(null);
   const isBeingDragged = draggedIdx === index;
   const isDropTarget = draggedIdx !== null && draggedIdx !== index;
   const isActiveDropTarget = isDragOverTarget === index;
@@ -1231,6 +1232,23 @@ const StackCard = React.memo(({
   // Get cached URL for File object (persists across unmounts/remounts)
   const coverFile = stack.files[0];
   const coverUrl = getFileUrl(coverFile);
+  
+  // Check if image is already loaded (from browser cache or previous render)
+  useEffect(() => {
+    if (coverUrl && imageRef.current) {
+      const img = imageRef.current;
+      if (img.complete && img.naturalHeight !== 0) {
+        // Image already loaded (from cache)
+        setImageLoaded(true);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:imageAlreadyLoaded',message:'Image already loaded from cache',data:{stackId:stack.id,index},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+      } else {
+        // Image not loaded yet, wait for onLoad
+        setImageLoaded(false);
+      }
+    }
+  }, [coverUrl, stack.id]);
   
   // #region agent log
   const wasCached = coverFile && fileUrlCache.has(coverFile);
@@ -1330,10 +1348,16 @@ const StackCard = React.memo(({
         
         {coverUrl && (
           <img 
+            ref={imageRef}
             src={coverUrl} 
             className={`w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             alt="stack cover"
-            onLoad={() => setImageLoaded(true)}
+            onLoad={() => {
+              setImageLoaded(true);
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:StackCard:onLoad',message:'Image onLoad fired',data:{stackId:stack.id,index},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+              // #endregion
+            }}
             draggable={false}
           />
         )}
