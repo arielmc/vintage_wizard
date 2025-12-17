@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Routes, Route, useNavigate, useParams, useLocation, useSearchParams, Navigate } from "react-router-dom";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -6395,14 +6396,19 @@ const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
 };
 
 export default function App() {
+  // --- React Router hooks ---
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  
+  // --- Core state ---
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
-  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search state
+  const [searchQuery, setSearchQuery] = useState(""); // Search state
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [stagingFiles, setStagingFiles] = useState([]); // Files waiting for user decision
   const [authLoading, setAuthLoading] = useState(true);
@@ -6411,7 +6417,6 @@ export default function App() {
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false); // For mobile batch status menu
   const [isProcessing, setIsProcessing] = useState(false);
-  const [view, setView] = useState("dashboard"); // 'dashboard' | 'scanner'
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareOrigin, setShareOrigin] = useState('bottom'); // 'top' | 'bottom' - controls animation direction
   // Quick Action Menu state
@@ -6432,23 +6437,77 @@ export default function App() {
   const [isBottomAddMenuOpen, setIsBottomAddMenuOpen] = useState(false); // Bottom slide-up
   const addMenuRef = useRef(null);
   
-  // Profile page state
-  const [showProfilePage, setShowProfilePage] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   
   // Mobile bottom nav state
   const [mobileExportOpen, setMobileExportOpen] = useState(false);
   
-  // Check for share link in URL
-  const urlParams = useMemo(() => new URLSearchParams(window.location.search), []);
-  const shareId = urlParams.get('share');
-  const shareToken = urlParams.get('token');
-  const shareFilter = urlParams.get('filter');
+  // --- URL-based state derived from routes ---
+  // Check if we're viewing an item (URL: /item/:itemId)
+  const itemIdFromUrl = location.pathname.startsWith('/item/') 
+    ? location.pathname.split('/item/')[1]?.split('/')[0] 
+    : null;
   
-  // If viewing a shared collection, show the public view
-  if (shareId && shareToken) {
-    const shareMode = urlParams.get('mode') || 'library';
-    return <SharedCollectionView shareId={shareId} shareToken={shareToken} filterParam={shareFilter} viewMode={shareMode} />;
+  // Check if we're on profile page (URL: /profile)
+  const isProfileRoute = location.pathname === '/profile';
+  
+  // Check if we're on bulk upload page (URL: /bulk-upload)
+  const isBulkUploadRoute = location.pathname === '/bulk-upload';
+  
+  // Check for share routes (URL: /share/:userId)
+  const isShareRoute = location.pathname.startsWith('/share/');
+  const shareUserId = isShareRoute ? location.pathname.split('/share/')[1]?.split('/')[0] : null;
+  const shareToken = searchParams.get('token');
+  const shareMode = searchParams.get('mode') || 'library';
+  const shareFilter = searchParams.get('filter');
+  
+  // Derive selectedItem from URL
+  const selectedItem = useMemo(() => {
+    if (!itemIdFromUrl || items.length === 0) return null;
+    return items.find(item => item.id === itemIdFromUrl) || null;
+  }, [itemIdFromUrl, items]);
+  
+  // Navigation helpers
+  const openItem = useCallback((item) => {
+    navigate(`/item/${item.id}`);
+  }, [navigate]);
+  
+  const closeItem = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+  
+  const openProfile = useCallback(() => {
+    navigate('/profile');
+  }, [navigate]);
+  
+  const closeProfile = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+  
+  const openBulkUpload = useCallback(() => {
+    navigate('/bulk-upload');
+  }, [navigate]);
+  
+  const closeBulkUpload = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+  
+  // --- Handle legacy share query params (redirect to new route format) ---
+  useEffect(() => {
+    const legacyShareId = searchParams.get('share');
+    const legacyToken = searchParams.get('token');
+    if (legacyShareId && legacyToken && !isShareRoute) {
+      const legacyMode = searchParams.get('mode') || 'library';
+      const legacyFilter = searchParams.get('filter');
+      let newUrl = `/share/${legacyShareId}?token=${legacyToken}&mode=${legacyMode}`;
+      if (legacyFilter) newUrl += `&filter=${legacyFilter}`;
+      navigate(newUrl, { replace: true });
+    }
+  }, [searchParams, isShareRoute, navigate]);
+  
+  // --- If viewing a shared collection, show the public view ---
+  if (isShareRoute && shareUserId && shareToken) {
+    return <SharedCollectionView shareId={shareUserId} shareToken={shareToken} filterParam={shareFilter} viewMode={shareMode} />;
   }
 
   const handleQuickAnalyze = async (item) => {
@@ -6649,12 +6708,13 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (newUser) => {
       setUser(newUser);
       setAuthLoading(false);
-      // Reset to grid view on any auth state change (login/logout)
-      setShowProfilePage(false);
-      setSelectedItem(null);
+      // Reset to main view on auth state change (login/logout)
+      if (location.pathname !== '/') {
+        navigate('/', { replace: true });
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [navigate, location.pathname]);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
@@ -6738,7 +6798,7 @@ export default function App() {
     setStagingFiles(files);
     
     if (mode === 'bulk') {
-       setView('staging'); // Go to smart stacker
+       navigate('/bulk-upload'); // Go to smart stacker
     }
   };
 
@@ -6753,7 +6813,7 @@ export default function App() {
      // stacks is Array<{ id, files: File[] }>
      const fileGroups = stacks.map(s => s.files);
      await handleConfirmUpload('bulk', 'process_batch', fileGroups);
-     setView('dashboard');
+     navigate('/'); // Return to dashboard
   };
 
   const handleConfirmUpload = async (uploadMode, actionType = "analyze_now", fileGroups = []) => {
@@ -6866,22 +6926,8 @@ export default function App() {
         }
 
         if (uploadMode === "single" && actionType === "edit_first") {
-          setSelectedItem({
-            id: docRef.id,
-            images: imageUrls,
-            image: imageUrls[0] || "",
-            status: "TBD",
-            title: "",
-            category: "",
-            materials: "",
-            maker: "",
-            style: "",
-            markings: "",
-            condition: "",
-            userNotes: "",
-            valuation_low: 0,
-            valuation_high: 0,
-          });
+          // Navigate to the newly created item
+          navigate(`/item/${docRef.id}`);
         }
       }
     } catch (error) {
@@ -7899,7 +7945,7 @@ export default function App() {
              {/* Profile Avatar - Desktop */}
              <div className="relative group cursor-pointer ml-1 z-50">
                <div 
-                 onClick={() => setShowProfilePage(true)}
+                 onClick={openProfile}
                  className="transition-all duration-200 hover:scale-105 hover:shadow-md rounded-full"
                >
                  {user.photoURL ? (
@@ -7925,7 +7971,7 @@ export default function App() {
                    </div>
                    
                    <button
-                     onClick={() => setShowProfilePage(true)}
+                     onClick={openProfile}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
                      <div className="w-7 h-7 rounded-md bg-stone-100 group-hover/item:bg-stone-200 flex items-center justify-center transition-colors">
@@ -8228,7 +8274,7 @@ export default function App() {
                <ItemCard 
                   key={item.id} 
                   item={item} 
-                  onClick={setSelectedItem}
+                  onClick={openItem}
                   isSelected={selectedIds.has(item.id)}
                   isSelectionMode={isSelectionMode}
                   onToggleSelect={handleToggleSelect}
@@ -8357,7 +8403,7 @@ export default function App() {
         onChange={(e) => handleFileSelect(e, 'bulk')}
       />
       
-      {stagingFiles.length > 0 && view !== 'staging' && (
+      {stagingFiles.length > 0 && !isBulkUploadRoute && (
          <UploadStagingModal 
             files={stagingFiles} 
             onConfirm={(mode, action) => handleConfirmSingleUpload(action)}
@@ -8365,11 +8411,11 @@ export default function App() {
          />
       )}
 
-      {view === 'staging' && (
+      {isBulkUploadRoute && stagingFiles.length > 0 && (
          <StagingArea 
             files={stagingFiles}
             onConfirm={handleConfirmBulkUpload}
-            onCancel={() => { setStagingFiles([]); setView('dashboard'); if(bulkInputRef.current) bulkInputRef.current.value = ""; }}
+            onCancel={() => { setStagingFiles([]); navigate('/'); if(bulkInputRef.current) bulkInputRef.current.value = ""; }}
             isProcessingBatch={isUploading}
          />
       )}
@@ -8378,19 +8424,19 @@ export default function App() {
         <EditModal
           item={selectedItem}
           user={user}
-          onClose={() => setSelectedItem(null)}
+          onClose={closeItem}
           onSave={handleUpdateItem}
           onDelete={handleDeleteItem}
           onNext={() => {
             const currentIdx = filteredItems.findIndex(i => i.id === selectedItem.id);
             if (currentIdx < filteredItems.length - 1) {
-              setSelectedItem(filteredItems[currentIdx + 1]);
+              navigate(`/item/${filteredItems[currentIdx + 1].id}`);
             }
           }}
           onPrev={() => {
             const currentIdx = filteredItems.findIndex(i => i.id === selectedItem.id);
             if (currentIdx > 0) {
-              setSelectedItem(filteredItems[currentIdx - 1]);
+              navigate(`/item/${filteredItems[currentIdx - 1].id}`);
             }
           }}
           hasNext={filteredItems.findIndex(i => i.id === selectedItem.id) < filteredItems.length - 1}
@@ -8409,7 +8455,7 @@ export default function App() {
       )}
       
       {/* Global Loading Overlay - shows during single item uploads (not bulk staging) */}
-      {isUploading && view !== 'staging' && (
+      {isUploading && !isBulkUploadRoute && (
         <LoadingOverlay 
           message="Adding item..." 
           subMessage="AI is analyzing your photo"
@@ -8528,7 +8574,7 @@ export default function App() {
           
           {/* Profile/Avatar */}
           <button
-            onClick={() => setShowProfilePage(true)}
+            onClick={openProfile}
             className="p-1.5 rounded-xl hover:bg-stone-100 transition-all"
           >
             {user?.photoURL ? (
@@ -8585,7 +8631,7 @@ export default function App() {
                 {filteredItems.slice(0, 10).map(item => (
                   <button
                     key={item.id}
-                    onClick={() => { setSelectedItem(item); setIsMobileSearchOpen(false); }}
+                    onClick={() => { navigate(`/item/${item.id}`); setIsMobileSearchOpen(false); }}
                     className="w-full flex items-center gap-3 p-3 bg-stone-50 rounded-xl text-left hover:bg-stone-100 transition-colors"
                   >
                     {item.images?.[0] ? (
@@ -8776,11 +8822,11 @@ export default function App() {
       )}
       
       {/* Profile Page */}
-      {showProfilePage && (
+      {isProfileRoute && (
         <ProfilePage
           user={user}
           items={items}
-          onClose={() => setShowProfilePage(false)}
+          onClose={closeProfile}
           onLogout={() => signOut(auth)}
           onDeleteAccount={async () => {
             // Delete all user data first
@@ -8794,7 +8840,7 @@ export default function App() {
               await user.delete();
               // User will automatically be signed out when deleted
               // State will update via onAuthStateChanged and show login screen
-              setShowProfilePage(false);
+              navigate('/');
             } catch (err) {
               console.error("Failed to delete account:", err);
               if (err.code === 'auth/requires-recent-login') {
