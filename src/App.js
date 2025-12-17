@@ -6573,7 +6573,7 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
     <div className="min-h-screen bg-[#FDFBF7]">
       {/* Header */}
       <header className="bg-white border-b border-stone-100 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
@@ -6806,22 +6806,6 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             </div>
           )}
 
-          {/* Subtle footer CTA on background (not a big black box) */}
-          <div className="mt-6 mb-4 text-center">
-            <p className="text-[11px] text-stone-400">
-              Cataloged with{" "}
-              <a
-                href="https://vintage.yescraft.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-stone-500 hover:text-rose-600 font-semibold"
-              >
-                Vintage Wizard
-              </a>{" "}
-              — for collectors, sellers & the curious.
-            </p>
-          </div>
-
         {/* Contact Seller Modal (same as shared sales collection) */}
         {contactModalItem && (
           <ContactSellerModal
@@ -6889,6 +6873,22 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
           />
         )}
           </div>
+        </div>
+
+        {/* Footer CTA: same width as layout + centered */}
+        <div className="mt-10 pb-6 flex justify-center">
+          <p className="text-[11px] text-stone-400 text-center max-w-md">
+            Cataloged with{" "}
+            <a
+              href="https://vintage.yescraft.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-stone-500 hover:text-rose-600 font-semibold"
+            >
+              Vintage Wizard
+            </a>{" "}
+            — for collectors, sellers & the curious.
+          </p>
         </div>
       </main>
 
