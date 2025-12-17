@@ -5206,6 +5206,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           item={contactModalItem}
           ownerName={ownerName}
           onClose={() => setContactModalItem(null)}
+          sourceUrl={window.location.href}
           onSend={async ({ message, email, itemTitle, itemId }) => {
             // Write to 'mail' collection - Firebase Trigger Email extension will send
             if (!ownerEmail) {
@@ -5216,6 +5217,8 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
               Math.round((Number(contactModalItem.valuation_low) + Number(contactModalItem.valuation_high)) * 0.6);
             
             try {
+              const sourceLink = window.location.href;
+              const skuLine = contactModalItem?.sku ? `SKU: ${contactModalItem.sku}` : "";
               await addDoc(collection(db, "mail"), {
                 to: ownerEmail,
                 replyTo: email,
@@ -5234,6 +5237,10 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
                         </h2>
                         <p style="margin: 0 0 8px 0; color: #10b981; font-weight: bold; font-size: 16px;">
                           Listed at: $${itemPrice}
+                        </p>
+                        ${skuLine ? `<p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px;"><strong>${skuLine}</strong></p>` : ``}
+                        <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13px;">
+                          <a href="${sourceLink}" style="color:#0f766e; text-decoration: underline;">View the public item page</a>
                         </p>
                         
                         <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
@@ -5260,7 +5267,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
                       </div>
                     </div>
                   `,
-                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`
+                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n${skuLine ? `${skuLine}\n` : ``}Public page: ${sourceLink}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`
                 }
               });
               return true;
@@ -5340,7 +5347,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
 };
 
 // --- CONTACT SELLER MODAL ---
-const ContactSellerModal = ({ item, ownerName, onClose, onSend }) => {
+const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }) => {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -5348,6 +5355,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend }) => {
   
   const itemTitle = item.listing_title || item.title || "Vintage Item";
   const itemPrice = item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6);
+  const sku = item.sku || "";
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -6835,6 +6843,7 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             item={contactModalItem}
             ownerName={ownerName}
             onClose={() => setContactModalItem(null)}
+            sourceUrl={window.location.href}
             onSend={async ({ message, email, itemTitle, itemId }) => {
               if (!ownerEmail) {
                 throw new Error("Seller email not available. Please try again later.");
@@ -6842,6 +6851,8 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
               const itemPrice =
                 contactModalItem.listing_price ||
                 Math.round(((Number(contactModalItem.valuation_low) || 0) + (Number(contactModalItem.valuation_high) || 0)) * 0.6);
+              const sourceLink = window.location.href;
+              const skuLine = contactModalItem?.sku ? `SKU: ${contactModalItem.sku}` : "";
               await addDoc(collection(db, "mail"), {
                 to: ownerEmail,
                 replyTo: email,
@@ -6859,6 +6870,10 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
                         </h2>
                         <p style="margin: 0 0 8px 0; color: #10b981; font-weight: bold; font-size: 16px;">
                           Listed at: $${itemPrice}
+                        </p>
+                        ${skuLine ? `<p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px;"><strong>${skuLine}</strong></p>` : ``}
+                        <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13px;">
+                          <a href="${sourceLink}" style="color:#0f766e; text-decoration: underline;">View the public item page</a>
                         </p>
                         <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
                           <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message}</p>
@@ -6881,7 +6896,7 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
                       </div>
                     </div>
                   `,
-                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`,
+                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n${skuLine ? `${skuLine}\n` : ``}Public page: ${sourceLink}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`,
                 },
               });
               return true;
