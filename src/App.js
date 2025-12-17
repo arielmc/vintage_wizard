@@ -6442,7 +6442,7 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState(null);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
-  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactModalItem, setContactModalItem] = useState(null);
 
   const isListingMode = viewType === 'listing';
 
@@ -6528,13 +6528,8 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
   };
 
   const handleContactSeller = () => {
-    if (ownerEmail) {
-      const subject = encodeURIComponent(`Inquiry about: ${item?.title || 'Your item'}`);
-      const body = encodeURIComponent(`Hi ${ownerName},\n\nI'm interested in your item "${item?.title || 'listed item'}".\n\n`);
-      window.location.href = `mailto:${ownerEmail}?subject=${subject}&body=${body}`;
-    } else {
-      setShowContactForm(true);
-    }
+    // Use in-app ContactSellerModal like shared sales collection
+    setContactModalItem(item);
   };
 
   if (loading) {
@@ -6833,6 +6828,66 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             </div>
           </a>
         </div>
+
+        {/* Contact Seller Modal (same as shared sales collection) */}
+        {contactModalItem && (
+          <ContactSellerModal
+            item={contactModalItem}
+            ownerName={ownerName}
+            onClose={() => setContactModalItem(null)}
+            onSend={async ({ message, email, itemTitle, itemId }) => {
+              if (!ownerEmail) {
+                throw new Error("Seller email not available. Please try again later.");
+              }
+              const itemPrice =
+                contactModalItem.listing_price ||
+                Math.round(((Number(contactModalItem.valuation_low) || 0) + (Number(contactModalItem.valuation_high) || 0)) * 0.6);
+              await addDoc(collection(db, "mail"), {
+                to: ownerEmail,
+                replyTo: email,
+                message: {
+                  subject: `Inquiry about: ${itemTitle}`,
+                  html: `
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                      <div style="background: linear-gradient(135deg, #f43f5e, #ec4899); padding: 20px; border-radius: 12px 12px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 24px;">🧙 Vintage Wizard</h1>
+                        <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Someone is interested in your item!</p>
+                      </div>
+                      <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+                        <h2 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px;">
+                          Inquiry about: ${itemTitle}
+                        </h2>
+                        <p style="margin: 0 0 8px 0; color: #10b981; font-weight: bold; font-size: 16px;">
+                          Listed at: $${itemPrice}
+                        </p>
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                          <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+                        </div>
+                        <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
+                          <strong>From:</strong> ${email}
+                        </p>
+                        <a href="mailto:${email}?subject=Re: ${encodeURIComponent(itemTitle)}"
+                           style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                          Reply to Buyer
+                        </a>
+                      </div>
+                      <div style="padding: 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                        <p style="margin: 0; color: #64748b; font-size: 12px;">
+                          Reply directly to this email to respond to the buyer.
+                        </p>
+                        <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 11px;">
+                          Item ID: ${itemId?.substring(0, 8).toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                  `,
+                  text: `Someone is interested in your item!\n\nInquiry about: ${itemTitle}\nListed at: $${itemPrice}\n\nMessage:\n${message}\n\nFrom: ${email}\n\n---\nReply directly to this email to respond to the buyer.\nItem ID: ${itemId?.substring(0, 8).toUpperCase()}\n\nSent via Vintage Wizard`,
+                },
+              });
+              return true;
+            }}
+          />
+        )}
       </main>
     </div>
   );
