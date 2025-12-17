@@ -6598,39 +6598,45 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-4 py-6">
-        {/* Image Gallery */}
-        {images.length > 0 && (
-          <div className="mb-6">
-            <div className="aspect-square bg-stone-100 rounded-2xl overflow-hidden mb-3">
-              <img
-                src={images[activeImageIdx]}
-                alt={item.title || "Item"}
-                className="w-full h-full object-contain"
-              />
-            </div>
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIdx(idx)}
-                    className={`w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
-                      idx === activeImageIdx 
-                        ? 'border-rose-500 shadow-md' 
-                        : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        <div className="md:grid md:grid-cols-2 md:gap-8 md:items-start">
+          {/* Left: Images */}
+          <div>
+            {/* Image Gallery */}
+            {images.length > 0 && (
+              <div className="mb-6 md:mb-0">
+                <div className="aspect-square bg-stone-100 rounded-2xl overflow-hidden mb-3">
+                  <img
+                    src={images[activeImageIdx]}
+                    alt={item.title || "Item"}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                {images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIdx(idx)}
+                        className={`w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
+                          idx === activeImageIdx 
+                            ? 'border-rose-500 shadow-md' 
+                            : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
 
-        {/* Item Info */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+          {/* Right: Info */}
+          <div className="md:sticky md:top-20">
+            {/* Item Info */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
           {/* Title & Price */}
           <div className="mb-4">
             <h1 className="text-xl font-bold text-stone-900 mb-2">
@@ -6651,11 +6657,12 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
                     </span>
                   ) : null
                 )}
-                {(item.listing_price || midPrice) && (
+                {!isListingMode && (item.listing_price || midPrice) && (
                   <span className="text-xs text-stone-500">estimated value</span>
                 )}
               </div>
-              {item.confidence && (
+              {/* Hide confidence on public sales pages */}
+              {!isListingMode && item.confidence && (
                 <span
                   className={`text-[11px] font-bold px-2 py-1 rounded-full ${
                     item.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
@@ -6757,20 +6764,6 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             )}
           </div>
 
-          {/* Confidence indicator (details mode only) */}
-          {!isListingMode && item.confidence && (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-xs text-stone-400">AI Confidence:</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                item.confidence === 'High' ? 'bg-emerald-100 text-emerald-700' :
-                item.confidence === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                'bg-stone-100 text-stone-600'
-              }`}>
-                {item.confidence}
-              </span>
-            </div>
-          )}
-
           {/* Market Research Links - compact horizontal layout */}
           {marketLinks.length > 0 && (
             <div className="mt-4 pt-4 border-t border-stone-100">
@@ -6797,45 +6790,37 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
           )}
         </div>
 
-        {/* Contact (small, bottom) */}
-        {isListingMode && (
-          <div className="mt-6 flex items-center justify-between gap-3 p-3 bg-white rounded-2xl border border-stone-100">
-            <div className="text-xs text-stone-500">
-              Questions for <span className="font-bold text-stone-700">{ownerName}</span>?
+          {/* Desktop contact button (prominent, like product pages) */}
+          {isListingMode && (
+            <div className="hidden md:block mt-4">
+              <button
+                onClick={handleContactSeller}
+                className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold hover:bg-stone-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <Mail className="w-5 h-5" />
+                Contact {ownerName}
+              </button>
+              <p className="mt-2 text-[11px] text-stone-500 text-center">
+                The seller will reply by email.
+              </p>
             </div>
-            <button
-              onClick={handleContactSeller}
-              className="px-3 py-2 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 transition-colors flex items-center gap-1.5"
-            >
-              <Mail className="w-4 h-4" />
-              Contact
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Powered by footer with CTA (smaller + shorter) */}
-        <div className="mt-6 mb-4">
-          <a 
-            href="https://vintage.yescraft.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block p-3 bg-stone-900 rounded-2xl text-center group hover:bg-stone-800 transition-colors"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-6 h-6 bg-stone-800 group-hover:bg-stone-700 rounded-md flex items-center justify-center transition-colors">
-                <Sparkles className="w-3.5 h-3.5 text-rose-400" fill="currentColor" />
-              </div>
-              <span className="text-white font-bold text-sm">Vintage Wizard</span>
-            </div>
-            <p className="text-stone-400 text-[11px] leading-relaxed max-w-xs mx-auto">
-              For collectors, sellers & the curious.
+          {/* Subtle footer CTA on background (not a big black box) */}
+          <div className="mt-6 mb-4 text-center">
+            <p className="text-[11px] text-stone-400">
+              Cataloged with{" "}
+              <a
+                href="https://vintage.yescraft.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-stone-500 hover:text-rose-600 font-semibold"
+              >
+                Vintage Wizard
+              </a>{" "}
+              — for collectors, sellers & the curious.
             </p>
-            <div className="mt-2 inline-flex items-center gap-1 text-rose-400 text-[11px] font-medium group-hover:text-rose-300 transition-colors">
-              <span>Try it free</span>
-              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </a>
-        </div>
+          </div>
 
         {/* Contact Seller Modal (same as shared sales collection) */}
         {contactModalItem && (
@@ -6903,7 +6888,22 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             }}
           />
         )}
+          </div>
+        </div>
       </main>
+
+      {/* Mobile sticky contact footer (sales pages only) */}
+      {isListingMode && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 p-3 safe-area-pb">
+          <button
+            onClick={handleContactSeller}
+            className="w-full py-3 bg-stone-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2"
+          >
+            <Mail className="w-5 h-5" />
+            Contact {ownerName}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
