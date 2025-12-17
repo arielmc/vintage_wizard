@@ -6265,16 +6265,16 @@ const ShareItemModal = ({ item, user, onClose }) => {
                 className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
                   copied === 'listing'
                     ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-stone-200 hover:border-rose-400 hover:bg-rose-50'
+                    : 'border-stone-200 hover:border-emerald-400 hover:bg-emerald-50'
                 }`}
               >
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-                  copied === 'listing' ? 'bg-emerald-100' : 'bg-rose-100'
+                  copied === 'listing' ? 'bg-emerald-100' : 'bg-emerald-100'
                 }`}>
                   {copied === 'listing' ? (
                     <Check className="w-6 h-6 text-emerald-600" />
                   ) : (
-                    <Tag className="w-6 h-6 text-rose-600" />
+                    <Tag className="w-6 h-6 text-emerald-600" />
                   )}
                 </div>
                 <div className="flex-1">
