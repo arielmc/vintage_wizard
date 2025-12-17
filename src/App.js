@@ -4156,94 +4156,96 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* HEADER: Tab Navigation + Save Status */}
+        {/* HEADER: Compact Tab Navigation with inline nav */}
         <div className="bg-white border-b border-stone-200 shrink-0 sticky top-0 z-10">
-          {/* Action buttons - Top Right */}
-          <div className="absolute top-3 right-3 z-20 flex items-center gap-1">
+          {/* Single row: Prev | Tabs | Next | Actions */}
+          <div className="flex items-center gap-1 p-2 px-3">
+            {/* Prev button */}
+            {hasPrev ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleItemTransition('prev'); }}
+                className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-all shrink-0"
+                title="Previous item"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            ) : (
+              <div className="w-8 shrink-0" />
+            )}
+            
+            {/* Tab Bar - Segmented Control Style */}
+            <div className="flex gap-1 flex-1 min-w-0">
+              <button
+                onClick={() => setActiveTab("details")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg transition-all font-bold text-sm ${
+                  activeTab === "details" 
+                    ? "bg-stone-900 text-white shadow-sm" 
+                    : "bg-stone-50 text-stone-600 hover:bg-stone-100"
+                }`}
+              >
+                <Archive className="w-4 h-4" />
+                <span className="hidden sm:inline">Item Analysis</span>
+                <span className="sm:hidden">Analysis</span>
+              </button>
+              
+              <button
+                onClick={() => setActiveTab("listing")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg transition-all font-bold text-sm ${
+                  activeTab === "listing" 
+                    ? "bg-stone-900 text-white shadow-sm" 
+                    : "bg-stone-50 text-stone-600 hover:bg-stone-100"
+                }`}
+              >
+                <Tag className="w-4 h-4" />
+                <span className="hidden sm:inline">Listing Wizard</span>
+                <span className="sm:hidden">Listing</span>
+              </button>
+            </div>
+            
+            {/* Next button */}
+            {hasNext ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleItemTransition('next'); }}
+                className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-all shrink-0"
+                title="Next item"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            ) : (
+              <div className="w-8 shrink-0" />
+            )}
+            
+            {/* Divider */}
+            <div className="w-px h-6 bg-stone-200 mx-1 shrink-0" />
+            
             {/* Share button */}
             <button
               onClick={() => setShowShareItemModal(true)}
-              className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+              className="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
               title="Share item"
             >
               <Share2 className="w-4 h-4" />
             </button>
-            {/* Divider */}
-            <div className="w-px h-6 bg-stone-200 mx-1" />
+            
             {/* Close button */}
             <button
               onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-              className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-200 rounded-lg transition-all"
+              className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-200 rounded-lg transition-all shrink-0"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          
-          {/* Tab Bar - Segmented Control Style */}
-          <div className="flex gap-1 p-3 pr-24">
-            {/* Details Tab */}
-            <button
-              onClick={() => setActiveTab("details")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg transition-all font-bold text-sm ${
-                activeTab === "details" 
-                  ? "bg-stone-900 text-white shadow-sm" 
-                  : "bg-stone-50 text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              <Archive className="w-4 h-4" />
-              <span>Item Analysis</span>
-            </button>
-            
-            {/* Listing Tab */}
-            <button
-              onClick={() => setActiveTab("listing")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg transition-all font-bold text-sm ${
-                activeTab === "listing" 
-                  ? "bg-stone-900 text-white shadow-sm" 
-                  : "bg-stone-50 text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              <Tag className="w-4 h-4" />
-              <span>Listing Wizard</span>
-            </button>
-          </div>
-          
-          {/* Save Status + Navigation */}
-          <div className="px-3 pb-2 flex items-center justify-between text-xs">
-            <span className={`font-medium ${hasUnsavedChanges ? 'text-amber-600' : 'text-stone-400'}`}>
-              {hasUnsavedChanges ? '• Unsaved changes' : 'Saved'}
-            </span>
-            {(hasNext || hasPrev) && (
-              <div className="flex items-center gap-2">
-                {hasPrev && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleItemTransition('prev'); }}
-                    className="text-stone-400 hover:text-stone-600 px-2 py-1 hover:bg-stone-100 rounded transition-colors"
-                  >
-                    ← Prev
-                  </button>
-                )}
-                {hasNext && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleItemTransition('next'); }}
-                    className="text-stone-400 hover:text-stone-600 px-2 py-1 hover:bg-stone-100 rounded transition-colors"
-                  >
-                    Next →
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
         
         {/* === TWO-COLUMN CONTENT AREA === */}
-        <div className="flex-1 overflow-hidden bg-stone-50 md:flex md:flex-row">
+        <div className="flex-1 overflow-y-auto md:overflow-hidden bg-stone-50 md:flex md:flex-row">
           {/* LEFT COLUMN: Photos + Key Facts (sticky on desktop) */}
           <div className="md:w-[40%] md:max-w-md md:border-r md:border-stone-200 md:overflow-y-auto bg-white">
-            <div className="p-4 space-y-4">
+            <div className="p-3 space-y-3">
               {/* Hero Image */}
               {formData.images.length > 0 ? (
-                <div className="aspect-square bg-stone-100 rounded-2xl overflow-hidden mb-3">
+                <div className="aspect-square bg-stone-100 rounded-xl overflow-hidden">
                   <img
                     src={formData.images[activeImageIdx]}
                     alt={formData.title || "Item"}
@@ -4252,19 +4254,23 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   />
                 </div>
               ) : (
-                <div className="aspect-square bg-stone-100 rounded-2xl flex items-center justify-center text-stone-400">
-                  <Camera size={48} />
-                </div>
+                <button 
+                  onClick={() => addPhotoInputRef.current?.click()}
+                  className="aspect-square bg-stone-100 rounded-xl flex flex-col items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-500 transition-colors cursor-pointer"
+                >
+                  <Camera size={40} />
+                  <span className="text-sm font-medium mt-2">Add Photos</span>
+                </button>
               )}
               
-              {/* Thumbnail Strip */}
-              {formData.images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
+              {/* Thumbnail Strip + Add Button */}
+              {formData.images.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {formData.images.map((img, idx) => (
                     <button
                       key={img}
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
                         idx === activeImageIdx 
                           ? 'border-rose-500 shadow-md' 
                           : 'border-transparent opacity-60 hover:opacity-100'
@@ -4273,17 +4279,16 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
+                  {/* Add Photo as thumbnail */}
+                  <button
+                    onClick={() => addPhotoInputRef.current?.click()}
+                    className="flex-shrink-0 w-14 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+                    title="Add more photos"
+                  >
+                    <Plus size={20} />
+                  </button>
                 </div>
               )}
-              
-              {/* Add Photo Button */}
-              <button
-                onClick={() => addPhotoInputRef.current?.click()}
-                className="w-full py-2 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center gap-2 text-stone-600 text-sm font-medium transition-colors"
-              >
-                <Plus size={16} />
-                <span>Add Photos</span>
-              </button>
               <input
                 type="file"
                 multiple
@@ -4293,126 +4298,115 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onChange={handleAddPhoto}
               />
               
-              {/* AI Info Note */}
+              {/* AI Info Note - more compact */}
               {formData.images.length > 0 && (
-                <p className="text-[10px] text-stone-400 text-center">📷 AI uses first 4 photos</p>
+                <p className="text-[10px] text-stone-400 text-center -mt-1">📷 AI uses first 4 photos</p>
               )}
               
-              {/* Key Facts Panel */}
-              <div className="pt-4 border-t border-stone-200">
-                <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">Key Facts</h4>
-                <div className="space-y-3">
-                  {/* Value - Editable */}
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Value</label>
-                    <div className="flex items-center gap-1">
-                      <span className="text-emerald-600 font-bold text-xs">$</span>
-                      <input
-                        type="number"
-                        value={formData.valuation_low || ""}
-                        onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value ? Number(e.target.value) : null }))}
-                        className="w-16 p-1 text-xs bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 font-bold text-emerald-700"
-                        placeholder="Low"
-                      />
-                      <span className="text-stone-300 text-xs">—</span>
-                      <input
-                        type="number"
-                        value={formData.valuation_high || ""}
-                        onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value ? Number(e.target.value) : null }))}
-                        className="w-16 p-1 text-xs bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 font-bold text-emerald-700"
-                        placeholder="High"
-                      />
-                    </div>
+              {/* Key Facts Panel - Compact 2-column grid */}
+              <div className="pt-3 border-t border-stone-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Key Facts</h4>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || formData.images.length === 0}
+                    className="px-2 py-1 rounded-md text-[10px] font-semibold bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    {isAnalyzing ? (
+                      <Loader className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    {isAnalyzing ? "..." : "Re-analyze"}
+                  </button>
+                </div>
+                
+                {/* Value - Full width */}
+                <div className="mb-2">
+                  <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Value</label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold text-xs">$</span>
+                    <input
+                      type="number"
+                      value={formData.valuation_low || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value ? Number(e.target.value) : null }))}
+                      className="w-16 p-1 text-xs bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 font-bold text-emerald-700"
+                      placeholder="Low"
+                    />
+                    <span className="text-stone-300 text-xs">—</span>
+                    <input
+                      type="number"
+                      value={formData.valuation_high || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value ? Number(e.target.value) : null }))}
+                      className="w-16 p-1 text-xs bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 font-bold text-emerald-700"
+                      placeholder="High"
+                    />
                   </div>
-                  
-                  {/* Category */}
+                </div>
+                
+                {/* 2-column grid for other fields */}
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
                   <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Category</label>
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Category</label>
                     <input
                       type="text"
                       value={formData.category || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500"
-                      placeholder="Jewelry & Watches"
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      placeholder="Category"
                     />
                   </div>
-                  
-                  {/* Era */}
                   <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Era</label>
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Era</label>
                     <input
                       type="text"
                       value={formData.era || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, era: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500"
-                      placeholder="1960s"
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      placeholder="Era"
                     />
                   </div>
-                  
-                  {/* Maker */}
                   <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Maker</label>
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Maker</label>
                     <input
                       type="text"
                       value={formData.maker || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, maker: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500"
-                      placeholder="Unknown"
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      placeholder="Maker"
                     />
                   </div>
-                  
-                  {/* Materials */}
                   <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Materials</label>
-                    <input
-                      type="text"
-                      value={formData.materials || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500"
-                      placeholder="14K Gold, Garnet"
-                    />
-                  </div>
-                  
-                  {/* Condition */}
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">Condition</label>
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Condition</label>
                     <input
                       type="text"
                       value={formData.condition || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500"
-                      placeholder="Very good"
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      placeholder="Condition"
                     />
                   </div>
-                  
-                  {/* SKU */}
-                  <div>
-                    <label className="block text-[10px] font-semibold text-stone-400 uppercase mb-1">SKU</label>
+                  <div className="col-span-2">
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Materials</label>
+                    <input
+                      type="text"
+                      value={formData.materials || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      placeholder="Materials"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">SKU</label>
                     <input
                       type="text"
                       value={formData.sku || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, sku: e.target.value }))}
-                      className="w-full p-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
+                      className="w-full p-1.5 text-[11px] bg-white border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 font-mono"
                       placeholder="Auto-generated"
                     />
                   </div>
                 </div>
-              </div>
-              
-              {/* Quick Actions */}
-              <div className="pt-4 border-t border-stone-200 space-y-2">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || formData.images.length === 0}
-                  className="w-full py-2 rounded-lg text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isAnalyzing ? (
-                    <Loader className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
-                  )}
-                  {isAnalyzing ? "Analyzing..." : "Re-run AI Analysis"}
-                </button>
               </div>
             </div>
           </div>
@@ -4420,60 +4414,56 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           {/* RIGHT COLUMN: Tab Content (scrollable work area) */}
           <div className="flex-1 md:overflow-y-auto">
           {/* Tab Content */}
-          <div className="p-4 md:p-6 space-y-4">
+          <div className="p-3 md:p-4 space-y-3">
           {activeTab === "listing" ? (
             <ListingGenerator formData={formData} setFormData={setFormData} />
           ) : (
-            <div className="flex flex-col gap-4">
-              {/* Valuation Header */}
+            <div className="flex flex-col gap-3">
+              {/* Valuation Header - More compact */}
               {(formData.valuation_low || formData.valuation_high || formData.confidence) && (
-                <div className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
+                <div className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-xl p-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
                       {(formData.valuation_low || formData.valuation_high) && (
-                        <div className="text-2xl font-bold text-emerald-700 mb-1">
+                        <div className="text-xl font-bold text-emerald-700">
                           ${formData.valuation_low || 0} - ${formData.valuation_high || 0}
                         </div>
                       )}
                       {formData.confidence && (
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              formData.confidence === 'high' 
-                                ? 'bg-emerald-200 text-emerald-800' 
-                                : formData.confidence === 'medium' 
-                                  ? 'bg-amber-200 text-amber-800' 
-                                  : 'bg-red-200 text-red-800'
-                            }`}
-                          >
-                            <Gauge className="w-3 h-3" />
-                            {formData.confidence} confidence
-                          </div>
-                          {formData.confidence_reason && (
-                            <span className="text-[11px] text-emerald-600/80 italic">
-                              {formData.confidence_reason}
-                            </span>
-                          )}
+                        <div 
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            formData.confidence === 'high' 
+                              ? 'bg-emerald-200 text-emerald-800' 
+                              : formData.confidence === 'medium' 
+                                ? 'bg-amber-200 text-amber-800' 
+                                : 'bg-red-200 text-red-800'
+                          }`}
+                        >
+                          <Gauge className="w-3 h-3" />
+                          {formData.confidence}
                         </div>
                       )}
                     </div>
+                    {formData.confidence_reason && (
+                      <span className="text-[11px] text-emerald-600/80 italic">
+                        {formData.confidence_reason}
+                      </span>
+                    )}
                   </div>
                   {formData.reasoning && (
-                    <p className="text-xs text-emerald-700/80 leading-relaxed">
-                      <span className="font-semibold">AI Reasoning:</span> {formData.reasoning}
+                    <p className="text-[11px] text-emerald-700/80 leading-relaxed mt-2">
+                      <span className="font-semibold">Why:</span> {formData.reasoning}
                     </p>
                   )}
                 </div>
               )}
               
-              {/* TITLE - Single line */}
+              {/* TITLE - Compact */}
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                    Title
-                  </label>
-                  <div className="group relative flex items-center">
-                    <Bot className="w-3.5 h-3.5 text-stone-400 cursor-help" />
+                <div className="flex items-center gap-1.5 mb-1">
+                  <label className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">Title</label>
+                  <div className="group relative">
+                    <Bot className="w-3 h-3 text-stone-400 cursor-help" />
                     <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block w-max max-w-[200px] px-2 py-1 bg-stone-800 text-white text-[10px] rounded shadow-lg z-50 pointer-events-none">
                       AI makes mistakes, please check
                     </div>
@@ -4486,116 +4476,106 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, title: e.target.value }))
                   }
-                  className="w-full p-2.5 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm shadow-sm"
+                  className="w-full p-2 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium text-sm"
                   placeholder="Item title..."
                 />
               </div>
 
-              {/* Improve Analysis - collapsible questions */}
+              {/* Improve Analysis - collapsible questions - compact */}
               {formData.questions && formData.questions.length > 0 && (
-                <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-rose-50 border border-rose-100 rounded-lg overflow-hidden">
                   <div 
-                    className="bg-rose-100/50 px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors"
+                    className="bg-rose-100/50 px-2.5 py-2 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors"
                     onClick={() => setShowQuestions(!showQuestions)}
                   >
-                    <div className="flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4 text-rose-600" />
-                      <span className="text-sm font-bold text-rose-900">
-                        Improve Analysis
+                    <div className="flex items-center gap-1.5">
+                      <HelpCircle className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-xs font-bold text-rose-900">Improve Analysis</span>
+                      <span className="text-[9px] uppercase font-bold text-rose-600 bg-white/50 px-1.5 py-0.5 rounded-full">
+                        {formData.questions.length}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
-                      {formData.questions.length} Questions
-                    </span>
-                      <ChevronRight className={`w-4 h-4 text-rose-400 transition-transform ${showQuestions ? 'rotate-90' : ''}`} />
-                    </div>
+                    <ChevronRight className={`w-4 h-4 text-rose-400 transition-transform ${showQuestions ? 'rotate-90' : ''}`} />
                   </div>
                   
                   {showQuestions && (
-                    <div className="p-3 space-y-3">
-                      <p className="text-[11px] text-rose-800/70 italic">
-                        Help the AI give you a more accurate price.
-                      </p>
+                    <div className="p-2.5 space-y-2">
                       {formData.questions.map((q, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <label className="block text-xs font-semibold text-rose-800">
-                            {q}
-                          </label>
-                            <input
-                              type="text"
-                              inputMode="text"
-                              enterKeyHint="next"
-                              placeholder="Your answer..."
-                              value={formData.clarifications?.[q] || ""}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  clarifications: {
-                                    ...prev.clarifications,
-                                    [q]: e.target.value,
-                                  },
-                                }))
-                              }
-                            className="w-full p-2.5 text-sm bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                            />
+                        <div key={idx}>
+                          <label className="block text-[11px] font-semibold text-rose-800 mb-0.5">{q}</label>
+                          <input
+                            type="text"
+                            inputMode="text"
+                            enterKeyHint="next"
+                            placeholder="Your answer..."
+                            value={formData.clarifications?.[q] || ""}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                clarifications: {
+                                  ...prev.clarifications,
+                                  [q]: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full p-2 text-sm bg-white border border-rose-200 rounded focus:outline-none focus:ring-2 focus:ring-rose-500"
+                          />
                         </div>
                       ))}
                       <button
                         onClick={handleAnalyze}
-                        className="w-full mt-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-95"
+                        className="w-full bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-2 px-3 rounded flex items-center justify-center gap-1.5 transition-colors"
                       >
-                        <RefreshCw className="w-3.5 h-3.5" /> Re-Appraise with Answers
+                        <RefreshCw className="w-3 h-3" /> Re-Appraise
                       </button>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Description */}
+              {/* Description - Compact */}
               <div>
-                <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1">
                   Description
                 </label>
                 <textarea
-                  rows={6}
+                  rows={4}
                   value={formData.details_description || formData.sales_blurb || ""}
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, details_description: e.target.value }))
                   }
-                  placeholder="AI will generate a detailed description including context, translations, and sales appeal..."
-                  className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y leading-relaxed"
+                  placeholder="AI will generate a detailed description..."
+                  className="w-full p-2 bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm resize-y leading-relaxed"
                 />
               </div>
 
-              {/* Market Comps - more compact */}
-            {marketLinks.length > 0 && (
-                <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-                    <ExternalLink className="w-3 h-3" /> Market Comps
-                  </h4>
-                    <span className="text-[10px] text-stone-400 truncate max-w-[120px]">
-                    {formData.search_terms}
-                  </span>
+              {/* Market Comps - Compact grid */}
+              {marketLinks.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+                      <ExternalLink className="w-3 h-3" /> Market Comps
+                    </h4>
+                    <span className="text-[9px] text-stone-400 truncate max-w-[100px]">
+                      {formData.search_terms}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 md:grid-cols-4 gap-1">
+                    {marketLinks.map((link, i) => (
+                      <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        referrerPolicy="no-referrer"
+                        className={`flex items-center justify-center px-2 py-1.5 rounded border transition-all hover:shadow-sm text-[11px] font-medium ${link.color}`}
+                      >
+                        {link.name}
+                      </a>
+                    ))}
+                  </div>
                 </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-                  {marketLinks.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      referrerPolicy="no-referrer"
-                        className={`flex items-center justify-between px-2.5 py-2 rounded-lg border transition-all hover:shadow-sm text-xs ${link.color}`}
-                    >
-                        <span className="font-semibold">{link.name}</span>
-                      <ExternalLink className="w-3 h-3 opacity-50" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
 
               {/* More Fields - Collapsible (fields not in key facts) */}
               <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
