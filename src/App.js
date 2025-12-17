@@ -4827,17 +4827,10 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
 
   useEffect(() => {
     const loadSharedCollection = async () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedCollectionView:loadSharedCollection',message:'Loading shared collection',data:{shareId,shareToken:shareToken?.substring(0,8)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       try {
         // Verify share token
         const shareDocRef = doc(db, "artifacts", appId, "shares", shareId);
         const shareDoc = await getDoc(shareDocRef);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedCollectionView:afterGetDoc',message:'Firestore getDoc result',data:{exists:shareDoc.exists(),shareId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3-H4-H5'})}).catch(()=>{});
-        // #endregion
         
         if (!shareDoc.exists()) {
           setError("This share link is invalid or has expired.");
@@ -4846,9 +4839,6 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
         }
         
         const shareData = shareDoc.data();
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedCollectionView:tokenCheck',message:'Token validation',data:{storedToken:shareData.token?.substring(0,8),providedToken:shareToken?.substring(0,8),match:shareData.token===shareToken,isActive:shareData.isActive},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-        // #endregion
         if (shareData.token !== shareToken) {
           setError("Invalid share token.");
           setLoading(false);
@@ -4870,15 +4860,9 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
         const snapshot = await getDocs(q);
         
         const loadedItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedCollectionView:itemsLoaded',message:'Items loaded successfully',data:{itemCount:loadedItems.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3-H4'})}).catch(()=>{});
-        // #endregion
         setItems(loadedItems);
         setLoading(false);
       } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedCollectionView:error',message:'Error loading collection',data:{error:err.message,code:err.code},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-        // #endregion
         console.error("Error loading shared collection:", err);
         setError("Failed to load collection. Please try again.");
         setLoading(false);
@@ -6413,17 +6397,10 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
 
   useEffect(() => {
     const loadSharedItem = async () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedItemView:loadSharedItem',message:'Loading shared item',data:{userId,itemId,shareToken:shareToken?.substring(0,8),viewType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       try {
         // Verify share token
         const shareDocRef = doc(db, "artifacts", appId, "item_shares", `${userId}_${itemId}`);
         const shareDoc = await getDoc(shareDocRef);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedItemView:afterGetDoc',message:'Item share doc result',data:{exists:shareDoc.exists(),docPath:`item_shares/${userId}_${itemId}`},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
         
         if (!shareDoc.exists()) {
           setError("This share link is invalid or has expired.");
@@ -6460,9 +6437,6 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
         setItem({ id: itemDoc.id, ...itemDoc.data() });
         setLoading(false);
       } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SharedItemView:error',message:'Error loading item',data:{error:err.message,code:err.code},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-        // #endregion
         console.error("Error loading shared item:", err);
         setError("Failed to load item. Please try again.");
         setLoading(false);
@@ -7102,23 +7076,12 @@ export default function App() {
   }, [searchParams, isShareRoute, navigate]);
   
   // --- If viewing a shared individual item, show the item view ---
-  // #region agent log
-  if (isShareRoute) {
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:7078',message:'Share route detected',data:{isShareRoute,shareUserId,sharedItemId,shareToken:shareToken?.substring(0,8),shareMode,shareViewType,pathname:location.pathname},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-  }
-  // #endregion
   if (isShareRoute && shareUserId && sharedItemId && shareToken) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:7080',message:'Rendering SharedItemView',data:{userId:shareUserId,itemId:sharedItemId,viewType:shareViewType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     return <SharedItemView userId={shareUserId} itemId={sharedItemId} shareToken={shareToken} viewType={shareViewType} />;
   }
   
   // --- If viewing a shared collection, show the public view ---
   if (isShareRoute && shareUserId && shareToken && !sharedItemId) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:7085',message:'Rendering SharedCollectionView',data:{shareId:shareUserId,filterParam:shareFilter,viewMode:shareMode},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     return <SharedCollectionView shareId={shareUserId} shareToken={shareToken} filterParam={shareFilter} viewMode={shareMode} />;
   }
 
