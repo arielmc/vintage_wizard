@@ -4612,9 +4612,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   </div>
                 )}
               </div>
-            </div>
-          )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
