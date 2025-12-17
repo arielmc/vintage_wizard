@@ -1,0 +1,6 @@
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761535,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761555,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766013761556,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761560,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761563,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766013761564,"sessionId":"debug-session","hypothesisId":"B"}

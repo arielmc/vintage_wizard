@@ -4175,7 +4175,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 <Share2 className="w-4 h-4" />
               </button>
               <button
-                onClick={handleSaveItem}
+                onClick={handleSaveAndClose}
                 disabled={!hasUnsavedChanges}
                 className="px-3 py-1.5 text-sm font-semibold bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
