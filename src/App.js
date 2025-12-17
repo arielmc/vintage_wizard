@@ -3663,6 +3663,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
   const [chatInput, setChatInput] = useState("");
   const [isChatting, setIsChatting] = useState(false);
   const chatInputRef = useRef(null);
+  
+  // Share item state
+  const [showShareItemModal, setShowShareItemModal] = useState(false);
 
   // Handle item navigation with dip-to-black transition
   const handleItemTransition = (direction) => {
@@ -4096,13 +4099,24 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         
         {/* HEADER: Material Design Tab Navigation */}
         <div className="bg-stone-100 shrink-0 sticky top-0 z-10 shadow-sm">
-          {/* Close button - Top Right */}
-          <button
-            onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-            className="absolute top-2.5 right-2.5 z-20 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-200 rounded-full transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Action buttons - Top Right */}
+          <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1">
+            {/* Share button */}
+            <button
+              onClick={() => setShowShareItemModal(true)}
+              className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
+              title="Share item"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+            {/* Close button */}
+            <button
+              onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+              className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-200 rounded-full transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
           
           {/* Tab Bar - Pill Style Active State */}
           <div className="flex gap-2 p-2 pr-12">
@@ -4736,6 +4750,15 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </button>
         </div>
       </div>
+      
+      {/* Share Item Modal */}
+      {showShareItemModal && (
+        <ShareItemModal
+          item={formData}
+          user={user}
+          onClose={() => setShowShareItemModal(false)}
+        />
+      )}
     </div>
   );
 };
@@ -5929,14 +5952,10 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
   }, [user]);
 
   const getShareUrl = (mode) => {
-    const baseUrl = window.location.origin + window.location.pathname;
-    const params = new URLSearchParams({
-      share: user.uid,
-      token: shareData?.token || "",
-      mode: mode, // 'library' or 'forsale'
-      ...(mode === 'forsale' && { filter: 'sell' })
-    });
-    return `${baseUrl}?${params.toString()}`;
+    const baseUrl = window.location.origin;
+    let url = `${baseUrl}/share/${user.uid}?token=${shareData?.token || ""}&mode=${mode}`;
+    if (mode === 'forsale') url += '&filter=sell';
+    return url;
   };
 
   const handleCopy = (mode) => {
@@ -6122,6 +6141,547 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// --- SHARE INDIVIDUAL ITEM MODAL ---
+const ShareItemModal = ({ item, user, onClose }) => {
+  const [selectedView, setSelectedView] = useState(null); // 'listing' | 'details'
+  const [shareData, setShareData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    const loadOrCreateShare = async () => {
+      try {
+        // Check if item already has a share
+        const shareDocRef = doc(db, "artifacts", appId, "item_shares", `${user.uid}_${item.id}`);
+        const shareDoc = await getDoc(shareDocRef);
+        
+        if (shareDoc.exists()) {
+          setShareData(shareDoc.data());
+        }
+      } catch (err) {
+        console.error("Error loading item share:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadOrCreateShare();
+  }, [user.uid, item.id]);
+
+  const generateShareLink = async (viewType) => {
+    setGenerating(true);
+    try {
+      const shareId = `${user.uid}_${item.id}`;
+      const newShareData = {
+        itemId: item.id,
+        userId: user.uid,
+        viewType: viewType,
+        token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        ownerName: user.displayName || "A collector",
+        ownerEmail: user.email,
+        itemTitle: item.title || "Untitled Item",
+        itemImage: item.images?.[0] || item.image || null,
+      };
+      
+      const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
+      await setDoc(shareDocRef, newShareData);
+      setShareData(newShareData);
+      setSelectedView(viewType);
+    } catch (err) {
+      console.error("Error creating item share:", err);
+      alert("Failed to create share link. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const getShareUrl = () => {
+    if (!shareData) return "";
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/share/${user.uid}/item/${item.id}?token=${shareData.token}&view=${shareData.viewType}`;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getShareUrl());
+    setCopied(true);
+    playSuccessFeedback();
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRegenerateLink = async () => {
+    if (!window.confirm("This will invalidate the existing share link. Continue?")) return;
+    const newToken = Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
+    const shareId = `${user.uid}_${item.id}`;
+    const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
+    await updateDoc(shareDocRef, { token: newToken });
+    setShareData({ ...shareData, token: newToken });
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-stone-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
+              <Share2 className="w-5 h-5 text-rose-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-stone-900">Share Item</h2>
+              <p className="text-xs text-stone-500 truncate max-w-[200px]">{item.title || "Untitled"}</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-stone-500" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader className="w-6 h-6 text-rose-500 animate-spin" />
+            </div>
+          ) : shareData ? (
+            /* Show existing share link */
+            <div className="space-y-4">
+              <div className="p-4 bg-stone-50 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="w-4 h-4 text-stone-500" />
+                  <span className="text-sm font-bold text-stone-700">
+                    {shareData.viewType === 'listing' ? 'Sales Listing' : 'Full Details'} Link Active
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={getShareUrl()}
+                    className="flex-1 p-2.5 bg-white border border-stone-200 rounded-lg text-xs text-stone-600 font-mono truncate"
+                  />
+                  <button
+                    onClick={handleCopy}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all ${
+                      copied
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-rose-500 text-white hover:bg-rose-600"
+                    }`}
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Option to switch view type */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => generateShareLink('listing')}
+                  disabled={generating}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    shareData.viewType === 'listing'
+                      ? 'border-rose-500 bg-rose-50'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <Tag className="w-5 h-5 text-rose-500 mb-1" />
+                  <p className="font-bold text-sm text-stone-800">Sales Listing</p>
+                  <p className="text-[10px] text-stone-500">For buyers</p>
+                </button>
+                <button
+                  onClick={() => generateShareLink('details')}
+                  disabled={generating}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    shareData.viewType === 'details'
+                      ? 'border-violet-500 bg-violet-50'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <BookOpen className="w-5 h-5 text-violet-500 mb-1" />
+                  <p className="font-bold text-sm text-stone-800">Full Details</p>
+                  <p className="text-[10px] text-stone-500">All info & history</p>
+                </button>
+              </div>
+
+              {/* Security Note */}
+              <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
+                <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-800">
+                  Anyone with this link can view this item.
+                  <button onClick={handleRegenerateLink} className="underline ml-1 hover:text-amber-900">
+                    Generate new link
+                  </button> to revoke access.
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Choose view type */
+            <div className="space-y-4">
+              <p className="text-sm text-stone-600 text-center">
+                Choose how you want to share this item:
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => generateShareLink('listing')}
+                  disabled={generating}
+                  className="p-4 rounded-xl border-2 border-stone-200 hover:border-rose-500 hover:bg-rose-50 text-left transition-all group disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
+                    <Tag className="w-5 h-5 text-rose-600" />
+                  </div>
+                  <p className="font-bold text-stone-800">Sales Listing</p>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Title, price, description & contact
+                  </p>
+                </button>
+                
+                <button
+                  onClick={() => generateShareLink('details')}
+                  disabled={generating}
+                  className="p-4 rounded-xl border-2 border-stone-200 hover:border-violet-500 hover:bg-violet-50 text-left transition-all group disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-violet-200 transition-colors">
+                    <BookOpen className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <p className="font-bold text-stone-800">Full Details</p>
+                  <p className="text-xs text-stone-500 mt-1">
+                    All metadata, history & valuations
+                  </p>
+                </button>
+              </div>
+              
+              {generating && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <Loader className="w-4 h-4 text-rose-500 animate-spin" />
+                  <span className="text-sm text-stone-500">Creating share link...</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- SHARED INDIVIDUAL ITEM VIEW (Public) ---
+const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [ownerName, setOwnerName] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState(null);
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [showContactForm, setShowContactForm] = useState(false);
+
+  const isListingMode = viewType === 'listing';
+
+  useEffect(() => {
+    const loadSharedItem = async () => {
+      try {
+        // Verify share token
+        const shareDocRef = doc(db, "artifacts", appId, "item_shares", `${userId}_${itemId}`);
+        const shareDoc = await getDoc(shareDocRef);
+        
+        if (!shareDoc.exists()) {
+          setError("This share link is invalid or has expired.");
+          setLoading(false);
+          return;
+        }
+        
+        const shareData = shareDoc.data();
+        if (shareData.token !== shareToken) {
+          setError("Invalid share token.");
+          setLoading(false);
+          return;
+        }
+        
+        if (!shareData.isActive) {
+          setError("This share link has been deactivated.");
+          setLoading(false);
+          return;
+        }
+        
+        setOwnerName(shareData.ownerName || "A collector");
+        setOwnerEmail(shareData.ownerEmail || null);
+        
+        // Load item from user's inventory
+        const itemDocRef = doc(db, "artifacts", appId, "users", userId, "inventory", itemId);
+        const itemDoc = await getDoc(itemDocRef);
+        
+        if (!itemDoc.exists()) {
+          setError("This item is no longer available.");
+          setLoading(false);
+          return;
+        }
+        
+        setItem({ id: itemDoc.id, ...itemDoc.data() });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error loading shared item:", err);
+        setError("Failed to load item. Please try again.");
+        setLoading(false);
+      }
+    };
+    
+    loadSharedItem();
+  }, [userId, itemId, shareToken]);
+
+  const images = item?.images?.length > 0 ? item.images : (item?.image ? [item.image] : []);
+
+  const handleContactSeller = () => {
+    if (ownerEmail) {
+      const subject = encodeURIComponent(`Inquiry about: ${item?.title || 'Your item'}`);
+      const body = encodeURIComponent(`Hi ${ownerName},\n\nI'm interested in your item "${item?.title || 'listed item'}".\n\n`);
+      window.location.href = `mailto:${ownerEmail}?subject=${subject}&body=${body}`;
+    } else {
+      setShowContactForm(true);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] gap-4">
+        <div className="w-14 h-14 bg-stone-900 rounded-2xl flex items-center justify-center animate-pulse">
+          <Sparkles className="w-7 h-7 text-rose-400" />
+        </div>
+        <p className="text-stone-500 text-sm">Loading item...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFBF7] p-6">
+        <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-4">
+          <AlertCircle className="w-8 h-8 text-rose-500" />
+        </div>
+        <h1 className="text-xl font-bold text-stone-900 mb-2">Oops!</h1>
+        <p className="text-stone-600 text-center max-w-md">{error}</p>
+        <a 
+          href="/"
+          className="mt-6 px-6 py-2.5 bg-stone-900 text-white rounded-xl font-bold text-sm hover:bg-stone-800 transition-colors"
+        >
+          Go to Vintage Wizard
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FDFBF7]">
+      {/* Header */}
+      <header className="bg-white border-b border-stone-100 sticky top-0 z-30">
+        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-serif font-bold text-stone-900">
+                {isListingMode ? 'For Sale' : 'Shared Item'}
+              </span>
+              <span className="text-[10px] text-stone-500">by {ownerName}</span>
+            </div>
+          </div>
+          {isListingMode && ownerEmail && (
+            <button
+              onClick={handleContactSeller}
+              className="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600 transition-colors flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              Contact
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-3xl mx-auto px-4 py-6">
+        {/* Image Gallery */}
+        {images.length > 0 && (
+          <div className="mb-6">
+            <div className="aspect-square bg-stone-100 rounded-2xl overflow-hidden mb-3">
+              <img
+                src={images[activeImageIdx]}
+                alt={item.title || "Item"}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            {images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIdx(idx)}
+                    className={`w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all ${
+                      idx === activeImageIdx 
+                        ? 'border-rose-500 shadow-md' 
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Item Info */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+          {/* Title & Price */}
+          <div className="mb-4">
+            <h1 className="text-xl font-bold text-stone-900 mb-2">
+              {isListingMode ? (item.listing_title || item.title || "Untitled Item") : (item.title || "Untitled Item")}
+            </h1>
+            
+            {/* Price (for listing mode) or Valuation (for details mode) */}
+            {isListingMode ? (
+              item.listing_price ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-emerald-600">${item.listing_price}</span>
+                </div>
+              ) : item.valuation_low && item.valuation_high ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-emerald-600">
+                    ${item.valuation_low} - ${item.valuation_high}
+                  </span>
+                  <span className="text-xs text-stone-500">estimated value</span>
+                </div>
+              ) : null
+            ) : (
+              item.valuation_low && item.valuation_high && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg font-bold text-emerald-600">
+                    ${item.valuation_low} - ${item.valuation_high}
+                  </span>
+                  <span className="text-xs text-stone-500">estimated value</span>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="mb-4">
+            <p className="text-stone-600 text-sm leading-relaxed whitespace-pre-wrap">
+              {isListingMode 
+                ? (item.listing_description || item.sales_blurb || "No description available.")
+                : (item.sales_blurb || "No description available.")
+              }
+            </p>
+          </div>
+
+          {/* Details Grid (for both modes, but more complete in details mode) */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {item.category && (
+              <div className="bg-stone-50 rounded-lg p-3">
+                <span className="text-xs text-stone-400 uppercase tracking-wider">Category</span>
+                <p className="font-medium text-stone-800">{item.category}</p>
+              </div>
+            )}
+            {item.era && (
+              <div className="bg-stone-50 rounded-lg p-3">
+                <span className="text-xs text-stone-400 uppercase tracking-wider">Era</span>
+                <p className="font-medium text-stone-800">{item.era}</p>
+              </div>
+            )}
+            {item.maker && (
+              <div className="bg-stone-50 rounded-lg p-3">
+                <span className="text-xs text-stone-400 uppercase tracking-wider">Maker</span>
+                <p className="font-medium text-stone-800">{item.maker}</p>
+              </div>
+            )}
+            {item.condition && (
+              <div className="bg-stone-50 rounded-lg p-3">
+                <span className="text-xs text-stone-400 uppercase tracking-wider">Condition</span>
+                <p className="font-medium text-stone-800">{item.condition}</p>
+              </div>
+            )}
+            
+            {/* Additional details only in details mode */}
+            {!isListingMode && (
+              <>
+                {item.style && (
+                  <div className="bg-stone-50 rounded-lg p-3">
+                    <span className="text-xs text-stone-400 uppercase tracking-wider">Style</span>
+                    <p className="font-medium text-stone-800">{item.style}</p>
+                  </div>
+                )}
+                {item.materials && (
+                  <div className="bg-stone-50 rounded-lg p-3">
+                    <span className="text-xs text-stone-400 uppercase tracking-wider">Materials</span>
+                    <p className="font-medium text-stone-800">{item.materials}</p>
+                  </div>
+                )}
+                {item.markings && (
+                  <div className="bg-stone-50 rounded-lg p-3 col-span-2">
+                    <span className="text-xs text-stone-400 uppercase tracking-wider">Markings</span>
+                    <p className="font-medium text-stone-800">{item.markings}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Confidence indicator (details mode only) */}
+          {!isListingMode && item.confidence && (
+            <div className="mt-4 flex items-center gap-2">
+              <span className="text-xs text-stone-400">AI Confidence:</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                item.confidence === 'High' ? 'bg-emerald-100 text-emerald-700' :
+                item.confidence === 'Medium' ? 'bg-amber-100 text-amber-700' :
+                'bg-stone-100 text-stone-600'
+              }`}>
+                {item.confidence}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Contact CTA (listing mode) */}
+        {isListingMode && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100">
+            <p className="text-sm text-stone-700 mb-3 text-center">
+              Interested in this item? Contact the seller directly.
+            </p>
+            <button
+              onClick={handleContactSeller}
+              className="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <Mail className="w-5 h-5" />
+              Contact {ownerName}
+            </button>
+          </div>
+        )}
+
+        {/* Powered by footer */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-stone-400">
+            Cataloged with{' '}
+            <a href="/" className="text-rose-500 hover:text-rose-600 font-medium">
+              Vintage Wizard
+            </a>
+          </p>
+        </div>
+      </main>
     </div>
   );
 };
@@ -6454,12 +7014,16 @@ export default function App() {
   // Check if we're on bulk upload page (URL: /bulk-upload)
   const isBulkUploadRoute = location.pathname === '/bulk-upload';
   
-  // Check for share routes (URL: /share/:userId)
+  // Check for share routes (URL: /share/:userId or /share/:userId/item/:itemId)
   const isShareRoute = location.pathname.startsWith('/share/');
-  const shareUserId = isShareRoute ? location.pathname.split('/share/')[1]?.split('/')[0] : null;
+  const sharePathParts = isShareRoute ? location.pathname.split('/share/')[1]?.split('/') : [];
+  const shareUserId = sharePathParts[0] || null;
+  const isIndividualItemShare = sharePathParts[1] === 'item' && sharePathParts[2];
+  const sharedItemId = isIndividualItemShare ? sharePathParts[2] : null;
   const shareToken = searchParams.get('token');
   const shareMode = searchParams.get('mode') || 'library';
   const shareFilter = searchParams.get('filter');
+  const shareViewType = searchParams.get('view') || 'details';
   
   // Derive selectedItem from URL
   const selectedItem = useMemo(() => {
@@ -6505,8 +7069,13 @@ export default function App() {
     }
   }, [searchParams, isShareRoute, navigate]);
   
+  // --- If viewing a shared individual item, show the item view ---
+  if (isShareRoute && shareUserId && sharedItemId && shareToken) {
+    return <SharedItemView userId={shareUserId} itemId={sharedItemId} shareToken={shareToken} viewType={shareViewType} />;
+  }
+  
   // --- If viewing a shared collection, show the public view ---
-  if (isShareRoute && shareUserId && shareToken) {
+  if (isShareRoute && shareUserId && shareToken && !sharedItemId) {
     return <SharedCollectionView shareId={shareUserId} shareToken={shareToken} filterParam={shareFilter} viewMode={shareMode} />;
   }
 
