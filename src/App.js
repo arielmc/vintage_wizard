@@ -8060,10 +8060,28 @@ export default function App() {
     return { width: finalWidth, height: finalHeight };
   };
 
+  // Helper: sanitize text for jsPDF built-in fonts (avoid emoji / unsupported chars that render as Ø=...)
+  function sanitizePdfText(text) {
+    if (!text || typeof text !== "string") return "";
+    return text
+      .replace(/\r\n/g, "\n")
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/[–—]/g, "-")
+      .replace(/\u00A0/g, " ")
+      // remove emojis + non-latin symbols that break built-in font encoding
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+      // remove any remaining non-printable/control chars except newline/tab
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "")
+      .replace(/[ \t]+/g, " ")
+      .trim();
+  }
+
   // Helper: Wrap text to fit width
   const wrapText = (pdf, text, maxWidth) => {
     if (!text) return [];
-    const words = text.split(' ');
+    const sanitized = sanitizePdfText(text);
+    const words = sanitized.split(' ');
     const lines = [];
     let currentLine = '';
     
@@ -8088,6 +8106,8 @@ export default function App() {
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
+      // Force plain built-in font to avoid wonky encoding/layout
+      pdf.setFont('helvetica', 'normal');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 15;
@@ -8145,14 +8165,14 @@ export default function App() {
       // === COVER PAGE ===
       pdf.setFontSize(24);
       pdf.setTextColor(...black);
-      pdf.text("Collection Inventory", margin, 35);
+      pdf.text(sanitizePdfText("Collection Inventory"), margin, 35);
       
       pdf.setFontSize(10);
       pdf.setTextColor(...grey);
-      pdf.text(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`, margin, 50);
-      pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+      pdf.text(sanitizePdfText(`Prepared for: ${user?.displayName || user?.email || 'Collection Owner'}`), margin, 50);
+      pdf.text(sanitizePdfText(`Generated: ${new Date().toLocaleDateString('en-US', { 
         year: 'numeric', month: 'long', day: 'numeric' 
-      })}`, margin, 68);
+      })}`), margin, 68);
       
       // Summary stats
       const totalLow = items.reduce((sum, i) => sum + (Number(i.valuation_low) || 0), 0);
@@ -8170,15 +8190,15 @@ export default function App() {
       
       pdf.setFontSize(10);
       pdf.setTextColor(...black);
-      pdf.text(`Total Items: ${items.length}`, margin, yPos);
+      pdf.text(sanitizePdfText(`Total Items: ${items.length}`), margin, yPos);
       
       pdf.setFontSize(12);
       pdf.setTextColor(...green);
-      pdf.text(`Estimated Value: $${totalLow.toLocaleString()} – $${totalHigh.toLocaleString()}`, margin, yPos + 8);
+      pdf.text(sanitizePdfText(`Estimated Value: $${totalLow.toLocaleString()} - $${totalHigh.toLocaleString()}`), margin, yPos + 8);
       
       pdf.setFontSize(9);
       pdf.setTextColor(...grey);
-      pdf.text(`Keep: ${keepItems.length}   |   Sell: ${sellItems.length}   |   TBD: ${tbdItems.length}`, margin, yPos + 18);
+      pdf.text(sanitizePdfText(`Keep: ${keepItems.length}   |   Sell: ${sellItems.length}   |   TBD: ${tbdItems.length}`), margin, yPos + 18);
       
       yPos += 30;
       pdf.setDrawColor(...lightGrey);
@@ -8188,15 +8208,15 @@ export default function App() {
       // === SUMMARY TABLE ===
       pdf.setFontSize(11);
       pdf.setTextColor(...black);
-      pdf.text("Summary", margin, yPos);
+      pdf.text(sanitizePdfText("Summary"), margin, yPos);
       yPos += 8;
       
       // Table header
       pdf.setFontSize(8);
       pdf.setTextColor(...grey);
-      pdf.text("ITEM", margin + 18, yPos);
-      pdf.text("CATEGORY", margin + 90, yPos);
-      pdf.text("VALUE", pageWidth - margin, yPos, { align: 'right' });
+      pdf.text(sanitizePdfText("ITEM"), margin + 18, yPos);
+      pdf.text(sanitizePdfText("CATEGORY"), margin + 90, yPos);
+      pdf.text(sanitizePdfText("VALUE"), pageWidth - margin, yPos, { align: 'right' });
       yPos += 5;
       
       // Table rows
@@ -8221,19 +8241,20 @@ export default function App() {
         // Title
         pdf.setFontSize(9);
         pdf.setTextColor(...black);
-        const title = getDisplayTitle(item).substring(0, 40) + (getDisplayTitle(item).length > 40 ? '...' : '');
+        const rawTitle = getDisplayTitle(item);
+        const title = sanitizePdfText(rawTitle.substring(0, 40) + (rawTitle.length > 40 ? '...' : ''));
         pdf.text(title, margin + 18, yPos + 4);
         
         // Category
         pdf.setFontSize(8);
         pdf.setTextColor(...grey);
-        pdf.text((item.category || 'Other').substring(0, 20), margin + 90, yPos + 4);
+        pdf.text(sanitizePdfText((item.category || 'Other').substring(0, 20)), margin + 90, yPos + 4);
         
         // Value
         if (item.valuation_high > 0) {
           pdf.setFontSize(9);
           pdf.setTextColor(...green);
-          pdf.text(`$${item.valuation_low || 0} – $${item.valuation_high}`, pageWidth - margin, yPos + 4, { align: 'right' });
+          pdf.text(sanitizePdfText(`$${item.valuation_low || 0} - $${item.valuation_high}`), pageWidth - margin, yPos + 4, { align: 'right' });
         }
         
         yPos += 14;
@@ -8246,7 +8267,7 @@ export default function App() {
       // Footer
       pdf.setFontSize(8);
       pdf.setTextColor(...grey);
-      pdf.text("For insurance, estate planning, and record-keeping purposes.", pageWidth / 2, pageHeight - 10, { align: 'center' });
+      pdf.text(sanitizePdfText("For insurance, estate planning, and record-keeping purposes."), pageWidth / 2, pageHeight - 10, { align: 'center' });
       
       // === ITEM DETAIL PAGES BY CATEGORY ===
       const categoryGroups = groupByCategory(items);
@@ -8263,7 +8284,7 @@ export default function App() {
         // Category header - simple format: "category, # items"
         pdf.setFontSize(11);
         pdf.setTextColor(...black);
-        pdf.text(`${cat.toLowerCase()}, ${catItems.length} item${catItems.length > 1 ? 's' : ''}`, margin, yPos + 5);
+        pdf.text(sanitizePdfText(`${cat.toLowerCase()}, ${catItems.length} item${catItems.length > 1 ? 's' : ''}`), margin, yPos + 5);
         yPos += 14;
         
         // Items in this category
@@ -8283,7 +8304,7 @@ export default function App() {
             // Repeat category header on new page
             pdf.setFontSize(11);
             pdf.setTextColor(...grey);
-            pdf.text(`${cat} (continued)`, margin, yPos + 3);
+            pdf.text(sanitizePdfText(`${cat} (continued)`), margin, yPos + 3);
             yPos += 10;
           }
           
@@ -8333,7 +8354,7 @@ export default function App() {
           // Title (larger, heavier)
           pdf.setFontSize(titleSize);
           pdf.setTextColor(...black);
-          const titleText = getDisplayTitle(item);
+          const titleText = sanitizePdfText(getDisplayTitle(item));
           const titleLines = wrapText(pdf, titleText, textColWidth);
           titleLines.slice(0, 2).forEach((line, idx) => {
             pdf.text(line, textColX, textY + 4 + idx * 5);
@@ -8344,11 +8365,11 @@ export default function App() {
           if (item.valuation_high > 0) {
             const statusText = (item.status || 'TBD').charAt(0).toUpperCase() + (item.status || 'tbd').slice(1).toLowerCase();
             const statusStyle = statusColors[item.status] || statusColors.draft;
-            const valueText = `$${item.valuation_low || 0} – $${item.valuation_high}`;
+            const valueText = sanitizePdfText(`$${item.valuation_low || 0} - $${item.valuation_high}`);
             
             pdf.setFontSize(labelSize);
             pdf.setTextColor(...statusStyle.text);
-            pdf.text(`${statusText}: `, textColX, textY);
+            pdf.text(sanitizePdfText(`${statusText}: `), textColX, textY);
             const statusWidth = pdf.getTextWidth(`${statusText}: `);
             
             pdf.setTextColor(...green);
@@ -8358,7 +8379,7 @@ export default function App() {
               const valWidth = pdf.getTextWidth(valueText);
               pdf.setFontSize(smallSize);
               pdf.setTextColor(...grey);
-              pdf.text(`, ${item.confidence} confidence`, textColX + statusWidth + valWidth, textY);
+              pdf.text(sanitizePdfText(`, ${item.confidence} confidence`), textColX + statusWidth + valWidth, textY);
             }
             textY += lineHeight + 2;
           }
@@ -8379,10 +8400,10 @@ export default function App() {
             
             pdf.setFontSize(labelSize);
             pdf.setTextColor(...grey);
-            pdf.text(`${field.label}: `, textColX, textY);
+            pdf.text(sanitizePdfText(`${field.label}: `), textColX, textY);
             const labelWidth = pdf.getTextWidth(`${field.label}: `);
             pdf.setTextColor(...black);
-            const valueText = field.value.length > 60 ? field.value.substring(0, 60) + '...' : field.value;
+            const valueText = sanitizePdfText(field.value.length > 60 ? field.value.substring(0, 60) + '...' : field.value);
             pdf.text(valueText, textColX + labelWidth, textY);
             textY += lineHeight + 1;
           }
@@ -8393,7 +8414,7 @@ export default function App() {
             textY += 3;
             pdf.setFontSize(smallSize);
             pdf.setTextColor(...grey);
-            pdf.text(`${label}:`, textColX, textY);
+            pdf.text(sanitizePdfText(`${label}:`), textColX, textY);
             textY += lineHeight;
             
             pdf.setTextColor(60, 60, 60);
@@ -8405,7 +8426,7 @@ export default function App() {
           };
           
           // AI Description / Sales Blurb
-          renderTextBlock('Description', item.sales_blurb, 4);
+          renderTextBlock('Description', item.details_description || item.sales_blurb, 4);
           
           // AI Reasoning
           renderTextBlock('AI Reasoning', item.reasoning, 4);
@@ -8420,7 +8441,7 @@ export default function App() {
           renderTextBlock('Owner Notes', userNotes, 3);
           
           // === LISTING SECTION ===
-          if (item.listing_title || item.listing_description || item.listing_tags) {
+          if (item.listing_title || item.listing_description || item.sales_description || item.listing_tags) {
             textY += 4;
             pdf.setDrawColor(...lightGrey);
             pdf.line(textColX, textY, textColX + textColWidth, textY);
@@ -8428,7 +8449,7 @@ export default function App() {
             
             pdf.setFontSize(labelSize);
             pdf.setTextColor(...grey);
-            pdf.text('LISTING DETAILS', textColX, textY);
+            pdf.text(sanitizePdfText('LISTING DETAILS'), textColX, textY);
             textY += lineHeight + 2;
             
             // Listing Price
@@ -8436,7 +8457,7 @@ export default function App() {
             if (listingPrice) {
               pdf.setFontSize(labelSize);
               pdf.setTextColor(...grey);
-              pdf.text('Listed Price: ', textColX, textY);
+              pdf.text(sanitizePdfText('Listed Price: '), textColX, textY);
               pdf.setTextColor(...green);
               pdf.text(`$${listingPrice}`, textColX + pdf.getTextWidth('Listed Price: '), textY);
               textY += lineHeight + 1;
@@ -8446,23 +8467,23 @@ export default function App() {
             if (item.listing_title) {
               pdf.setFontSize(labelSize);
               pdf.setTextColor(...grey);
-              pdf.text('Title: ', textColX, textY);
+              pdf.text(sanitizePdfText('Title: '), textColX, textY);
               pdf.setTextColor(...black);
-              const ltText = item.listing_title.length > 70 ? item.listing_title.substring(0, 70) + '...' : item.listing_title;
+              const ltText = sanitizePdfText(item.listing_title.length > 70 ? item.listing_title.substring(0, 70) + '...' : item.listing_title);
               pdf.text(ltText, textColX + pdf.getTextWidth('Title: '), textY);
               textY += lineHeight + 1;
             }
             
             // Listing Description (the one with dad jokes!)
-            renderTextBlock('Listing Copy', item.listing_description, 8);
+            renderTextBlock('Listing Copy', item.sales_description || item.listing_description, 8);
             
             // Listing Tags
             if (item.listing_tags) {
               pdf.setFontSize(smallSize);
               pdf.setTextColor(...grey);
-              pdf.text('Tags: ', textColX, textY + 3);
+              pdf.text(sanitizePdfText('Tags: '), textColX, textY + 3);
               pdf.setTextColor(59, 130, 246); // blue
-              const tagsText = item.listing_tags.length > 100 ? item.listing_tags.substring(0, 100) + '...' : item.listing_tags;
+              const tagsText = sanitizePdfText(item.listing_tags.length > 100 ? item.listing_tags.substring(0, 100) + '...' : item.listing_tags);
               pdf.text(tagsText, textColX + pdf.getTextWidth('Tags: '), textY + 3);
               textY += lineHeight + 2;
             }
@@ -8479,7 +8500,7 @@ export default function App() {
         pdf.setPage(p);
         pdf.setFontSize(8);
         pdf.setTextColor(...grey);
-        pdf.text(`Page ${p} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+        pdf.text(sanitizePdfText(`Page ${p} of ${totalPages}`), pageWidth - margin, pageHeight - 8, { align: 'right' });
       }
       
       // Save
