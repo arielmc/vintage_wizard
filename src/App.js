@@ -7004,6 +7004,10 @@ export default function App() {
   // Mobile bottom nav state
   const [mobileExportOpen, setMobileExportOpen] = useState(false);
   
+  // Share link state for direct copy
+  const [collectionShareData, setCollectionShareData] = useState(null);
+  const [shareLinkCopied, setShareLinkCopied] = useState(null); // 'sales' | 'library' | null
+  
   // --- URL-based state derived from routes ---
   // Check if we're viewing an item (URL: /item/:itemId)
   const itemIdFromUrl = location.pathname.startsWith('/item/') 
@@ -7315,6 +7319,47 @@ export default function App() {
     );
     return () => unsubscribe();
   }, [user]);
+
+  // Load or create collection share data for direct link copying
+  useEffect(() => {
+    if (!user) return;
+    const loadOrCreateCollectionShare = async () => {
+      try {
+        const shareDocRef = doc(db, "artifacts", appId, "shares", user.uid);
+        const shareDoc = await getDoc(shareDocRef);
+        
+        if (shareDoc.exists()) {
+          setCollectionShareData(shareDoc.data());
+        } else {
+          const newShareData = {
+            userId: user.uid,
+            ownerName: user.displayName || "A collector",
+            ownerEmail: user.email,
+            token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
+            isActive: true,
+            createdAt: new Date().toISOString(),
+          };
+          await setDoc(shareDocRef, newShareData);
+          setCollectionShareData(newShareData);
+        }
+      } catch (err) {
+        console.error("Error loading collection share:", err);
+      }
+    };
+    loadOrCreateCollectionShare();
+  }, [user]);
+
+  // Helper to copy collection share link
+  const copyCollectionShareLink = (mode) => {
+    if (!collectionShareData || !user) return;
+    const baseUrl = window.location.origin;
+    let url = `${baseUrl}/share/${user.uid}?token=${collectionShareData.token}&mode=${mode}`;
+    if (mode === 'forsale') url += '&filter=sell';
+    navigator.clipboard.writeText(url);
+    setShareLinkCopied(mode);
+    playSuccessFeedback();
+    setTimeout(() => setShareLinkCopied(null), 2000);
+  };
 
   const handleFileSelect = (e, mode) => {
     let files = Array.from(e.target.files);
@@ -8457,25 +8502,53 @@ export default function App() {
                </button>
                 
                {isExportMenuOpen && (
-                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+                 <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                     Share & Export
+                     Share Collection
                    </div>
                     
                    <button
-                     onClick={() => { setShareOrigin('top'); setShowShareModal(true); setIsExportMenuOpen(false); }}
+                     onClick={() => { copyCollectionShareLink('forsale'); }}
+                     disabled={items.filter(i => i.status === 'sell').length === 0}
+                     className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item disabled:opacity-40 disabled:cursor-not-allowed"
+                   >
+                     <div className="w-7 h-7 rounded-md bg-emerald-50 group-hover/item:bg-emerald-100 flex items-center justify-center transition-colors">
+                       {shareLinkCopied === 'forsale' ? (
+                         <Check className="w-3.5 h-3.5 text-emerald-600" />
+                       ) : (
+                         <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                       )}
+                     </div>
+                     <div className="flex-1">
+                       <span className="block">{shareLinkCopied === 'forsale' ? 'Link Copied!' : 'Share Sales Items'}</span>
+                       <span className="text-[10px] text-stone-400">
+                         {items.filter(i => i.status === 'sell').length} items marked for sale
+                       </span>
+                     </div>
+                   </button>
+                   
+                   <button
+                     onClick={() => { copyCollectionShareLink('library'); }}
                      className="w-full text-left px-3 py-2.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 rounded-lg flex items-center gap-2.5 transition-all duration-150 group/item"
                    >
-                     <div className="w-7 h-7 rounded-md bg-rose-50 group-hover/item:bg-rose-100 flex items-center justify-center transition-colors">
-                       <Share2 className="w-3.5 h-3.5 text-rose-600" />
+                     <div className="w-7 h-7 rounded-md bg-violet-50 group-hover/item:bg-violet-100 flex items-center justify-center transition-colors">
+                       {shareLinkCopied === 'library' ? (
+                         <Check className="w-3.5 h-3.5 text-violet-600" />
+                       ) : (
+                         <BookOpen className="w-3.5 h-3.5 text-violet-600" />
+                       )}
                      </div>
-                     <div>
-                       <span className="block">Share Collection</span>
-                       <span className="text-[10px] text-stone-400">Create a public link</span>
+                     <div className="flex-1">
+                       <span className="block">{shareLinkCopied === 'library' ? 'Link Copied!' : 'Share Full Library'}</span>
+                       <span className="text-[10px] text-stone-400">All {items.length} items</span>
                      </div>
                    </button>
                     
                    <div className="h-px bg-stone-100 my-1" />
+                   
+                   <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                     Export
+                   </div>
                     
                    <button
                      onClick={() => { handleExportCSV(); setIsExportMenuOpen(false); }}
@@ -9333,17 +9406,41 @@ export default function App() {
             <h3 className="text-lg font-bold text-stone-900 mb-4">Share & Export</h3>
             
             <div className="space-y-2">
+              {/* Share Sales Items */}
               <button
-                onClick={() => { setShareOrigin('bottom'); setShowShareModal(true); setMobileExportOpen(false); }}
+                onClick={() => { copyCollectionShareLink('forsale'); }}
+                disabled={items.filter(i => i.status === 'sell').length === 0}
+                className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  {shareLinkCopied === 'forsale' ? (
+                    <Check className="w-5 h-5 text-emerald-600" />
+                  ) : (
+                    <Tag className="w-5 h-5 text-emerald-600" />
+                  )}
+                </div>
+                <div className="text-left flex-1">
+                  <p className="font-bold text-stone-900">{shareLinkCopied === 'forsale' ? 'Link Copied!' : 'Share Sales Items'}</p>
+                  <p className="text-xs text-stone-500">{items.filter(i => i.status === 'sell').length} items for sale</p>
+                </div>
+              </button>
+              
+              {/* Share Full Library */}
+              <button
+                onClick={() => { copyCollectionShareLink('library'); }}
                 disabled={items.length === 0}
                 className="w-full flex items-center gap-4 p-4 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-colors disabled:opacity-50"
               >
-                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                  <Share2 className="w-5 h-5 text-rose-600" />
+                <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                  {shareLinkCopied === 'library' ? (
+                    <Check className="w-5 h-5 text-violet-600" />
+                  ) : (
+                    <BookOpen className="w-5 h-5 text-violet-600" />
+                  )}
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-stone-900">Share Collection</p>
-                  <p className="text-xs text-stone-500">Create a public link</p>
+                <div className="text-left flex-1">
+                  <p className="font-bold text-stone-900">{shareLinkCopied === 'library' ? 'Link Copied!' : 'Share Full Library'}</p>
+                  <p className="text-xs text-stone-500">All {items.length} items</p>
                 </div>
               </button>
               
