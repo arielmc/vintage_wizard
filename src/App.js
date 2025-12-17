@@ -4100,15 +4100,17 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {/* HEADER: Material Design Tab Navigation */}
         <div className="bg-stone-100 shrink-0 sticky top-0 z-10 shadow-sm">
           {/* Action buttons - Top Right */}
-          <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1">
+          <div className="absolute top-2.5 right-2 z-20 flex items-center gap-0.5">
             {/* Share button */}
             <button
               onClick={() => setShowShareItemModal(true)}
               className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"
               title="Share item"
             >
-              <Share2 className="w-5 h-5" />
+              <Share2 className="w-4 h-4" />
             </button>
+            {/* Divider */}
+            <div className="w-px h-5 bg-stone-300 mx-1" />
             {/* Close button */}
             <button
               onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
@@ -4119,7 +4121,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
           
           {/* Tab Bar - Pill Style Active State */}
-          <div className="flex gap-2 p-2 pr-12">
+          <div className="flex gap-2 p-2 pr-24">
             {/* Details Tab */}
             <button
               onClick={() => setActiveTab("details")}
