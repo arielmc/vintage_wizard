@@ -3694,6 +3694,10 @@ Return ONLY valid JSON, no markdown or extra text.`;
 };
 
 const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev }) => {
+  // #region agent log
+  console.log('[DEBUG] EditModal called', { hasItem: !!item, itemId: item?.id });
+  fetch('http://127.0.0.1:7242/ingest/65cce96f-7c70-45de-8ab7-9d873d308221',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:EditModal:entry',message:'EditModal called',data:{hasItem:!!item,itemId:item?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const [formData, setFormData] = useState({
     ...item,
     images: item.images || (item.image ? [item.image] : []),
@@ -4065,6 +4069,11 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
     }
   };
 
+  // #region agent log
+  console.log('[DEBUG] EditModal rendering', { activeTab, hasFormData: !!formData, imagesCount: formData?.images?.length });
+  fetch('http://127.0.0.1:7242/ingest/65cce96f-7c70-45de-8ab7-9d873d308221',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:EditModal:render',message:'EditModal rendering',data:{activeTab,hasFormData:!!formData,imagesCount:formData?.images?.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
+
   return (
     <div className="fixed inset-0 z-50 bg-[#FDFBF7] overflow-y-auto">
       {/* Save Prompt Dialog */}
@@ -4330,6 +4339,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
           
             {/* RIGHT COLUMN: Tab Content */}
+            {/* #region agent log */}
+            {(() => { fetch('http://127.0.0.1:7242/ingest/65cce96f-7c70-45de-8ab7-9d873d308221',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:RightColumn',message:'Right column rendering',data:{activeTab},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{}); return null; })()}
+            {/* #endregion */}
             <div className="flex-1 min-w-0">
               {activeTab === "listing" ? (
                 <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4">
@@ -9190,6 +9202,10 @@ export default function App() {
       )}
 
       {selectedItem && (
+        <>
+        {/* #region agent log */}
+        {(() => { fetch('http://127.0.0.1:7242/ingest/65cce96f-7c70-45de-8ab7-9d873d308221',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.js:selectedItem',message:'Rendering EditModal',data:{itemId:selectedItem?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{}); return null; })()}
+        {/* #endregion */}
         <EditModal
           item={selectedItem}
           user={user}
@@ -9211,6 +9227,7 @@ export default function App() {
           hasNext={filteredItems.findIndex(i => i.id === selectedItem.id) < filteredItems.length - 1}
           hasPrev={filteredItems.findIndex(i => i.id === selectedItem.id) > 0}
         />
+        </>
       )}
       
       {/* Share Modal */}
