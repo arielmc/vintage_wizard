@@ -6634,17 +6634,17 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
             rel="noopener noreferrer"
             className="block p-4 bg-stone-900 rounded-2xl text-center group hover:bg-stone-800 transition-colors"
           >
-            <div className="flex items-center justify-center gap-2 mb-1.5">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-6 h-6 bg-stone-800 group-hover:bg-stone-700 rounded-md flex items-center justify-center transition-colors">
                 <Sparkles className="w-3.5 h-3.5 text-rose-400" fill="currentColor" />
               </div>
               <span className="text-white font-bold text-sm">Vintage Wizard</span>
             </div>
-            <p className="text-stone-400 text-xs">
-              AI-powered cataloging for collectors & sellers
+            <p className="text-stone-400 text-xs leading-relaxed max-w-xs mx-auto">
+              AI that researches your items — history, value, market links & listing copy. For collectors, sellers & the curious.
             </p>
-            <div className="mt-2 inline-flex items-center gap-1 text-rose-400 text-xs font-medium group-hover:text-rose-300 transition-colors">
-              <span>Start free</span>
+            <div className="mt-3 inline-flex items-center gap-1 text-rose-400 text-xs font-medium group-hover:text-rose-300 transition-colors">
+              <span>Try it free</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </a>
