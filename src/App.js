@@ -1405,6 +1405,9 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   const [loadingMessage, setLoadingMessage] = useState("Loading your photos...");
   const [isAutoGrouping, setIsAutoGrouping] = useState(false);
   const [groupingFeedback, setGroupingFeedback] = useState(null);
+
+  // Bulk default action: Upload + Analyze (recommended)
+  const [bulkUploadAction, setBulkUploadAction] = useState("analyze"); // 'analyze' | 'upload'
   
   // Ref for adding more photos
   const addMoreInputRef = useRef(null);
@@ -1469,6 +1472,11 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     
     // Reset file input
     if (addMoreInputRef.current) addMoreInputRef.current.value = "";
+  };
+
+  const handleConfirm = () => {
+    // Pass the chosen action back to parent
+    onConfirm?.(stacks, bulkUploadAction);
   };
 
   const handleAutoGroup = () => {
@@ -1985,6 +1993,35 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
           <span className="text-stone-300">→</span>
           <span className="font-bold text-stone-700">{stacks.length} {stacks.length === 1 ? "item" : "items"}</span>
         </div>
+
+        {/* Default Action Toggle */}
+        <div className="px-4 py-2 border-b border-stone-100 bg-white flex items-center justify-between gap-3">
+          <span className="text-[11px] text-stone-500 font-medium">After upload:</span>
+          <div className="flex items-center bg-stone-100 rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => setBulkUploadAction("analyze")}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                bulkUploadAction === "analyze"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-stone-600 hover:text-stone-800"
+              }`}
+            >
+              Upload + Analyze
+            </button>
+            <button
+              type="button"
+              onClick={() => setBulkUploadAction("upload")}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                bulkUploadAction === "upload"
+                  ? "bg-white text-stone-900 shadow-sm"
+                  : "text-stone-600 hover:text-stone-800"
+              }`}
+            >
+              Upload only
+            </button>
+          </div>
+        </div>
         
         {/* Action Buttons */}
         <div className="px-4 py-3 flex items-center justify-between gap-3">
@@ -2019,7 +2056,7 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
                 setTimeout(() => setGroupingFeedback(null), 5000);
                 return;
               }
-              onConfirm(stacks);
+              handleConfirm();
             }}
             disabled={isLoading || stacks.length === 0 || isProcessingBatch}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 shadow-lg transition-all active:scale-95 disabled:opacity-50"
@@ -7426,10 +7463,11 @@ export default function App() {
   };
 
   // Handle bulk stack upload (from Staging Area)
-  const handleConfirmBulkUpload = async (stacks) => {
+  const handleConfirmBulkUpload = async (stacks, bulkAction = "analyze") => {
      // stacks is Array<{ id, files: File[] }>
      const fileGroups = stacks.map(s => s.files);
-     await handleConfirmUpload('bulk', 'process_batch', fileGroups);
+     const actionType = bulkAction === "analyze" ? "process_batch_analyze" : "process_batch";
+     await handleConfirmUpload('bulk', actionType, fileGroups);
      navigate('/'); // Return to dashboard
   };
 
@@ -7444,7 +7482,9 @@ export default function App() {
     const groupsToProcess = fileGroups.length > 0 ? fileGroups : [stagingFiles];
     if (groupsToProcess.length === 0 || groupsToProcess[0].length === 0) return;
 
-    const shouldAutoAnalyze = uploadMode === "single" && actionType === "analyze_now";
+    const shouldAutoAnalyze =
+      (uploadMode === "single" && actionType === "analyze_now") ||
+      (uploadMode === "bulk" && actionType === "process_batch_analyze");
     
     setIsUploading(true);
     if (shouldAutoAnalyze) setIsProcessing(true); 
