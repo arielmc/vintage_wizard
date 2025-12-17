@@ -6455,15 +6455,15 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
               <span className="text-[10px] text-stone-500">by {ownerName}</span>
             </div>
           </div>
-          {isListingMode && ownerEmail && (
-            <button
-              onClick={handleContactSeller}
-              className="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold text-sm hover:bg-rose-600 transition-colors flex items-center gap-2"
-            >
-              <Mail className="w-4 h-4" />
-              Contact
-            </button>
-          )}
+          <a
+            href="https://vintage.yescraft.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 text-stone-600 hover:text-rose-600 text-xs font-medium flex items-center gap-1.5 transition-colors group"
+          >
+            <span>Try Vintage Wizard</span>
+            <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+          </a>
         </div>
       </header>
 
@@ -6611,7 +6611,7 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
         </div>
 
         {/* Contact CTA (listing mode) */}
-        {isListingMode && (
+        {isListingMode && ownerEmail && (
           <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100">
             <p className="text-sm text-stone-700 mb-3 text-center">
               Interested in this item? Contact the seller directly.
@@ -6626,14 +6626,28 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
           </div>
         )}
 
-        {/* Powered by footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-stone-400">
-            Cataloged with{' '}
-            <a href="/" className="text-rose-500 hover:text-rose-600 font-medium">
-              Vintage Wizard
-            </a>
-          </p>
+        {/* Powered by footer with CTA */}
+        <div className="mt-8 mb-6">
+          <a 
+            href="https://vintage.yescraft.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-4 bg-stone-900 rounded-2xl text-center group hover:bg-stone-800 transition-colors"
+          >
+            <div className="flex items-center justify-center gap-2 mb-1.5">
+              <div className="w-6 h-6 bg-stone-800 group-hover:bg-stone-700 rounded-md flex items-center justify-center transition-colors">
+                <Sparkles className="w-3.5 h-3.5 text-rose-400" fill="currentColor" />
+              </div>
+              <span className="text-white font-bold text-sm">Vintage Wizard</span>
+            </div>
+            <p className="text-stone-400 text-xs">
+              AI-powered cataloging for collectors & sellers
+            </p>
+            <div className="mt-2 inline-flex items-center gap-1 text-rose-400 text-xs font-medium group-hover:text-rose-300 transition-colors">
+              <span>Start free</span>
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </a>
         </div>
       </main>
     </div>
