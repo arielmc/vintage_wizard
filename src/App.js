@@ -571,7 +571,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     - search_terms_broad: A simplified 2-4 word query for most sites. Example: "Olatunji Drums Passion"
     - search_terms_discogs: FOR MUSIC ONLY - Artist name + Album/Title ONLY, no format/year/label. Example: "Olatunji Drums of Passion" (NOT "Olatunji Drums of Passion vinyl 1960 Columbia")
     - search_terms_auction: For auction sites - Maker/Artist + Object type + era. Example: "Columbia Records 1960s vinyl" or "Tiffany Art Nouveau lamp"
-    - sales_blurb: A detailed description (5-7 sentences) that serves multiple purposes:
+    - details_description: A general description for the item details page (5-7 sentences) that serves multiple purposes:
       1. IDENTIFICATION: What this item is, its origin, maker, and period
       2. CONTEXT: Historical significance, cultural context, or interesting background
       3. DETAILS: Notable features, materials, craftsmanship, or unique characteristics
@@ -579,6 +579,12 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
       5. SALES APPEAL: Why a collector or buyer would want this item
       6. DAD JOKE (REQUIRED): End with a clever, punny dad joke related to THIS SPECIFIC item. The joke should reference something unique about the item - the maker name, a visual detail, the era, the category, or a quirky feature. Format as: "🤓 [your dad joke]" at the very end.
       Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points (except in the dad joke if needed for effect).
+    - sales_description: A separate sales description for listings. TUNER DEFAULTS:
+      * Minimal emojis (avoid emojis except optionally the final dad joke marker "🤓")
+      * Include fun fact ON (a short "Tidbit:" line if relevant)
+      * Include dad joke ON (same format: "🤓 ...", at very end)
+      * Middle-of-the-road salesy and geeky (confident, informed, not cheesy)
+      * Include line breaks between sections using "\\n\\n"
     - questions: Array of strings (max 3) for critical missing info.
     
     WRITING STYLE: Write all text in a calm, confident, professional tone. Do NOT use exclamation points anywhere in your response. When you see text in non-English languages, translate or explain it.
@@ -637,7 +643,17 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
 
     console.log("AI Raw Response:", cleanedText); // Debug log
 
-    return JSON.parse(cleanedText);
+    const parsed = JSON.parse(cleanedText);
+    // Backwards-compat + normalized fields
+    // - keep existing uses of sales_blurb
+    // - allow shared/public views to use dedicated fields
+    if (parsed && typeof parsed === "object") {
+      if (!parsed.sales_blurb && parsed.details_description) parsed.sales_blurb = parsed.details_description;
+      if (!parsed.details_description && parsed.sales_blurb) parsed.details_description = parsed.sales_blurb;
+      if (!parsed.listing_description && parsed.sales_description) parsed.listing_description = parsed.sales_description;
+      if (!parsed.sales_description && parsed.listing_description) parsed.sales_description = parsed.listing_description;
+    }
+    return parsed;
   } catch (error) {
     console.error("Analysis failed:", error);
     throw error;
@@ -5531,6 +5547,14 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
 
   // Simple card view (not expanded)
   if (!isExpandedView) {
+    const midPrice = (() => {
+      const low = Number(item.valuation_low) || 0;
+      const high = Number(item.valuation_high) || 0;
+      if (!low && !high) return null;
+      // midpoint, rounded to a "normal" number
+      const mid = Math.round((low + high) / 2);
+      return mid;
+    })();
     return (
       <div
         onClick={() => onExpand?.(item)}
@@ -5552,27 +5576,65 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
             </div>
           )}
           
-          {/* Value - show listing price in For Sale mode, range otherwise */}
-          {(isForSaleMode ? item.listing_price : item.valuation_high > 0) && (
+          {/* Value - show listing price in For Sale mode, midpoint otherwise */}
+          {(isForSaleMode ? (item.listing_price || midPrice) : (midPrice && midPrice > 0)) && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
               <p className="text-white font-bold text-sm drop-shadow-md">
                 {isForSaleMode 
-                  ? `$${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6) || 'Contact'}` 
-                  : `$${item.valuation_low} - $${item.valuation_high}`}
+                  ? `$${item.listing_price || midPrice || 'Contact'}` 
+                  : `$${midPrice}`}
               </p>
             </div>
           )}
         </div>
         
         <div className="p-2.5">
+          {/* Status + confidence (match logged-in glanceability) */}
+          {!isForSaleMode && (
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <StatusBadge status={item.status || "TBD"} />
+              {item.confidence && (
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider ${
+                    item.confidence === 'high' ? 'text-emerald-600' :
+                    item.confidence === 'medium' ? 'text-amber-600' :
+                    'text-stone-500'
+                  }`}
+                  title={item.confidence_reason || 'AI confidence'}
+                >
+                  {item.confidence}
+                </span>
+              )}
+            </div>
+          )}
           <h3 className="font-semibold text-stone-800 text-sm line-clamp-1">
             {isForSaleMode ? (item.listing_title || item.title || "Vintage Item") : getDisplayTitle(item)}
           </h3>
           <p className="text-xs text-stone-500 line-clamp-1 mt-0.5">
             {isForSaleMode 
               ? (item.category || "Vintage")
-              : ([item.maker, item.style].filter(v => v && v.toLowerCase() !== "unknown").join(" • ") || item.category || "")}
+              : ([item.maker, item.era, item.materials].filter(v => v && String(v).toLowerCase() !== "unknown").slice(0, 2).join(" • ") || item.category || "")}
           </p>
+          {/* Compact chips row (full details shared library only) */}
+          {!isForSaleMode && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {item.category && (
+                <span className="px-1.5 py-0.5 rounded-md bg-stone-50 border border-stone-200 text-[10px] text-stone-600">
+                  {item.category}
+                </span>
+              )}
+              {item.condition && (
+                <span className="px-1.5 py-0.5 rounded-md bg-stone-50 border border-stone-200 text-[10px] text-stone-600">
+                  {item.condition}
+                </span>
+              )}
+              {item.sku && (
+                <span className="px-1.5 py-0.5 rounded-md bg-stone-50 border border-stone-200 text-[10px] text-stone-600">
+                  SKU: {item.sku}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -6449,6 +6511,22 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
     );
   }, [item]);
 
+  const midPrice = useMemo(() => {
+    const low = Number(item?.valuation_low) || 0;
+    const high = Number(item?.valuation_high) || 0;
+    if (!low && !high) return null;
+    return Math.round((low + high) / 2);
+  }, [item?.valuation_low, item?.valuation_high]);
+
+  const formatDescriptionWithDadJoke = (text) => {
+    if (!text || typeof text !== "string") return { pre: "", joke: null };
+    const idx = text.indexOf("🤓");
+    if (idx === -1) return { pre: text, joke: null };
+    const pre = text.slice(0, idx).trimEnd();
+    const joke = text.slice(idx).trim();
+    return { pre, joke };
+  };
+
   const handleContactSeller = () => {
     if (ownerEmail) {
       const subject = encodeURIComponent(`Inquiry about: ${item?.title || 'Your item'}`);
@@ -6556,64 +6634,96 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
               {isListingMode ? (item.listing_title || item.title || "Untitled Item") : (item.title || "Untitled Item")}
             </h1>
             
-            {/* Price (for listing mode) or Valuation (for details mode) */}
-            {isListingMode ? (
-              item.listing_price ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-emerald-600">${item.listing_price}</span>
-                </div>
-              ) : item.valuation_low && item.valuation_high ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-emerald-600">
-                    ${item.valuation_low} - ${item.valuation_high}
+            {/* Price / Estimated value + Confidence */}
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {isListingMode ? (
+                  <span className="text-2xl font-bold text-emerald-600">
+                    ${item.listing_price || midPrice || ""}
                   </span>
+                ) : (
+                  midPrice ? (
+                    <span className="text-lg font-bold text-emerald-600">
+                      ${midPrice}
+                    </span>
+                  ) : null
+                )}
+                {(item.listing_price || midPrice) && (
                   <span className="text-xs text-stone-500">estimated value</span>
-                </div>
-              ) : null
-            ) : (
-              item.valuation_low && item.valuation_high && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg font-bold text-emerald-600">
-                    ${item.valuation_low} - ${item.valuation_high}
-                  </span>
-                  <span className="text-xs text-stone-500">estimated value</span>
-                </div>
-              )
+                )}
+              </div>
+              {item.confidence && (
+                <span
+                  className={`text-[11px] font-bold px-2 py-1 rounded-full ${
+                    item.confidence === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                    item.confidence === 'medium' ? 'bg-amber-100 text-amber-700' :
+                    'bg-stone-100 text-stone-600'
+                  }`}
+                  title={item.confidence_reason || 'AI confidence level'}
+                >
+                  {item.confidence}
+                </span>
+              )}
+            </div>
+
+            {/* AI reasoning - small, right under value */}
+            {!isListingMode && (item.reasoning || item.confidence_reason) && (
+              <p className="mt-2 text-[11px] text-stone-500 leading-relaxed">
+                {item.reasoning || item.confidence_reason}
+              </p>
+            )}
+
+            {/* SKU (sales + details) */}
+            {item.sku && (
+              <p className="mt-2 text-[11px] text-stone-400">
+                SKU: <span className="font-mono text-stone-500">{item.sku}</span>
+              </p>
             )}
           </div>
 
           {/* Description */}
           <div className="mb-4">
-            <p className="text-stone-600 text-sm leading-relaxed whitespace-pre-wrap">
-              {isListingMode 
-                ? (item.listing_description || item.sales_blurb || "No description available.")
-                : (item.sales_blurb || "No description available.")
-              }
-            </p>
+            {(() => {
+              const raw = isListingMode
+                ? (item.listing_description || item.sales_description || item.sales_blurb || "No description available.")
+                : (item.details_description || item.sales_blurb || "No description available.");
+              const { pre, joke } = formatDescriptionWithDadJoke(raw);
+              return (
+                <p className="text-stone-600 text-sm leading-relaxed whitespace-pre-wrap">
+                  {pre}
+                  {joke && (
+                    <>
+                      {"\n\n"}
+                      <span className="italic text-stone-500">{joke}</span>
+                    </>
+                  )}
+                </p>
+              );
+            })()}
           </div>
 
-          {/* Details Grid (for both modes, but more complete in details mode) */}
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          {/* Details Grid (minimized) */}
+          <div className="grid grid-cols-2 gap-2 text-sm">
             {item.category && (
-              <div className="bg-stone-50 rounded-lg p-3">
+              <div className="bg-stone-50 rounded-lg p-2">
                 <span className="text-xs text-stone-400 uppercase tracking-wider">Category</span>
                 <p className="font-medium text-stone-800">{item.category}</p>
               </div>
             )}
             {item.era && (
-              <div className="bg-stone-50 rounded-lg p-3">
+              <div className="bg-stone-50 rounded-lg p-2">
                 <span className="text-xs text-stone-400 uppercase tracking-wider">Era</span>
                 <p className="font-medium text-stone-800">{item.era}</p>
               </div>
             )}
             {item.maker && (
-              <div className="bg-stone-50 rounded-lg p-3">
+              <div className="bg-stone-50 rounded-lg p-2">
                 <span className="text-xs text-stone-400 uppercase tracking-wider">Maker</span>
                 <p className="font-medium text-stone-800">{item.maker}</p>
               </div>
             )}
             {item.condition && (
-              <div className="bg-stone-50 rounded-lg p-3">
+              <div className="bg-stone-50 rounded-lg p-2">
                 <span className="text-xs text-stone-400 uppercase tracking-wider">Condition</span>
                 <p className="font-medium text-stone-800">{item.condition}</p>
               </div>
@@ -6684,29 +6794,29 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
           )}
         </div>
 
-        {/* Contact CTA (listing mode) */}
-        {isListingMode && ownerEmail && (
-          <div className="mt-6 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100">
-            <p className="text-sm text-stone-700 mb-3 text-center">
-              Interested in this item? Contact the seller directly.
-            </p>
+        {/* Contact (small, bottom) */}
+        {isListingMode && (
+          <div className="mt-6 flex items-center justify-between gap-3 p-3 bg-white rounded-2xl border border-stone-100">
+            <div className="text-xs text-stone-500">
+              Questions for <span className="font-bold text-stone-700">{ownerName}</span>?
+            </div>
             <button
               onClick={handleContactSeller}
-              className="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors flex items-center justify-center gap-2"
+              className="px-3 py-2 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 transition-colors flex items-center gap-1.5"
             >
-              <Mail className="w-5 h-5" />
-              Contact {ownerName}
+              <Mail className="w-4 h-4" />
+              Contact
             </button>
           </div>
         )}
 
-        {/* Powered by footer with CTA */}
-        <div className="mt-8 mb-6">
+        {/* Powered by footer with CTA (smaller + shorter) */}
+        <div className="mt-6 mb-4">
           <a 
             href="https://vintage.yescraft.ai"
             target="_blank"
             rel="noopener noreferrer"
-            className="block p-4 bg-stone-900 rounded-2xl text-center group hover:bg-stone-800 transition-colors"
+            className="block p-3 bg-stone-900 rounded-2xl text-center group hover:bg-stone-800 transition-colors"
           >
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="w-6 h-6 bg-stone-800 group-hover:bg-stone-700 rounded-md flex items-center justify-center transition-colors">
@@ -6714,10 +6824,10 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
               </div>
               <span className="text-white font-bold text-sm">Vintage Wizard</span>
             </div>
-            <p className="text-stone-400 text-xs leading-relaxed max-w-xs mx-auto">
-              AI that researches your items — history, value, market links & listing copy. For collectors, sellers & the curious.
+            <p className="text-stone-400 text-[11px] leading-relaxed max-w-xs mx-auto">
+              For collectors, sellers & the curious.
             </p>
-            <div className="mt-3 inline-flex items-center gap-1 text-rose-400 text-xs font-medium group-hover:text-rose-300 transition-colors">
+            <div className="mt-2 inline-flex items-center gap-1 text-rose-400 text-[11px] font-medium group-hover:text-rose-300 transition-colors">
               <span>Try it free</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
