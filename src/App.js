@@ -7032,29 +7032,29 @@ export default function App() {
   }, [itemIdFromUrl, items]);
   
   // Navigation helpers
-  const openItem = useCallback((item) => {
+  const openItem = (item) => {
     navigate(`/item/${item.id}`);
-  }, [navigate]);
+  };
   
-  const closeItem = useCallback(() => {
+  const closeItem = () => {
     navigate('/');
-  }, [navigate]);
+  };
   
-  const openProfile = useCallback(() => {
+  const openProfile = () => {
     navigate('/profile');
-  }, [navigate]);
+  };
   
-  const closeProfile = useCallback(() => {
+  const closeProfile = () => {
     navigate('/');
-  }, [navigate]);
+  };
   
-  const openBulkUpload = useCallback(() => {
+  const openBulkUpload = () => {
     navigate('/bulk-upload');
-  }, [navigate]);
+  };
   
-  const closeBulkUpload = useCallback(() => {
+  const closeBulkUpload = () => {
     navigate('/');
-  }, [navigate]);
+  };
   
   // --- Handle legacy share query params (redirect to new route format) ---
   useEffect(() => {
@@ -7277,13 +7277,11 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (newUser) => {
       setUser(newUser);
       setAuthLoading(false);
-      // Reset to main view on auth state change (login/logout)
-      if (location.pathname !== '/') {
-        navigate('/', { replace: true });
-      }
+      // Only redirect to home on logout (when user becomes null)
+      // Don't redirect on every auth check - that breaks navigation
     });
     return () => unsubscribe();
-  }, [navigate, location.pathname]);
+  }, []);
 
   // Close export dropdown when clicking outside
   useEffect(() => {
