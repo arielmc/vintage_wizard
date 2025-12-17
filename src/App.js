@@ -6400,6 +6400,18 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
 
   const images = item?.images?.length > 0 ? item.images : (item?.image ? [item.image] : []);
 
+  // Generate market links for the shared item
+  const marketLinks = useMemo(() => {
+    if (!item) return [];
+    return getMarketplaceLinks(
+      item.category,
+      item.search_terms,
+      item.search_terms_broad,
+      item.search_terms_discogs,
+      item.search_terms_auction
+    );
+  }, [item]);
+
   const handleContactSeller = () => {
     if (ownerEmail) {
       const subject = encodeURIComponent(`Inquiry about: ${item?.title || 'Your item'}`);
@@ -6606,6 +6618,31 @@ const SharedItemView = ({ userId, itemId, shareToken, viewType }) => {
               }`}>
                 {item.confidence}
               </span>
+            </div>
+          )}
+
+          {/* Market Research Links - compact horizontal layout */}
+          {marketLinks.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-stone-100">
+              <div className="flex items-center gap-2 mb-2">
+                <ExternalLink className="w-3 h-3 text-stone-400" />
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Research Links</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {marketLinks.slice(0, 6).map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    referrerPolicy="no-referrer"
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-medium transition-all hover:shadow-sm ${link.color}`}
+                  >
+                    <span>{link.name}</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </div>
