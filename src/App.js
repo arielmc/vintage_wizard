@@ -6149,19 +6149,16 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
 
 // --- SHARE INDIVIDUAL ITEM MODAL ---
 const ShareItemModal = ({ item, user, onClose }) => {
-  const [selectedView, setSelectedView] = useState(null); // 'listing' | 'details'
   const [shareData, setShareData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(null); // 'listing' | 'details' | null
 
+  // Load existing share data on mount
   useEffect(() => {
-    const loadOrCreateShare = async () => {
+    const loadShare = async () => {
       try {
-        // Check if item already has a share
         const shareDocRef = doc(db, "artifacts", appId, "item_shares", `${user.uid}_${item.id}`);
         const shareDoc = await getDoc(shareDocRef);
-        
         if (shareDoc.exists()) {
           setShareData(shareDoc.data());
         }
@@ -6171,50 +6168,49 @@ const ShareItemModal = ({ item, user, onClose }) => {
         setLoading(false);
       }
     };
-    
-    loadOrCreateShare();
+    loadShare();
   }, [user.uid, item.id]);
 
-  const generateShareLink = async (viewType) => {
-    setGenerating(true);
+  // Get or create share link, then copy
+  const handleShareAndCopy = async (viewType) => {
     try {
-      const shareId = `${user.uid}_${item.id}`;
-      const newShareData = {
-        itemId: item.id,
-        userId: user.uid,
-        viewType: viewType,
-        token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        ownerName: user.displayName || "A collector",
-        ownerEmail: user.email,
-        itemTitle: item.title || "Untitled Item",
-        itemImage: item.images?.[0] || item.image || null,
-      };
+      let currentShareData = shareData;
       
-      const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
-      await setDoc(shareDocRef, newShareData);
-      setShareData(newShareData);
-      setSelectedView(viewType);
+      // Create share if doesn't exist, or update viewType if different
+      if (!currentShareData || currentShareData.viewType !== viewType) {
+        const shareId = `${user.uid}_${item.id}`;
+        const newShareData = {
+          itemId: item.id,
+          userId: user.uid,
+          viewType: viewType,
+          token: currentShareData?.token || (Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16)),
+          isActive: true,
+          createdAt: currentShareData?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ownerName: user.displayName || "A collector",
+          ownerEmail: user.email,
+          itemTitle: item.title || "Untitled Item",
+          itemImage: item.images?.[0] || item.image || null,
+        };
+        
+        const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
+        await setDoc(shareDocRef, newShareData);
+        currentShareData = newShareData;
+        setShareData(newShareData);
+      }
+      
+      // Build URL and copy
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}/share/${user.uid}/item/${item.id}?token=${currentShareData.token}&view=${viewType}`;
+      await navigator.clipboard.writeText(url);
+      
+      setCopied(viewType);
+      playSuccessFeedback();
+      setTimeout(() => setCopied(null), 2500);
     } catch (err) {
-      console.error("Error creating item share:", err);
+      console.error("Error sharing item:", err);
       alert("Failed to create share link. Please try again.");
-    } finally {
-      setGenerating(false);
     }
-  };
-
-  const getShareUrl = () => {
-    if (!shareData) return "";
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/share/${user.uid}/item/${item.id}?token=${shareData.token}&view=${shareData.viewType}`;
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(getShareUrl());
-    setCopied(true);
-    playSuccessFeedback();
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRegenerateLink = async () => {
@@ -6224,6 +6220,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
     const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
     await updateDoc(shareDocRef, { token: newToken });
     setShareData({ ...shareData, token: newToken });
+    setCopied(null);
   };
 
   return (
@@ -6232,7 +6229,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
+        className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -6243,7 +6240,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
             </div>
             <div>
               <h2 className="font-bold text-stone-900">Share Item</h2>
-              <p className="text-xs text-stone-500 truncate max-w-[200px]">{item.title || "Untitled"}</p>
+              <p className="text-xs text-stone-500 truncate max-w-[180px]">{item.title || "Untitled"}</p>
             </div>
           </div>
           <button 
@@ -6255,124 +6252,79 @@ const ShareItemModal = ({ item, user, onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader className="w-6 h-6 text-rose-500 animate-spin" />
             </div>
-          ) : shareData ? (
-            /* Show existing share link */
-            <div className="space-y-4">
-              <div className="p-4 bg-stone-50 rounded-xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <Globe className="w-4 h-4 text-stone-500" />
-                  <span className="text-sm font-bold text-stone-700">
-                    {shareData.viewType === 'listing' ? 'Sales Listing' : 'Full Details'} Link Active
-                  </span>
+          ) : (
+            <div className="space-y-3">
+              {/* Tap to copy - Sales Listing */}
+              <button
+                onClick={() => handleShareAndCopy('listing')}
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
+                  copied === 'listing'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-stone-200 hover:border-rose-400 hover:bg-rose-50'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                  copied === 'listing' ? 'bg-emerald-100' : 'bg-rose-100'
+                }`}>
+                  {copied === 'listing' ? (
+                    <Check className="w-6 h-6 text-emerald-600" />
+                  ) : (
+                    <Tag className="w-6 h-6 text-rose-600" />
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={getShareUrl()}
-                    className="flex-1 p-2.5 bg-white border border-stone-200 rounded-lg text-xs text-stone-600 font-mono truncate"
-                  />
-                  <button
-                    onClick={handleCopy}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-all ${
-                      copied
-                        ? "bg-emerald-500 text-white" 
-                        : "bg-rose-500 text-white hover:bg-rose-600"
-                    }`}
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? "Copied" : "Copy"}
-                  </button>
+                <div className="flex-1">
+                  <p className="font-bold text-stone-800">
+                    {copied === 'listing' ? 'Link Copied!' : 'Share Sales Listing'}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {copied === 'listing' ? 'Ready to paste' : 'Price, photos & contact info'}
+                  </p>
                 </div>
-              </div>
-              
-              {/* Option to switch view type */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => generateShareLink('listing')}
-                  disabled={generating}
-                  className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    shareData.viewType === 'listing'
-                      ? 'border-rose-500 bg-rose-50'
-                      : 'border-stone-200 hover:border-stone-300'
-                  }`}
-                >
-                  <Tag className="w-5 h-5 text-rose-500 mb-1" />
-                  <p className="font-bold text-sm text-stone-800">Sales Listing</p>
-                  <p className="text-[10px] text-stone-500">For buyers</p>
-                </button>
-                <button
-                  onClick={() => generateShareLink('details')}
-                  disabled={generating}
-                  className={`p-3 rounded-xl border-2 text-left transition-all ${
-                    shareData.viewType === 'details'
-                      ? 'border-violet-500 bg-violet-50'
-                      : 'border-stone-200 hover:border-stone-300'
-                  }`}
-                >
-                  <BookOpen className="w-5 h-5 text-violet-500 mb-1" />
-                  <p className="font-bold text-sm text-stone-800">Full Details</p>
-                  <p className="text-[10px] text-stone-500">All info & history</p>
-                </button>
-              </div>
+              </button>
+
+              {/* Tap to copy - Full Details */}
+              <button
+                onClick={() => handleShareAndCopy('details')}
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
+                  copied === 'details'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-stone-200 hover:border-violet-400 hover:bg-violet-50'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                  copied === 'details' ? 'bg-emerald-100' : 'bg-violet-100'
+                }`}>
+                  {copied === 'details' ? (
+                    <Check className="w-6 h-6 text-emerald-600" />
+                  ) : (
+                    <BookOpen className="w-6 h-6 text-violet-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-stone-800">
+                    {copied === 'details' ? 'Link Copied!' : 'Share Full Details'}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {copied === 'details' ? 'Ready to paste' : 'All metadata, history & valuations'}
+                  </p>
+                </div>
+              </button>
 
               {/* Security Note */}
-              <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
-                <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                <p className="text-xs text-amber-800">
-                  Anyone with this link can view this item.
-                  <button onClick={handleRegenerateLink} className="underline ml-1 hover:text-amber-900">
-                    Generate new link
-                  </button> to revoke access.
-                </p>
-              </div>
-            </div>
-          ) : (
-            /* Choose view type */
-            <div className="space-y-4">
-              <p className="text-sm text-stone-600 text-center">
-                Choose how you want to share this item:
-              </p>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => generateShareLink('listing')}
-                  disabled={generating}
-                  className="p-4 rounded-xl border-2 border-stone-200 hover:border-rose-500 hover:bg-rose-50 text-left transition-all group disabled:opacity-50"
-                >
-                  <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-rose-200 transition-colors">
-                    <Tag className="w-5 h-5 text-rose-600" />
-                  </div>
-                  <p className="font-bold text-stone-800">Sales Listing</p>
-                  <p className="text-xs text-stone-500 mt-1">
-                    Title, price, description & contact
+              {shareData && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl mt-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-800">
+                    Anyone with the link can view.
+                    <button onClick={handleRegenerateLink} className="underline ml-1 hover:text-amber-900">
+                      Regenerate
+                    </button> to revoke access.
                   </p>
-                </button>
-                
-                <button
-                  onClick={() => generateShareLink('details')}
-                  disabled={generating}
-                  className="p-4 rounded-xl border-2 border-stone-200 hover:border-violet-500 hover:bg-violet-50 text-left transition-all group disabled:opacity-50"
-                >
-                  <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-violet-200 transition-colors">
-                    <BookOpen className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <p className="font-bold text-stone-800">Full Details</p>
-                  <p className="text-xs text-stone-500 mt-1">
-                    All metadata, history & valuations
-                  </p>
-                </button>
-              </div>
-              
-              {generating && (
-                <div className="flex items-center justify-center gap-2 py-2">
-                  <Loader className="w-4 h-4 text-rose-500 animate-spin" />
-                  <span className="text-sm text-stone-500">Creating share link...</span>
                 </div>
               )}
             </div>
