@@ -4157,78 +4157,105 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         className="min-h-screen bg-[#FDFBF7]"
       >
         
-        {/* STICKY HEADER */}
-        <div className="bg-white/95 backdrop-blur-sm border-b border-stone-200 sticky top-0 z-10">
-          <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
-            {/* Back button */}
-            <button
-              onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-              className="flex items-center gap-1.5 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back to Inventory</span>
-            </button>
-            
-            {/* Tab Bar - Segmented Control Style */}
-            <div className="flex gap-1 bg-stone-100 p-1 rounded-lg">
-              <button
-                onClick={() => setActiveTab("details")}
-                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-md transition-all font-semibold text-sm ${
-                  activeTab === "details" 
-                    ? "bg-white text-stone-900 shadow-sm" 
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                <Archive className="w-4 h-4" />
-                <span className="hidden sm:inline">Analysis</span>
-              </button>
+        {/* STICKY HEADER - Floating Tab Design */}
+        <div className="sticky top-0 z-10">
+          {/* Gradient background panel */}
+          <div className="bg-gradient-to-b from-stone-200 via-stone-100 to-transparent pb-4">
+            <div className="max-w-6xl mx-auto px-4 pt-3">
+              {/* Top row: Back + Actions */}
+              <div className="flex items-center justify-between mb-2">
+                {/* Back button */}
+                <button
+                  onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+                
+                {/* Pill action buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || formData.images.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 hover:bg-white rounded-full text-xs font-medium text-violet-600 hover:text-violet-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed border border-stone-200/50"
+                    title={formData.title ? "Re-analyze with AI" : "Analyze with AI"}
+                  >
+                    {isAnalyzing ? (
+                      <Loader className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span className="hidden sm:inline">{formData.title ? "Re-analyze" : "Analyze"}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowShareItemModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 hover:bg-white rounded-full text-xs font-medium text-stone-500 hover:text-rose-500 shadow-sm transition-all border border-stone-200/50"
+                    title="Share item"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
+                </div>
+              </div>
               
-              <button
-                onClick={() => setActiveTab("listing")}
-                className={`flex items-center gap-1.5 py-1.5 px-3 rounded-md transition-all font-semibold text-sm ${
-                  activeTab === "listing" 
-                    ? "bg-white text-stone-900 shadow-sm" 
-                    : "text-stone-500 hover:text-stone-700"
-                }`}
-              >
-                <Tag className="w-4 h-4" />
-                <span className="hidden sm:inline">Listing</span>
-              </button>
-            </div>
-            
-            {/* Right actions */}
-            <div className="flex items-center gap-1.5">
-              {/* Re-analyze button - icon only on mobile, with text on desktop */}
-              <button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || formData.images.length === 0}
-                className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                title={formData.title ? "Re-analyze with AI" : "Analyze with AI"}
-              >
-                {isAnalyzing ? (
-                  <Loader className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                <span className="hidden sm:inline">{formData.title ? "Re-analyze" : "Analyze"}</span>
-              </button>
-              <button
-                onClick={() => setShowShareItemModal(true)}
-                className="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                title="Share item"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleSaveAndClose}
-                disabled={!hasUnsavedChanges}
-                className="px-2.5 py-1.5 text-sm font-semibold bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Save
-              </button>
+              {/* Floating Tab Bar */}
+              <div className="flex justify-center">
+                <div className="inline-flex bg-white rounded-2xl shadow-lg border border-stone-200/50 p-1.5 relative">
+                  {/* Active tab indicator line */}
+                  <div 
+                    className={`absolute bottom-0 h-1 bg-blue-500 rounded-full transition-all duration-200 ${
+                      activeTab === "details" ? "left-1.5 w-[calc(50%-6px)]" : "left-[calc(50%+3px)] w-[calc(50%-6px)]"
+                    }`}
+                  />
+                  <button
+                    onClick={() => setActiveTab("details")}
+                    className={`flex items-center gap-2 py-2.5 px-5 rounded-xl transition-all font-bold text-sm ${
+                      activeTab === "details" 
+                        ? "text-blue-600" 
+                        : "text-stone-400 hover:text-stone-600"
+                    }`}
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Analysis</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveTab("listing")}
+                    className={`flex items-center gap-2 py-2.5 px-5 rounded-xl transition-all font-bold text-sm ${
+                      activeTab === "listing" 
+                        ? "text-blue-600" 
+                        : "text-stone-400 hover:text-stone-600"
+                    }`}
+                  >
+                    <Tag className="w-4 h-4" />
+                    <span>Listing</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        
+        {/* Navigation Chevrons - Fixed on edges */}
+        {hasPrev && (
+          <button
+            onClick={() => handleItemTransition('prev')}
+            className="fixed left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/60 hover:bg-white/90 rounded-full shadow-lg border border-stone-200/50 text-stone-400 hover:text-stone-700 transition-all opacity-60 hover:opacity-100"
+            title="Previous item"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+        {hasNext && (
+          <button
+            onClick={() => handleItemTransition('next')}
+            className="fixed right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/60 hover:bg-white/90 rounded-full shadow-lg border border-stone-200/50 text-stone-400 hover:text-stone-700 transition-all opacity-60 hover:opacity-100"
+            title="Next item"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
         <div className="max-w-6xl mx-auto px-4 py-4 md:py-6">
@@ -4236,20 +4263,20 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             {/* LEFT COLUMN: Photos + Details */}
             <div className="lg:w-[360px] lg:shrink-0">
             <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-              {/* Hero Image */}
+              {/* Hero Image - cropped on mobile, square on desktop */}
               {formData.images.length > 0 ? (
-                <div className="aspect-square bg-stone-100">
+                <div className="aspect-[4/3] lg:aspect-square bg-stone-100">
                   <img
                     src={formData.images[activeImageIdx]}
                     alt={formData.title || "Item"}
-                    className="w-full h-full object-contain cursor-pointer"
+                    className="w-full h-full object-cover lg:object-contain cursor-pointer"
                     onClick={() => setIsLightboxOpen(true)}
                   />
                 </div>
               ) : (
                 <button 
                   onClick={() => addPhotoInputRef.current?.click()}
-                  className="aspect-square bg-stone-100 flex flex-col items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-500 transition-colors cursor-pointer w-full"
+                  className="aspect-[4/3] lg:aspect-square bg-stone-100 flex flex-col items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-500 transition-colors cursor-pointer w-full"
                 >
                   <Camera size={40} />
                   <span className="text-sm font-medium mt-2">Add Photos</span>
@@ -4258,12 +4285,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               
               {/* Thumbnail Strip + Add Button */}
               {formData.images.length > 0 && (
-                <div className="flex gap-1.5 p-3 overflow-x-auto border-t border-stone-100">
+                <div className="flex gap-1.5 p-2 overflow-x-auto border-t border-stone-100">
                   {formData.images.map((img, idx) => (
                     <button
                       key={img}
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
                         idx === activeImageIdx 
                           ? 'border-rose-500 shadow-md' 
                           : 'border-stone-200 opacity-60 hover:opacity-100'
@@ -4275,10 +4302,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   {/* Add Photo as thumbnail */}
                   <button
                     onClick={() => addPhotoInputRef.current?.click()}
-                    className="flex-shrink-0 w-14 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+                    className="flex-shrink-0 w-12 h-12 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
                     title="Add more photos"
                   >
-                    <Plus size={20} />
+                    <Plus size={18} />
                   </button>
                 </div>
               )}
@@ -4291,87 +4318,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onChange={handleAddPhoto}
               />
               
-              {/* Item Details - Inside the card */}
-              <div className="p-2.5 space-y-1.5 border-t border-stone-100">
-                {/* 2-column grid for fields - more compact */}
-                <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Category</label>
-                    <input
-                      type="text"
-                      value={formData.category || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Category"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Era</label>
-                    <input
-                      type="text"
-                      value={formData.era || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, era: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Era"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Condition</label>
-                    <input
-                      type="text"
-                      value={formData.condition || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Condition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Maker</label>
-                    <input
-                      type="text"
-                      value={formData.maker || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, maker: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Maker"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Materials</label>
-                    <input
-                      type="text"
-                      value={formData.materials || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Materials"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Style</label>
-                    <input
-                      type="text"
-                      value={formData.style || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, style: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                      placeholder="Style"
-                    />
-                  </div>
-                </div>
-                
-                {/* Markings - full width */}
-                <div>
-                  <label className="block text-[8px] font-semibold text-stone-400 uppercase">Markings / Signatures</label>
-                  <input
-                    type="text"
-                    value={formData.markings || ""}
-                    onChange={(e) => setFormData((p) => ({ ...p, markings: e.target.value }))}
-                    className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
-                    placeholder="Hallmarks, serial numbers..."
-                  />
-                </div>
-              </div>
-              
-              {/* Keep/Sell/TBD Status - below the card */}
-              <div className="flex items-center justify-center gap-1 mt-2 bg-stone-100 rounded-lg p-1">
+              {/* Keep/Sell/TBD Status - directly below thumbnails */}
+              <div className="flex items-center justify-center gap-1 mx-2 my-2 bg-stone-100 rounded-lg p-1">
                 <button
                   onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
@@ -4406,6 +4354,95 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   TBD
                 </button>
               </div>
+              
+              {/* Item Details - Inside the card */}
+              <div className="p-2.5 space-y-1.5 border-t border-stone-100">
+                {/* Mobile-only: Title above details */}
+                <input
+                  type="text"
+                  value={formData.title || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
+                  className="lg:hidden w-full p-1.5 text-sm font-bold bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white mb-1"
+                  placeholder="Item title..."
+                />
+                
+                {/* 2-column grid for fields - more compact */}
+                <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Category</label>
+                    <input
+                      type="text"
+                      value={formData.category || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Category"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Era</label>
+                    <input
+                      type="text"
+                      value={formData.era || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, era: e.target.value }))}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Era"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Condition</label>
+                    <input
+                      type="text"
+                      value={formData.condition || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Condition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Materials</label>
+                    <input
+                      type="text"
+                      value={formData.materials || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Materials"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Style</label>
+                    <input
+                      type="text"
+                      value={formData.style || ""}
+                      onChange={(e) => setFormData((p) => ({ ...p, style: e.target.value }))}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Style"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Maker, Markings</label>
+                    <input
+                      type="text"
+                      value={formData.maker ? (formData.markings ? `${formData.maker}, ${formData.markings}` : formData.maker) : (formData.markings || "")}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Split on first comma if present
+                        const commaIdx = val.indexOf(',');
+                        if (commaIdx > -1) {
+                          setFormData((p) => ({ 
+                            ...p, 
+                            maker: val.slice(0, commaIdx).trim(),
+                            markings: val.slice(commaIdx + 1).trim()
+                          }));
+                        } else {
+                          setFormData((p) => ({ ...p, maker: val, markings: "" }));
+                        }
+                      }}
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      placeholder="Maker, hallmarks..."
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -4417,12 +4454,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* Title - Top of right column */}
+                  {/* Title - Desktop only (mobile has it in left column) */}
                   <input
                     type="text"
                     value={formData.title || ""}
                     onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-                    className="w-full p-2.5 text-base font-bold bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent shadow-sm"
+                    className="hidden lg:block w-full p-2.5 text-base font-bold bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent shadow-sm"
                     placeholder="Item title..."
                   />
                   
@@ -4592,7 +4629,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                           provenance: { ...prev.provenance, user_story: e.target.value }
                         }))}
                         rows={2}
-                        placeholder="Add any details you know about this item..."
+                        placeholder="Add provenance, history, or notes... These details + any edits above are included when you Re-analyze with AI"
                         className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-xs leading-relaxed placeholder:text-stone-400 resize-y"
                       />
                     </div>
@@ -4691,8 +4728,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
         </div>
           
-        {/* SLIM FOOTER */}
-        <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 px-4 py-2">
+        {/* FOOTER with Delete and Save */}
+        <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 px-4 py-2 z-10">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             {/* Trash Button */}
             <button
@@ -4709,11 +4746,19 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               <span className="hidden sm:inline">Delete</span>
             </button>
             
-            {/* Powered by hint */}
-            <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
-              <Sparkles className="w-3 h-3 text-rose-400" />
-              <span>AI-powered analysis</span>
-            </div>
+            {/* Save Button */}
+            <button
+              onClick={handleSaveAndClose}
+              disabled={!hasUnsavedChanges}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                hasUnsavedChanges
+                  ? "bg-stone-900 hover:bg-black text-white shadow-md"
+                  : "bg-stone-200 text-stone-400 cursor-not-allowed"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              <span>Save</span>
+            </button>
           </div>
         </div>
       </div>
