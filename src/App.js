@@ -3627,22 +3627,22 @@ Return ONLY valid JSON, no markdown or extra text.`;
       </div>
 
       {/* Editable Title */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
             Title
           </label>
-          <div className="flex items-center gap-2">
-            <span className={`text-[10px] font-mono ${currentTitle.length > 70 ? 'text-red-500 font-bold' : currentTitle.length > 60 ? 'text-amber-500' : 'text-stone-400'}`}>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[9px] font-mono ${currentTitle.length > 70 ? 'text-red-500 font-bold' : currentTitle.length > 60 ? 'text-amber-500' : 'text-stone-400'}`}>
               {currentTitle.length}/70
             </span>
             {formData.listing_title && (
-              <button onClick={() => handleReset('title')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" /> Reset
+              <button onClick={() => handleReset('title')} className="text-stone-400 text-[10px] hover:text-stone-600 flex items-center gap-0.5">
+                <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentTitle)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-              <Copy className="w-3 h-3" /> Copy
+            <button onClick={() => handleCopy(currentTitle)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+              <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
         </div>
@@ -3651,86 +3651,83 @@ Return ONLY valid JSON, no markdown or extra text.`;
           value={currentTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
           maxLength={80}
-          className={`w-full p-3 bg-white border rounded-xl text-sm font-medium text-stone-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent ${currentTitle.length > 70 ? 'border-red-300 bg-red-50' : 'border-stone-200'}`}
+          className={`w-full p-2 bg-white border rounded-lg text-xs font-medium text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent ${currentTitle.length > 70 ? 'border-red-300 bg-red-50' : 'border-stone-200'}`}
           placeholder="Enter listing title..."
         />
       </div>
 
       {/* Editable Description */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
             Description
           </label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {formData.listing_description && (
-              <button onClick={() => handleReset('description')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" /> Reset
+              <button onClick={() => handleReset('description')} className="text-stone-400 text-[10px] hover:text-stone-600 flex items-center gap-0.5">
+                <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentDesc)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-              <Copy className="w-3 h-3" /> Copy
+            <button onClick={() => handleCopy(currentDesc)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+              <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
         </div>
         <textarea 
           value={currentDesc}
           onChange={(e) => handleDescChange(e.target.value)}
-          className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-mono text-stone-600 h-32 md:h-40 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y shadow-sm leading-relaxed"
+          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-600 h-28 md:h-32 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y leading-relaxed"
           placeholder="Enter listing description..."
         />
       </div>
 
       {/* Editable SEO Tags */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+          <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1">
             <span className="text-blue-500">#</span> SEO Tags
           </label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {formData.listing_tags && (
-              <button onClick={() => handleReset('tags')} className="text-stone-400 text-xs hover:text-stone-600 flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" /> Reset
+              <button onClick={() => handleReset('tags')} className="text-stone-400 text-[10px] hover:text-stone-600 flex items-center gap-0.5">
+                <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentTags)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-              <Copy className="w-3 h-3" /> Copy
+            <button onClick={() => handleCopy(currentTags)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+              <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
         </div>
         <textarea
           value={currentTags}
           onChange={(e) => handleTagsChange(e.target.value)}
-          rows={2}
-          className="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y shadow-sm"
+          rows={1}
+          className="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-[11px] font-medium text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
           placeholder="#vintage #retro #collectible..."
         />
       </div>
       
       {/* SKU (read-only) */}
-      <div className="flex items-center justify-between py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">SKU:</span>
-          <span className="px-2 py-1 bg-stone-100 border border-stone-200 rounded text-xs font-mono text-stone-700">
+      <div className="flex items-center justify-between py-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">SKU:</span>
+          <span className="px-1.5 py-0.5 bg-stone-100 border border-stone-200 rounded text-[10px] font-mono text-stone-700">
             {itemSku}
           </span>
         </div>
-        <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-xs font-bold hover:underline flex items-center gap-1">
-          <Copy className="w-3 h-3" /> Copy
+        <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+          <Copy className="w-2.5 h-2.5" /> Copy
         </button>
       </div>
       
-      {/* Copy All Button - Prominent */}
+      {/* Copy All Button */}
       <div className="pt-2 border-t border-stone-200">
         <button 
           onClick={() => handleCopy(`${currentTitle}\n\nPrice: $${currentListingPrice || 'TBD'}\n\n${currentDesc}\n\n${currentTags}\n\nSKU: ${itemSku}`)}
-          className="w-full py-4 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white text-base font-bold rounded-xl shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+          className="w-full py-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white text-sm font-bold rounded-lg shadow-md shadow-rose-200/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
         >
-          <Copy className="w-5 h-5" /> Copy All Listing Copy
+          <Copy className="w-4 h-4" /> Copy All Listing
         </button>
-        <p className="text-[10px] text-stone-400 text-center mt-2">
-          Copies title, price, description, tags, and SKU
-        </p>
       </div>
     </div>
   );
@@ -4200,10 +4197,24 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             </div>
             
             {/* Right actions */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              {/* Re-analyze button - icon only on mobile, with text on desktop */}
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || formData.images.length === 0}
+                className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                title={formData.title ? "Re-analyze with AI" : "Analyze with AI"}
+              >
+                {isAnalyzing ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">{formData.title ? "Re-analyze" : "Analyze"}</span>
+              </button>
               <button
                 onClick={() => setShowShareItemModal(true)}
-                className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                className="p-1.5 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                 title="Share item"
               >
                 <Share2 className="w-4 h-4" />
@@ -4211,7 +4222,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               <button
                 onClick={handleSaveAndClose}
                 disabled={!hasUnsavedChanges}
-                className="px-3 py-1.5 text-sm font-semibold bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-2.5 py-1.5 text-sm font-semibold bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Save
               </button>
@@ -4281,93 +4292,79 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               />
               
               {/* Item Details - Inside the card */}
-              <div className="p-3 space-y-2 border-t border-stone-100">
-                {/* Title - Full width, prominent */}
+              <div className="p-2.5 space-y-1.5 border-t border-stone-100">
+                {/* Title - Full width */}
                 <input
                   type="text"
                   value={formData.title || ""}
                   onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-                  className="w-full p-2 text-sm font-semibold bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
+                  className="w-full p-1.5 text-xs font-semibold bg-stone-50 border-0 rounded focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
                   placeholder="Item title..."
                 />
                 
-                {/* 2-column grid for fields */}
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                {/* 2-column grid for fields - more compact */}
+                <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Category</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Category</label>
                     <input
                       type="text"
                       value={formData.category || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Category"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Era</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Era</label>
                     <input
                       type="text"
                       value={formData.era || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, era: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Era"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Condition</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Condition</label>
                     <input
                       type="text"
                       value={formData.condition || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Condition"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Maker</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Maker</label>
                     <input
                       type="text"
                       value={formData.maker || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, maker: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Maker"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Materials</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Materials</label>
                     <input
                       type="text"
                       value={formData.materials || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Materials"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-semibold text-stone-400 uppercase mb-0.5">Style</label>
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Style</label>
                     <input
                       type="text"
                       value={formData.style || ""}
                       onChange={(e) => setFormData((p) => ({ ...p, style: e.target.value }))}
-                      className="w-full p-1.5 text-[11px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Style"
                     />
                   </div>
                 </div>
-                
-                {/* Re-analyze button */}
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || formData.images.length === 0}
-                  className="w-full py-2 rounded-lg text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 mt-2"
-                >
-                  {isAnalyzing ? (
-                    <Loader className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
-                  )}
-                  {isAnalyzing ? "Analyzing..." : "Re-analyze with AI"}
-                </button>
               </div>
             </div>
           </div>
@@ -4425,14 +4422,14 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                           </div>
                         </div>
                         {formData.confidence_reason && (
-                          <p className="text-xs text-emerald-600/80 italic mt-2">
+                          <p className="text-[10px] text-emerald-600/80 italic mt-1">
                             {formData.confidence_reason}
                           </p>
                         )}
                       </div>
                       {formData.reasoning && (
-                        <div className="px-4 py-3 border-t border-emerald-100">
-                          <p className="text-sm text-stone-600 leading-relaxed">
+                        <div className="px-3 py-2 border-t border-emerald-100">
+                          <p className="text-xs text-stone-600 leading-relaxed">
                             <span className="font-semibold text-stone-700">Why this price:</span> {formData.reasoning}
                           </p>
                         </div>
@@ -4441,7 +4438,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   )}
               
                   {/* Details Card */}
-                  <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 space-y-4">
+                  <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-3 space-y-3">
                     {/* Improve Analysis - collapsible questions */}
                     {formData.questions && formData.questions.length > 0 && (
                       <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden">
@@ -4496,30 +4493,30 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
 
                     {/* Description */}
                     <div>
-                      <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5">
                         Description
                       </label>
                       <textarea
-                        rows={4}
+                        rows={3}
                         value={formData.details_description || formData.sales_blurb || ""}
                         onChange={(e) =>
                           setFormData((p) => ({ ...p, details_description: e.target.value }))
                         }
                         placeholder="AI will generate a detailed description..."
-                        className="w-full p-3 bg-stone-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm resize-y leading-relaxed"
+                        className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-xs resize-y leading-relaxed"
                       />
                     </div>
 
                     {/* Markings */}
                     <div>
-                      <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5">
                         Markings / Signatures
                       </label>
                       <input
                         type="text"
                         value={formData.markings || ""}
                         onChange={(e) => setFormData((p) => ({ ...p, markings: e.target.value }))}
-                        className="w-full p-2.5 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm"
+                        className="w-full p-1.5 bg-stone-50 border-0 rounded focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-xs"
                         placeholder="Hallmarks, serial numbers, signatures..."
                       />
                     </div>
@@ -4527,12 +4524,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     {/* Market Comps */}
                     {marketLinks.length > 0 && (
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <ExternalLink className="w-3.5 h-3.5" /> Market Comps
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
+                        <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Market Comps
+                        </h4>
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-1">
                           {marketLinks.map((link, i) => (
                             <a
                               key={i}
@@ -4540,7 +4535,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                               target="_blank"
                               rel="noopener noreferrer"
                               referrerPolicy="no-referrer"
-                              className={`flex items-center justify-center px-2 py-2 rounded-lg border transition-all hover:shadow-sm text-xs font-medium ${link.color}`}
+                              className={`flex items-center justify-center px-1.5 py-1.5 rounded border transition-all hover:shadow-sm text-[10px] font-medium ${link.color}`}
                             >
                               {link.name}
                             </a>
@@ -4551,8 +4546,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
 
                     {/* Notes / Context */}
                     <div>
-                      <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                        <MessageCircle className="w-3.5 h-3.5" /> Notes / Context
+                      <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                        <MessageCircle className="w-3 h-3" /> Notes / Context
                       </label>
                       <textarea
                         value={formData.provenance?.user_story || formData.userNotes || ""}
@@ -4561,26 +4556,26 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                           userNotes: e.target.value,
                           provenance: { ...prev.provenance, user_story: e.target.value }
                         }))}
-                        rows={3}
+                        rows={2}
                         placeholder="Add any details you know about this item..."
-                        className="w-full p-3 bg-stone-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-sm leading-relaxed placeholder:text-stone-400 resize-y"
+                        className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-xs leading-relaxed placeholder:text-stone-400 resize-y"
                       />
                     </div>
                   </div>
 
               {/* --- Ask About This Item (AI Chat) --- */}
-              <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-lg border border-stone-200 shadow-sm overflow-hidden">
                 <button 
                   onClick={() => setShowChat(!showChat)}
-                  className="w-full p-3 bg-gradient-to-r from-rose-50 to-amber-50 border-b border-stone-100 flex items-center justify-between hover:from-rose-100 hover:to-amber-100 transition-colors"
+                  className="w-full p-2 bg-gradient-to-r from-rose-50 to-amber-50 border-b border-stone-100 flex items-center justify-between hover:from-rose-100 hover:to-amber-100 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-rose-500" />
-                    <span className="text-sm font-bold text-stone-700 uppercase tracking-wider">Ask About This Item</span>
+                  <div className="flex items-center gap-1.5">
+                    <Bot className="w-3.5 h-3.5 text-rose-500" />
+                    <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">Ask About This Item</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-400">Chat with AI</span>
-                    {showChat ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-stone-400">Chat with AI</span>
+                    {showChat ? <ChevronUp className="w-3.5 h-3.5 text-stone-400" /> : <ChevronDown className="w-3.5 h-3.5 text-stone-400" />}
                   </div>
                 </button>
                 
