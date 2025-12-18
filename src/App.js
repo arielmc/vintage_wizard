@@ -4293,15 +4293,6 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               
               {/* Item Details - Inside the card */}
               <div className="p-2.5 space-y-1.5 border-t border-stone-100">
-                {/* Title - Full width */}
-                <input
-                  type="text"
-                  value={formData.title || ""}
-                  onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-                  className="w-full p-1.5 text-xs font-semibold bg-stone-50 border-0 rounded focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
-                  placeholder="Item title..."
-                />
-                
                 {/* 2-column grid for fields - more compact */}
                 <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
                   <div>
@@ -4365,6 +4356,55 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     />
                   </div>
                 </div>
+                
+                {/* Markings - full width */}
+                <div>
+                  <label className="block text-[8px] font-semibold text-stone-400 uppercase">Markings / Signatures</label>
+                  <input
+                    type="text"
+                    value={formData.markings || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, markings: e.target.value }))}
+                    className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                    placeholder="Hallmarks, serial numbers..."
+                  />
+                </div>
+              </div>
+              
+              {/* Keep/Sell/TBD Status - below the card */}
+              <div className="flex items-center justify-center gap-1 mt-2 bg-stone-100 rounded-lg p-1">
+                <button
+                  onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                    formData.status === "keep" 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-stone-500 hover:text-blue-600"
+                  }`}
+                >
+                  <Lock size={11} />
+                  Keep
+                </button>
+                <button
+                  onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                    formData.status === "sell" 
+                      ? "bg-white text-emerald-600 shadow-sm" 
+                      : "text-stone-500 hover:text-emerald-600"
+                  }`}
+                >
+                  <Tag size={11} />
+                  Sell
+                </button>
+                <button
+                  onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                    formData.status === "TBD" || !formData.status || formData.status === "draft"
+                      ? "bg-white text-amber-600 shadow-sm" 
+                      : "text-stone-500 hover:text-amber-600"
+                  }`}
+                >
+                  <HelpCircle size={11} />
+                  TBD
+                </button>
               </div>
             </div>
           </div>
@@ -4376,7 +4416,16 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   <ListingGenerator formData={formData} setFormData={setFormData} />
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
+                  {/* Title - Top of right column */}
+                  <input
+                    type="text"
+                    value={formData.title || ""}
+                    onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
+                    className="w-full p-2.5 text-base font-bold bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent shadow-sm"
+                    placeholder="Item title..."
+                  />
+                  
                   {/* Valuation Card */}
                   {(formData.valuation_low || formData.valuation_high || formData.confidence) && (
                     <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
@@ -4491,33 +4540,19 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       </div>
                     )}
 
-                    {/* Description */}
+                    {/* Description - expanded */}
                     <div>
                       <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5">
                         Description
                       </label>
                       <textarea
-                        rows={3}
+                        rows={5}
                         value={formData.details_description || formData.sales_blurb || ""}
                         onChange={(e) =>
                           setFormData((p) => ({ ...p, details_description: e.target.value }))
                         }
                         placeholder="AI will generate a detailed description..."
                         className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-xs resize-y leading-relaxed"
-                      />
-                    </div>
-
-                    {/* Markings */}
-                    <div>
-                      <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5">
-                        Markings / Signatures
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.markings || ""}
-                        onChange={(e) => setFormData((p) => ({ ...p, markings: e.target.value }))}
-                        className="w-full p-1.5 bg-stone-50 border-0 rounded focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-xs"
-                        placeholder="Hallmarks, serial numbers, signatures..."
                       />
                     </div>
 
@@ -4656,9 +4691,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
         </div>
           
-        {/* STICKY FOOTER: Status controls */}
-        <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-200 px-4 py-3">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+        {/* SLIM FOOTER */}
+        <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 px-4 py-2">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
             {/* Trash Button */}
             <button
               onClick={() => {
@@ -4667,62 +4702,18 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   onClose();
                 }
               }}
-              className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-2 py-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs"
               title="Delete item"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Delete</span>
             </button>
             
-            {/* Status Segmented Control */}
-            <div className="inline-flex bg-stone-100 rounded-xl p-1">
-              <button
-                onClick={() => setFormData((p) => ({ ...p, status: "keep" }))}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  formData.status === "keep" 
-                    ? "bg-white text-blue-600 shadow-sm" 
-                    : "text-stone-500 hover:text-blue-600"
-                }`}
-              >
-                <Lock size={13} />
-                Keep
-              </button>
-              <button
-                onClick={() => setFormData((p) => ({ ...p, status: "sell" }))}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  formData.status === "sell" 
-                    ? "bg-white text-emerald-600 shadow-sm" 
-                    : "text-stone-500 hover:text-emerald-600"
-                }`}
-              >
-                <Tag size={13} />
-                Sell
-              </button>
-              <button
-                onClick={() => setFormData((p) => ({ ...p, status: "TBD" }))}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                  formData.status === "TBD" || !formData.status || formData.status === "draft"
-                    ? "bg-white text-amber-600 shadow-sm" 
-                    : "text-stone-500 hover:text-amber-600"
-                }`}
-              >
-                <HelpCircle size={13} />
-                TBD
-              </button>
+            {/* Powered by hint */}
+            <div className="flex items-center gap-1.5 text-[10px] text-stone-400">
+              <Sparkles className="w-3 h-3 text-rose-400" />
+              <span>AI-powered analysis</span>
             </div>
-
-            {/* Save Button */}
-            <button
-              onClick={handleSaveAndClose}
-              disabled={!hasUnsavedChanges}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                hasUnsavedChanges
-                  ? "bg-stone-900 hover:bg-black text-white shadow-lg"
-                  : "bg-stone-200 text-stone-400 cursor-not-allowed"
-              }`}
-            >
-              <Check className="w-4 h-4" />
-              <span>Save</span>
-            </button>
           </div>
         </div>
       </div>
