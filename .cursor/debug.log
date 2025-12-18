@@ -4,3 +4,65 @@
 {"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761560,"sessionId":"debug-session","hypothesisId":"E"}
 {"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766013761563,"sessionId":"debug-session","hypothesisId":"A"}
 {"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766013761564,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766019228114,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766019228122,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766019228123,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019228124,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766019228169,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766019228170,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019228170,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"IYsn03Szz68vjYTXG1T6"},"timestamp":1766019228172,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":1},"timestamp":1766019228173,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019228173,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019252709,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019252716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019252717,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019252717,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019252731,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019252731,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019252732,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019252739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019252739,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019252739,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019257915,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019257916,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019257916,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019259757,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019259758,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019259758,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019261122,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019261124,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019261124,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019262262,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019262263,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019262263,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019264390,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019264391,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019264392,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"rbIcJTn3TAFiZWdtUovd"},"timestamp":1766019264402,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":3},"timestamp":1766019264403,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019264403,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"QV6xbpmT5VaeBMbZALck"},"timestamp":1766019270782,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"QV6xbpmT5VaeBMbZALck"},"timestamp":1766019270788,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":2},"timestamp":1766019270789,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019270789,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"QV6xbpmT5VaeBMbZALck"},"timestamp":1766019270802,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":2},"timestamp":1766019270802,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019270803,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"QV6xbpmT5VaeBMbZALck"},"timestamp":1766019270805,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":2},"timestamp":1766019270806,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019270806,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019279297,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019279302,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":4},"timestamp":1766019279303,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019279303,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:selectedItem","message":"Rendering EditModal","data":{"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019279310,"sessionId":"debug-session","hypothesisId":"E"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019279311,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":4},"timestamp":1766019279311,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019279311,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019279319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":4},"timestamp":1766019279319,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019279319,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"App.js:EditModal:entry","message":"EditModal called","data":{"hasItem":true,"itemId":"pTGygGWspARGJiVnenMH"},"timestamp":1766019285563,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"App.js:EditModal:render","message":"EditModal rendering","data":{"activeTab":"details","hasFormData":true,"imagesCount":4},"timestamp":1766019285564,"sessionId":"debug-session","hypothesisId":"B"}
+{"location":"App.js:RightColumn","message":"Right column rendering","data":{"activeTab":"details"},"timestamp":1766019285564,"sessionId":"debug-session","hypothesisId":"C"}
