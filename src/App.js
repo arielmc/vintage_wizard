@@ -4157,34 +4157,43 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         className="min-h-screen bg-[#FDFBF7]"
       >
         
-        {/* STICKY HEADER - Integrated Tab Design */}
+        {/* STICKY HEADER - Folder Tab Design */}
         <div className="sticky top-0 z-10">
-          {/* Subtle gradient background panel */}
-          <div className="bg-gradient-to-b from-stone-50/80 via-stone-50/40 to-transparent backdrop-blur-sm pb-3">
+          {/* Transparent background - no container color */}
+          <div className="bg-transparent pb-0">
             <div className="max-w-6xl mx-auto px-4 pt-3">
               {/* Single row: Back + Tabs + Actions (all on same line) */}
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-end justify-between gap-3">
                 {/* Back button */}
                 <button
                   onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors flex-shrink-0"
+                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors flex-shrink-0 mb-1"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="hidden sm:inline">Back</span>
                 </button>
                 
-                {/* Integrated Tab Bar - Active tab blends into content */}
+                {/* Folder Tab Bar - Active tab connects to content below */}
                 <div className="flex-1 flex justify-center items-end relative max-w-md mx-auto">
-                  {/* Background container for tabs */}
+                  {/* Tab container - transparent background */}
                   <div className="relative flex items-end gap-0">
                     {/* Analysis Tab */}
                     <button
                       onClick={() => setActiveTab("details")}
-                      className={`flex items-center gap-2 py-3 px-6 rounded-t-2xl transition-all duration-300 font-bold text-sm relative ${
+                      className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                         activeTab === "details" 
-                          ? "z-10 bg-white text-rose-600 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]" 
-                          : "z-0 text-stone-500 bg-white/70 shadow-[0_-4px_12px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] translate-y-1 hover:translate-y-0.5"
+                          ? "z-20 bg-white text-rose-600 rounded-t-xl" 
+                          : "z-10 text-stone-500 bg-[#F5F3F0] rounded-t-xl translate-y-0.5 hover:translate-y-0"
                       }`}
+                      style={activeTab === "details" ? {
+                        borderRadius: "12px 12px 0 0",
+                        boxShadow: "0 -2px 8px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.08), 2px 0 8px rgba(0,0,0,0.08)",
+                        borderBottom: "none",
+                        marginBottom: "-1px"
+                      } : {
+                        borderRadius: "12px 12px 0 0",
+                        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06), 0 -1px 2px rgba(0,0,0,0.04)"
+                      }}
                     >
                       <Search className="w-4 h-4" />
                       <span>Analysis</span>
@@ -4193,11 +4202,20 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     {/* Listing Tab */}
                     <button
                       onClick={() => setActiveTab("listing")}
-                      className={`flex items-center gap-2 py-3 px-6 rounded-t-2xl transition-all duration-300 font-bold text-sm relative ${
+                      className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                         activeTab === "listing" 
-                          ? "z-10 bg-white text-violet-600 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]" 
-                          : "z-0 text-stone-500 bg-white/70 shadow-[0_-4px_12px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] translate-y-1 hover:translate-y-0.5"
+                          ? "z-20 bg-white text-violet-600 rounded-t-xl" 
+                          : "z-10 text-stone-500 bg-[#F5F3F0] rounded-t-xl translate-y-0.5 hover:translate-y-0"
                       }`}
+                      style={activeTab === "listing" ? {
+                        borderRadius: "12px 12px 0 0",
+                        boxShadow: "0 -2px 8px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.08), 2px 0 8px rgba(0,0,0,0.08)",
+                        borderBottom: "none",
+                        marginBottom: "-1px"
+                      } : {
+                        borderRadius: "12px 12px 0 0",
+                        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06), 0 -1px 2px rgba(0,0,0,0.04)"
+                      }}
                     >
                       <Tag className="w-4 h-4" />
                       <span>Listing</span>
@@ -4206,7 +4224,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 </div>
                 
                 {/* Pill action buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0 mb-1">
                   <button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || formData.images.length === 0}
@@ -4255,7 +4273,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
-        <div className="max-w-6xl mx-auto px-4 py-4 md:py-6">
+        <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* LEFT COLUMN: Photos + Details */}
             <div className="lg:w-[360px] lg:shrink-0">
@@ -4443,10 +4461,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             </div>
           </div>
           
-            {/* RIGHT COLUMN: Tab Content - Connected to active tab */}
+            {/* RIGHT COLUMN: Tab Content - Connected seamlessly to active tab */}
             <div className="flex-1 min-w-0">
-              {/* White background wrapper that connects to active tab */}
-              <div className="bg-white rounded-b-2xl shadow-sm border-x border-b border-stone-200 -mt-px">
+              {/* White background wrapper that connects seamlessly to active tab - tab overlaps by 1px for seamless connection */}
+              <div className="bg-white rounded-b-2xl" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
                 {activeTab === "listing" ? (
                   <div className="p-4">
                     <ListingGenerator formData={formData} setFormData={setFormData} />
@@ -4729,7 +4747,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         </div>
           
         {/* FOOTER with Delete and Save - Enhanced shadow/glow */}
-        <div className="sticky bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t border-stone-200/50 px-4 py-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.05)]">
+        <div className="sticky bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t border-stone-200/30 px-4 py-3 z-10" style={{ boxShadow: "0 -4px 16px rgba(0,0,0,0.12)" }}>
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             {/* Trash Button */}
             <button
