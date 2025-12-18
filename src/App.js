@@ -4157,28 +4157,60 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         className="min-h-screen bg-[#FDFBF7]"
       >
         
-        {/* STICKY HEADER - Floating Tab Design */}
+        {/* STICKY HEADER - Integrated Tab Design */}
         <div className="sticky top-0 z-10">
-          {/* Gradient background panel */}
-          <div className="bg-gradient-to-b from-stone-200 via-stone-100 to-transparent pb-4">
+          {/* Subtle gradient background panel */}
+          <div className="bg-gradient-to-b from-stone-50/80 via-stone-50/40 to-transparent backdrop-blur-sm pb-3">
             <div className="max-w-6xl mx-auto px-4 pt-3">
-              {/* Top row: Back + Actions */}
-              <div className="flex items-center justify-between mb-2">
+              {/* Single row: Back + Tabs + Actions (all on same line) */}
+              <div className="flex items-center justify-between gap-3">
                 {/* Back button */}
                 <button
                   onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
-                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors"
+                  className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors flex-shrink-0"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="hidden sm:inline">Back</span>
                 </button>
                 
+                {/* Integrated Tab Bar - Active tab blends into content */}
+                <div className="flex-1 flex justify-center items-end relative max-w-md mx-auto">
+                  {/* Background container for tabs */}
+                  <div className="relative flex items-end gap-0">
+                    {/* Analysis Tab */}
+                    <button
+                      onClick={() => setActiveTab("details")}
+                      className={`flex items-center gap-2 py-3 px-6 rounded-t-2xl transition-all duration-300 font-bold text-sm relative ${
+                        activeTab === "details" 
+                          ? "z-10 bg-white text-rose-600 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]" 
+                          : "z-0 text-stone-500 bg-white/70 shadow-[0_-4px_12px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] translate-y-1 hover:translate-y-0.5"
+                      }`}
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>Analysis</span>
+                    </button>
+                    
+                    {/* Listing Tab */}
+                    <button
+                      onClick={() => setActiveTab("listing")}
+                      className={`flex items-center gap-2 py-3 px-6 rounded-t-2xl transition-all duration-300 font-bold text-sm relative ${
+                        activeTab === "listing" 
+                          ? "z-10 bg-white text-violet-600 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]" 
+                          : "z-0 text-stone-500 bg-white/70 shadow-[0_-4px_12px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] translate-y-1 hover:translate-y-0.5"
+                      }`}
+                    >
+                      <Tag className="w-4 h-4" />
+                      <span>Listing</span>
+                    </button>
+                  </div>
+                </div>
+                
                 {/* Pill action buttons */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || formData.images.length === 0}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 hover:bg-white rounded-full text-xs font-medium text-violet-600 hover:text-violet-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed border border-stone-200/50"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-violet-50 to-violet-100/50 hover:from-violet-100 hover:to-violet-200 rounded-full text-xs font-semibold text-violet-700 hover:text-violet-800 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed border border-violet-200/50"
                     title={formData.title ? "Re-analyze with AI" : "Analyze with AI"}
                   >
                     {isAnalyzing ? (
@@ -4190,46 +4222,11 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   </button>
                   <button
                     onClick={() => setShowShareItemModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 hover:bg-white rounded-full text-xs font-medium text-stone-500 hover:text-rose-500 shadow-sm transition-all border border-stone-200/50"
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-rose-50 to-rose-100/50 hover:from-rose-100 hover:to-rose-200 rounded-full text-xs font-semibold text-rose-600 hover:text-rose-700 shadow-sm transition-all border border-rose-200/50"
                     title="Share item"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Share</span>
-                  </button>
-                </div>
-              </div>
-              
-              {/* Floating Tab Bar */}
-              <div className="flex justify-center">
-                <div className="inline-flex bg-white rounded-2xl shadow-lg border border-stone-200/50 p-1.5 relative">
-                  {/* Active tab indicator line */}
-                  <div 
-                    className={`absolute bottom-0 h-1 bg-blue-500 rounded-full transition-all duration-200 ${
-                      activeTab === "details" ? "left-1.5 w-[calc(50%-6px)]" : "left-[calc(50%+3px)] w-[calc(50%-6px)]"
-                    }`}
-                  />
-                  <button
-                    onClick={() => setActiveTab("details")}
-                    className={`flex items-center gap-2 py-2.5 px-5 rounded-xl transition-all font-bold text-sm ${
-                      activeTab === "details" 
-                        ? "text-blue-600" 
-                        : "text-stone-400 hover:text-stone-600"
-                    }`}
-                  >
-                    <Search className="w-4 h-4" />
-                    <span>Analysis</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setActiveTab("listing")}
-                    className={`flex items-center gap-2 py-2.5 px-5 rounded-xl transition-all font-bold text-sm ${
-                      activeTab === "listing" 
-                        ? "text-blue-600" 
-                        : "text-stone-400 hover:text-stone-600"
-                    }`}
-                  >
-                    <Tag className="w-4 h-4" />
-                    <span>Listing</span>
                   </button>
                 </div>
               </div>
@@ -4446,14 +4443,16 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             </div>
           </div>
           
-            {/* RIGHT COLUMN: Tab Content */}
+            {/* RIGHT COLUMN: Tab Content - Connected to active tab */}
             <div className="flex-1 min-w-0">
-              {activeTab === "listing" ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4">
-                  <ListingGenerator formData={formData} setFormData={setFormData} />
-                </div>
-              ) : (
-                <div className="space-y-3">
+              {/* White background wrapper that connects to active tab */}
+              <div className="bg-white rounded-b-2xl shadow-sm border-x border-b border-stone-200 -mt-px">
+                {activeTab === "listing" ? (
+                  <div className="p-4">
+                    <ListingGenerator formData={formData} setFormData={setFormData} />
+                  </div>
+                ) : (
+                  <div className="p-4 space-y-3">
                   {/* Title - Desktop only (mobile has it in left column) */}
                   <input
                     type="text"
@@ -4722,14 +4721,15 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   </div>
                 )}
               </div>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
           
-        {/* FOOTER with Delete and Save */}
-        <div className="sticky bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-stone-100 px-4 py-2 z-10">
+        {/* FOOTER with Delete and Save - Enhanced shadow/glow */}
+        <div className="sticky bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t border-stone-200/50 px-4 py-3 z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.05)]">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             {/* Trash Button */}
             <button
@@ -4739,7 +4739,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   onClose();
                 }
               }}
-              className="flex items-center gap-1.5 px-2 py-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs"
+              className="flex items-center gap-1.5 px-3 py-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-sm font-medium"
               title="Delete item"
             >
               <Trash2 className="w-4 h-4" />
@@ -4750,10 +4750,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             <button
               onClick={handleSaveAndClose}
               disabled={!hasUnsavedChanges}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg ${
                 hasUnsavedChanges
-                  ? "bg-stone-900 hover:bg-black text-white shadow-md"
-                  : "bg-stone-200 text-stone-400 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-stone-900 to-stone-800 hover:from-black hover:to-stone-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+                  : "bg-stone-200 text-stone-400 cursor-not-allowed shadow-sm"
               }`}
             >
               <Check className="w-4 h-4" />
