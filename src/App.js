@@ -3048,12 +3048,12 @@ const LoginScreen = () => {
 const ListingGenerator = ({ formData, setFormData }) => {
   // Listing Tuner state - initialize from formData or defaults
   const [toneSettings, setToneSettings] = useState({
-    salesIntensity: formData.tone_sales ?? 3,
+    salesIntensity: formData.tone_sales ?? 4,
     nerdFactor: formData.tone_nerd ?? 3,
     formality: formData.tone_formality ?? 3,
-    includeFunFact: formData.tone_funfact ?? false,
+    includeFunFact: formData.tone_funfact ?? true, // Fun facts ON by default
     includeDadJoke: formData.tone_dadjoke ?? true, // Dad jokes ON by default!
-    emojiStyle: formData.tone_emoji ?? 'minimal', // 'none' | 'minimal' | 'full'
+    emojiStyle: formData.tone_emoji ?? 'minimal', // 'none' | 'minimal' | 'full' - 'minimal' = "Some"
   });
   const [isTunerOpen, setIsTunerOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -3072,7 +3072,7 @@ const ListingGenerator = ({ formData, setFormData }) => {
   };
 
   // Get preset for current category
-  const currentPreset = categoryPresets[formData.category] || { salesIntensity: 3, nerdFactor: 3, formality: 3, includeFunFact: false, includeDadJoke: true, emojiStyle: 'minimal' };
+  const currentPreset = categoryPresets[formData.category] || { salesIntensity: 4, nerdFactor: 3, formality: 3, includeFunFact: true, includeDadJoke: true, emojiStyle: 'minimal' };
 
   // Apply a preset
   const applyPreset = (presetName) => {
@@ -3379,52 +3379,77 @@ Return ONLY valid JSON, no markdown or extra text.`;
   );
 
   return (
-    <div className="space-y-4 p-1 pb-6">
-      {/* === LISTING TUNER PANEL === */}
-      <div className="bg-gradient-to-br from-violet-50 via-fuchsia-50 to-rose-50 border border-violet-200/60 rounded-2xl overflow-hidden shadow-sm">
-        {/* Header - Always visible, shows summary when collapsed */}
+    <div className="space-y-4 pb-6">
+      {/* === LISTING TUNER PANEL - A+ Design === */}
+      <div className={`relative overflow-hidden rounded-2xl transition-all duration-300 ${
+        isTunerOpen 
+          ? 'bg-gradient-to-br from-slate-900 via-violet-950 to-fuchsia-950 shadow-2xl shadow-violet-500/20' 
+          : 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-rose-500 shadow-lg shadow-violet-300/40 hover:shadow-xl hover:shadow-violet-400/50'
+      }`}>
+        {/* Decorative elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-20 -right-20 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-fuchsia-400/20 rounded-full blur-2xl" />
+        </div>
+        
+        {/* Header - Always visible */}
         <button
           onClick={() => setIsTunerOpen(!isTunerOpen)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/30 transition-colors"
+          className="relative w-full px-5 py-4 flex items-center justify-between group"
         >
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg flex items-center justify-center shadow-sm">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+              isTunerOpen 
+                ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/50' 
+                : 'bg-white/20 backdrop-blur-sm'
+            }`}>
+              <Sparkles className={`w-5 h-5 ${isTunerOpen ? 'text-white' : 'text-white'}`} />
             </div>
             <div className="text-left">
-              <span className="text-sm font-bold text-stone-800 block">Listing Tuner</span>
-              {/* Collapsed summary */}
+              <span className="text-base font-bold text-white block tracking-tight">Listing Tuner</span>
+              {/* Collapsed: Show current settings as pills */}
               {!isTunerOpen && (
-                <span className="text-[10px] text-stone-500">
-                  Sales {toneSettings.salesIntensity}/5 · Nerd {toneSettings.nerdFactor}/5
-                  {toneSettings.includeFunFact && ' · 💡'}
-                  {toneSettings.includeDadJoke && ' · 🤓'}
-                  {' · '}{toneSettings.emojiStyle === 'none' ? '🚫' : toneSettings.emojiStyle === 'minimal' ? '✨' : '🎉'}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-white/70 bg-white/10 px-2 py-0.5 rounded-full">
+                    Sales {toneSettings.salesIntensity}/5
+                  </span>
+                  <span className="text-[10px] text-white/70 bg-white/10 px-2 py-0.5 rounded-full">
+                    Nerd {toneSettings.nerdFactor}/5
+                  </span>
+                  <span className="text-[10px]">
+                    {toneSettings.includeFunFact && '💡'}
+                    {toneSettings.includeDadJoke && '🤓'}
+                    {toneSettings.emojiStyle === 'none' ? ' 🚫' : toneSettings.emojiStyle === 'minimal' ? ' ✨' : ' 🎉'}
+                  </span>
+                </div>
               )}
               {isTunerOpen && (
-                <span className="text-[10px] text-stone-500">Customize title & description style</span>
+                <span className="text-xs text-white/60">Customize your listing style</span>
               )}
             </div>
           </div>
-          <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${isTunerOpen ? 'rotate-180' : ''}`} />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+            isTunerOpen ? 'bg-white/10' : 'bg-white/20 group-hover:bg-white/30'
+          }`}>
+            <ChevronDown className={`w-5 h-5 text-white transition-transform duration-300 ${isTunerOpen ? 'rotate-180' : ''}`} />
+          </div>
         </button>
 
         {/* Expandable Content */}
         {isTunerOpen && (
-          <div className="px-4 pb-4 space-y-4 border-t border-violet-100 animate-in slide-in-from-top-2 duration-200">
+          <div className="relative px-5 pb-5 space-y-5 animate-in slide-in-from-top-2 duration-300">
             {/* Quick Presets */}
-            <div className="pt-3">
-              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2">Quick Presets</p>
-              <div className="flex flex-wrap gap-1.5">
+            <div>
+              <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">Quick Presets</p>
+              <div className="flex flex-wrap gap-2">
                 {Object.keys(categoryPresets).slice(0, 6).map((preset) => (
                   <button
                     key={preset}
                     onClick={() => applyPreset(preset)}
-                    className={`px-2.5 py-1 text-[10px] font-medium rounded-full border transition-all ${
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                       formData.category === preset
-                        ? 'bg-violet-100 border-violet-300 text-violet-700'
-                        : 'bg-white/60 border-stone-200 text-stone-600 hover:bg-white hover:border-stone-300'
+                        ? 'bg-white text-violet-900 shadow-lg'
+                        : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10'
                     }`}
                   >
                     {preset === 'Jewelry & Watches' ? '💎 Jewelry' : 
@@ -3438,44 +3463,66 @@ Return ONLY valid JSON, no markdown or extra text.`;
               </div>
             </div>
 
-            {/* Sliders */}
-            <div className="space-y-4 pt-2">
-              <ToneSlider
-                label="Sales Intensity"
-                value={toneSettings.salesIntensity}
-                onChange={(v) => setToneSettings(prev => ({ ...prev, salesIntensity: v }))}
-                leftLabel="Just facts"
-                rightLabel="Full charm"
-                description="How persuasive and salesy should the copy be?"
-              />
+            {/* Sliders - Custom dark theme */}
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-white">Sales Intensity</span>
+                  <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-white/80">{toneSettings.salesIntensity}/5</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-white/40 w-14 text-right">Just facts</span>
+                  <input
+                    type="range" min="1" max="5"
+                    value={toneSettings.salesIntensity}
+                    onChange={(e) => setToneSettings(prev => ({ ...prev, salesIntensity: parseInt(e.target.value) }))}
+                    className="flex-1 h-2 bg-white/20 rounded-full appearance-none cursor-pointer
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
+                      [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-rose-400 [&::-webkit-slider-thumb]:to-fuchsia-500 
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-fuchsia-500/50
+                      [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
+                  />
+                  <span className="text-[10px] text-white/40 w-14">Full charm</span>
+                </div>
+                <p className="text-[10px] text-white/30 italic">How persuasive should the copy be?</p>
+              </div>
               
-              <ToneSlider
-                label="Nerd Factor"
-                value={toneSettings.nerdFactor}
-                onChange={(v) => setToneSettings(prev => ({ ...prev, nerdFactor: v }))}
-                leftLabel="General"
-                rightLabel="Deep cuts"
-                description="Include collector knowledge and obscure details"
-              />
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-white">Nerd Factor</span>
+                  <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-white/80">{toneSettings.nerdFactor}/5</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-white/40 w-14 text-right">General</span>
+                  <input
+                    type="range" min="1" max="5"
+                    value={toneSettings.nerdFactor}
+                    onChange={(e) => setToneSettings(prev => ({ ...prev, nerdFactor: parseInt(e.target.value) }))}
+                    className="flex-1 h-2 bg-white/20 rounded-full appearance-none cursor-pointer
+                      [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
+                      [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-violet-400 [&::-webkit-slider-thumb]:to-indigo-500 
+                      [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-violet-500/50
+                      [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform"
+                  />
+                  <span className="text-[10px] text-white/40 w-14">Deep cuts</span>
+                </div>
+                <p className="text-[10px] text-white/30 italic">Include collector knowledge & obscure details</p>
+              </div>
             </div>
 
-            {/* Toggles Row */}
-            <div className="flex flex-wrap gap-3 pt-2">
+            {/* Toggles Row - Refined */}
+            <div className="flex flex-wrap items-center gap-2">
               {/* Fun Fact Toggle */}
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setToneSettings(prev => ({ ...prev, includeFunFact: !prev.includeFunFact }));
-                }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setToneSettings(prev => ({ ...prev, includeFunFact: !prev.includeFunFact })); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                   toneSettings.includeFunFact
-                    ? 'bg-amber-100 border-amber-400 text-amber-700'
-                    : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
+                    ? 'bg-amber-400 text-amber-950 shadow-lg shadow-amber-500/30'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20 border border-white/10'
                 }`}
               >
-                <span className="text-base">💡</span>
+                <span className="text-sm">💡</span>
                 <span>Fun Fact</span>
                 {toneSettings.includeFunFact && <Check className="w-3.5 h-3.5" />}
               </button>
@@ -3483,60 +3530,56 @@ Return ONLY valid JSON, no markdown or extra text.`;
               {/* Dad Joke Toggle */}
               <button
                 type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke }));
-                }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setToneSettings(prev => ({ ...prev, includeDadJoke: !prev.includeDadJoke })); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                   toneSettings.includeDadJoke
-                    ? 'bg-purple-100 border-purple-400 text-purple-700'
-                    : 'bg-white/60 border-stone-200 text-stone-500 hover:bg-white'
+                    ? 'bg-fuchsia-400 text-fuchsia-950 shadow-lg shadow-fuchsia-500/30'
+                    : 'bg-white/10 text-white/60 hover:bg-white/20 border border-white/10'
                 }`}
               >
-                <span className="text-base">🤓</span>
+                <span className="text-sm">🤓</span>
                 <span>Dad Joke</span>
                 {toneSettings.includeDadJoke && <Check className="w-3.5 h-3.5" />}
               </button>
 
-              {/* Emoji Style */}
-              <div className="flex items-center gap-1 bg-white/60 rounded-lg border border-stone-200 p-1">
-                {['none', 'minimal', 'full'].map((style) => (
+              {/* Emoji Style - Segmented control */}
+              <div className="flex items-center bg-white/10 rounded-xl p-1 border border-white/10">
+                {[
+                  { value: 'none', label: '🚫 None' },
+                  { value: 'minimal', label: '✨ Some' },
+                  { value: 'full', label: '🎉 Lots' }
+                ].map((style) => (
                   <button
-                    key={style}
+                    key={style.value}
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setToneSettings(prev => ({ ...prev, emojiStyle: style }));
-                    }}
-                    className={`px-2.5 py-1.5 text-[10px] font-medium rounded-md transition-all ${
-                      toneSettings.emojiStyle === style
-                        ? 'bg-rose-500 text-white shadow-sm'
-                        : 'text-stone-500 hover:bg-stone-100'
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setToneSettings(prev => ({ ...prev, emojiStyle: style.value })); }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                      toneSettings.emojiStyle === style.value
+                        ? 'bg-white text-violet-900 shadow-md'
+                        : 'text-white/60 hover:text-white/80'
                     }`}
                   >
-                    {style === 'none' ? '🚫 None' : style === 'minimal' ? '✨ Some' : '🎉 Lots'}
+                    {style.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Regenerate Button */}
+            {/* Regenerate Button - Hero CTA */}
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 hover:from-rose-400 hover:via-fuchsia-400 hover:to-violet-400 text-white text-sm font-bold rounded-xl shadow-xl shadow-fuchsia-500/30 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed group"
             >
               {isRegenerating ? (
                 <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Regenerating...
+                  <Loader className="w-5 h-5 animate-spin" />
+                  <span>Regenerating...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
-                  Regenerate with AI
+                  <Sparkles className="w-5 h-5 group-hover:animate-pulse" />
+                  <span>Regenerate with AI</span>
                 </>
               )}
             </button>
