@@ -1119,6 +1119,575 @@ const getMarketplaceLinks = (category, searchTerms, broadTerms, discogsTerms, au
   return links;
 };
 
+// --- Truncated Metadata Field Component with Tooltip/Drawer ---
+const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey, maxLength = 200 }) => {
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || "");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const fieldRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const textareaRef = useRef(null);
+  const drawerTextareaRef = useRef(null);
+  const backdropRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  const [isTablet, setIsTablet] = useState(window.innerWidth > 480 && window.innerWidth <= 768);
+
+  // Detect screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 480);
+      setIsTablet(width > 480 && width <= 768);
+      checkOverflow();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Check overflow on value change and after render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkOverflow();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  // Sync edit value with actual value
+  useEffect(() => {
+    setEditValue(value || "");
+  }, [value]);
+
+  // Auto-expand textarea when editing starts
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 200);
+      textarea.style.height = newHeight + 'px';
+    }
+    if (isDrawerOpen && drawerTextareaRef.current) {
+      const textarea = drawerTextareaRef.current;
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 120), 300);
+      textarea.style.height = newHeight + 'px';
+    }
+  }, [isEditing, isDrawerOpen]);
+
+  const checkOverflow = () => {
+    if (fieldRef.current) {
+      const hasOverflow = fieldRef.current.scrollWidth > fieldRef.current.clientWidth;
+      setIsOverflowing(hasOverflow);
+    }
+  };
+
+  const handleFieldClick = () => {
+    if (isMobile) {
+      setIsDrawerOpen(true);
+      setTimeout(() => {
+        drawerTextareaRef.current?.focus();
+        if (drawerTextareaRef.current) {
+          const textarea = drawerTextareaRef.current;
+          textarea.style.height = 'auto';
+          const newHeight = Math.min(Math.max(textarea.scrollHeight, 120), 300);
+          textarea.style.height = newHeight + 'px';
+        }
+      }, 300);
+    } else {
+      setIsEditing(true);
+      setEditValue(value || "");
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        if (textareaRef.current) {
+          const textarea = textareaRef.current;
+          textarea.style.height = 'auto';
+          const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 200);
+          textarea.style.height = newHeight + 'px';
+        }
+      }, 50);
+    }
+  };
+
+  const handleFieldMouseEnter = () => {
+    if (!isMobile && !isTablet && isOverflowing && !isEditing) {
+      setIsTooltipVisible(true);
+    }
+  };
+
+  const handleFieldMouseLeave = () => {
+    if (!isEditing) {
+      setIsTooltipVisible(false);
+    }
+  };
+
+  const handleSave = () => {
+    onChange(editValue);
+    setIsEditing(false);
+    setIsTooltipVisible(false);
+    setIsDrawerOpen(false);
+  };
+
+  const handleCancel = () => {
+    setEditValue(value || "");
+    setIsEditing(false);
+    setIsTooltipVisible(false);
+    setIsDrawerOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleCancel();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
+  const handleBackdropClick = () => {
+    handleSave();
+  };
+
+  // Calculate character count
+  const charCount = editValue.length;
+  const displayValue = value || placeholder || "";
+
+  return (
+    <>
+      <div className="relative">
+        <div
+          ref={fieldRef}
+          onClick={handleFieldClick}
+          onMouseEnter={handleFieldMouseEnter}
+          onMouseLeave={handleFieldMouseLeave}
+          className={`metadata-value ${isOverflowing ? 'has-overflow' : ''} ${isEditing ? 'editing' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${label}: ${displayValue}. Click to edit`}
+          aria-expanded={isEditing || isDrawerOpen}
+        >
+          {displayValue || placeholder}
+        </div>
+
+        {/* Desktop Hover Tooltip (read-only) */}
+        {!isMobile && !isTablet && isOverflowing && isTooltipVisible && !isEditing && (
+          <div
+            ref={tooltipRef}
+            className="tooltip"
+            role="tooltip"
+            aria-hidden="false"
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 10px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1a1816',
+              color: 'white',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              fontSize: '0.9rem',
+              lineHeight: '1.5',
+              maxWidth: '300px',
+              width: 'max-content',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+              zIndex: 100,
+              pointerEvents: 'none',
+            }}
+          >
+            {displayValue}
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                border: '8px solid transparent',
+                borderTopColor: '#1a1816',
+              }}
+            />
+          </div>
+        )}
+
+        {/* Desktop/Tablet Edit Tooltip */}
+        {!isMobile && isEditing && (
+          <>
+            <div
+              ref={backdropRef}
+              className="backdrop active"
+              onClick={handleBackdropClick}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'transparent',
+                zIndex: 50,
+              }}
+            />
+            <div
+              className="tooltip editing"
+              role="dialog"
+              aria-label={`Edit ${label}`}
+              style={{
+                position: 'absolute',
+                [isTablet ? 'top' : 'bottom']: isTablet ? 'calc(100% + 10px)' : 'calc(100% + 10px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'white',
+                color: '#2D2A26',
+                border: '1.5px solid #D4A574',
+                padding: 0,
+                borderRadius: '10px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                zIndex: 100,
+                minWidth: '320px',
+                maxWidth: '400px',
+                overflow: 'hidden',
+              }}
+            >
+              <textarea
+                ref={(el) => {
+                  textareaRef.current = el;
+                  if (el) {
+                    // Set initial height
+                    el.style.height = 'auto';
+                    const newHeight = Math.min(Math.max(el.scrollHeight, 100), 200);
+                    el.style.height = newHeight + 'px';
+                  }
+                }}
+                value={editValue}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  if (maxLength && newValue.length <= maxLength) {
+                    setEditValue(newValue);
+                    // Auto-expand
+                    const textarea = e.target;
+                    textarea.style.height = 'auto';
+                    const newHeight = Math.min(Math.max(textarea.scrollHeight, 100), 200);
+                    textarea.style.height = newHeight + 'px';
+                  }
+                }}
+                onKeyDown={handleKeyDown}
+                maxLength={maxLength}
+                className="tooltip-edit-area"
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  border: 'none',
+                  fontFamily: 'inherit',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.6',
+                  resize: 'none',
+                  minHeight: '100px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  color: '#2D2A26',
+                  outline: 'none',
+                }}
+              />
+              <div
+                className="tooltip-footer"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  background: '#FAFAF8',
+                  borderTop: '1px solid #F0EDE9',
+                }}
+              >
+                <span className="char-count" style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                  <span className="current">{charCount}</span>/{maxLength}
+                </span>
+                <div className="tooltip-actions" style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="btn-cancel"
+                    style={{
+                      padding: '8px 14px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#7A7267',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    className="btn-done"
+                    style={{
+                      padding: '8px 16px',
+                      background: '#1a1816',
+                      color: 'white',
+                      border: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  [isTablet ? 'bottom' : 'top']: isTablet ? '100%' : '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  border: '8px solid transparent',
+                  [isTablet ? 'borderBottomColor' : 'borderTopColor']: '#D4A574',
+                }}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Mobile Drawer */}
+      {isMobile && isDrawerOpen && (
+        <>
+          <div
+            className="edit-drawer-backdrop active"
+            onClick={() => handleCancel()}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.4)',
+              zIndex: 998,
+              opacity: 1,
+              visibility: 'visible',
+              transition: 'all 0.3s',
+            }}
+          />
+          <div
+            className="edit-drawer active"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Edit ${label}`}
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'white',
+              borderRadius: '20px 20px 0 0',
+              padding: '12px 20px 32px',
+              boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.15)',
+              zIndex: 999,
+              transform: 'translateY(0)',
+              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <div
+              className="edit-drawer-handle"
+              style={{
+                width: '36px',
+                height: '4px',
+                background: '#D4CFC7',
+                borderRadius: '2px',
+                margin: '0 auto 16px',
+              }}
+            />
+            <div
+              className="edit-drawer-header"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <span
+                className="edit-drawer-label"
+                style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: '#9CA3AF',
+                }}
+              >
+                {label}
+              </span>
+              <button
+                className="edit-drawer-close"
+                onClick={handleCancel}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: '#F5F3F0',
+                  color: '#7A7267',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <textarea
+              ref={drawerTextareaRef}
+              value={editValue}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                if (maxLength && newValue.length <= maxLength) {
+                  setEditValue(newValue);
+                  // Auto-expand
+                  const textarea = e.target;
+                  textarea.style.height = 'auto';
+                  const newHeight = Math.min(Math.max(textarea.scrollHeight, 120), 300);
+                  textarea.style.height = newHeight + 'px';
+                }
+              }}
+              onKeyDown={handleKeyDown}
+              maxLength={maxLength}
+              className="edit-drawer-textarea"
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                padding: '14px 16px',
+                border: '1.5px solid #E5E0D9',
+                borderRadius: '12px',
+                fontFamily: 'inherit',
+                fontSize: '1rem',
+                lineHeight: '1.6',
+                resize: 'none',
+                color: '#2D2A26',
+                outline: 'none',
+              }}
+            />
+            <div
+              className="edit-drawer-footer"
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '16px',
+              }}
+            >
+              <span className="char-count" style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                <span className="current">{charCount}</span>/{maxLength}
+              </span>
+              <div className="edit-drawer-actions" style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="btn-drawer-cancel"
+                  style={{
+                    padding: '12px 20px',
+                    background: '#F5F3F0',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    color: '#7A7267',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="btn-drawer-done"
+                  style={{
+                    padding: '12px 24px',
+                    background: '#1a1816',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    color: 'white',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style>{`
+        .metadata-value {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+          cursor: pointer;
+          padding: 4px 8px;
+          background: #FAFAF8;
+          border-radius: 6px;
+          border: 1.5px solid transparent;
+          transition: all 0.2s;
+          font-size: 10px;
+          line-height: 1.4;
+          min-height: 24px;
+          display: flex;
+          align-items: center;
+        }
+
+        .metadata-value:hover {
+          background: #F5F3F0;
+          border-color: #E5E0D9;
+        }
+
+        .metadata-value.has-overflow {
+          position: relative;
+        }
+
+        .metadata-value.has-overflow::after {
+          content: '';
+          position: absolute;
+          right: 1px;
+          top: 1px;
+          bottom: 1px;
+          width: 24px;
+          background: linear-gradient(to right, transparent, #FAFAF8);
+          border-radius: 0 5px 5px 0;
+          pointer-events: none;
+          transition: background 0.2s;
+        }
+
+        .metadata-value.has-overflow:hover::after {
+          background: linear-gradient(to right, transparent, #F5F3F0);
+        }
+
+        @media (max-width: 768px) {
+          .metadata-value {
+            min-height: 32px;
+            padding: 6px 10px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .metadata-value {
+            min-height: 40px;
+            padding: 8px 12px;
+            font-size: 11px;
+          }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+          .tooltip:not(.editing) {
+            display: none !important;
+          }
+        }
+      `}</style>
+    </>
+  );
+};
+
 // --- Thumbnail Item Component (Draggable with Remove) ---
 const ThumbnailItem = ({ id, src, index, active, onClick, onDragStart, onDrop, onDragOver, onDragEnd, onRemove }) => {
   return (
@@ -1582,11 +2151,11 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
     e.preventDefault();
     const sourceIdx = draggedStackIdxRef.current;
     if (sourceIdx === null || sourceIdx === dropIndex) return;
-    
+
     setStacks(prevStacks => {
       const newStacks = [...prevStacks];
       const sourceStack = newStacks[sourceIdx];
-      const targetStack = newStacks[dropIndex];
+    const targetStack = newStacks[dropIndex];
 
       // Check if merging would exceed limit
       const mergedCount = sourceStack.files.length + targetStack.files.length;
@@ -1598,12 +2167,12 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
         return prevStacks;
       }
 
-      // Merge source into target
-      targetStack.files = [...targetStack.files, ...sourceStack.files];
-      
-      // Remove source
+    // Merge source into target
+    targetStack.files = [...targetStack.files, ...sourceStack.files];
+    
+    // Remove source
       newStacks.splice(sourceIdx, 1);
-      
+    
       return newStacks;
     });
     draggedStackIdxRef.current = null;
@@ -1614,11 +2183,11 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
   const toggleSelect = useCallback((id) => {
       setSelectedStackIds(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(id)) {
+      if (newSet.has(id)) {
           newSet.delete(id);
-        } else {
+      } else {
           newSet.add(id);
-        }
+      }
         return newSet;
       });
   }, []); // Empty deps - uses functional setState
@@ -3412,7 +3981,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] text-white/70 bg-white/10 px-2 py-0.5 rounded-full">
                     Sales {toneSettings.salesIntensity}/5
-                  </span>
+                </span>
                   <span className="text-[10px] text-white/70 bg-white/10 px-2 py-0.5 rounded-full">
                     Nerd {toneSettings.nerdFactor}/5
                   </span>
@@ -3474,7 +4043,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                   <span className="text-[10px] text-white/40 w-14 text-right">Just facts</span>
                   <input
                     type="range" min="1" max="5"
-                    value={toneSettings.salesIntensity}
+                value={toneSettings.salesIntensity}
                     onChange={(e) => setToneSettings(prev => ({ ...prev, salesIntensity: parseInt(e.target.value) }))}
                     className="flex-1 h-2 bg-white/20 rounded-full appearance-none cursor-pointer
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
@@ -3496,7 +4065,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                   <span className="text-[10px] text-white/40 w-14 text-right">General</span>
                   <input
                     type="range" min="1" max="5"
-                    value={toneSettings.nerdFactor}
+                value={toneSettings.nerdFactor}
                     onChange={(e) => setToneSettings(prev => ({ ...prev, nerdFactor: parseInt(e.target.value) }))}
                     className="flex-1 h-2 bg-white/20 rounded-full appearance-none cursor-pointer
                       [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 
@@ -3722,12 +4291,12 @@ Return ONLY valid JSON, no markdown or extra text.`;
       
       {/* Copy All Button */}
       <div className="pt-2 border-t border-stone-200">
-        <button 
+      <button 
           onClick={() => handleCopy(`${currentTitle}\n\nPrice: $${currentListingPrice || 'TBD'}\n\n${currentDesc}\n\n${currentTags}\n\nSKU: ${itemSku}`)}
           className="w-full py-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white text-sm font-bold rounded-lg shadow-md shadow-rose-200/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-        >
+      >
           <Copy className="w-4 h-4" /> Copy All Listing
-        </button>
+      </button>
       </div>
     </div>
   );
@@ -4055,8 +4624,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         }
       }
       
-      setFormData((prev) => ({
-        ...prev,
+    setFormData((prev) => ({
+      ...prev,
         images: [...prev.images, ...newImageUrls],
       }));
     } catch (err) {
@@ -4143,13 +4712,13 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           >
             <X size={32} />
           </button>
-          <img
-            src={formData.images[activeImageIdx]}
+              <img
+                src={formData.images[activeImageIdx]}
             className="max-w-full max-h-full object-contain pointer-events-none select-none"
             alt="Full view"
-          />
-        </div>
-      )}
+              />
+              </div>
+            )}
       
       {/* Full-page layout container */}
       <div 
@@ -4165,23 +4734,23 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               {/* Single row: Back + Tabs + Actions (all on same line) */}
               <div className="flex items-end justify-between gap-3">
                 {/* Back button */}
-                <button
-                  onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
+          <button
+            onClick={() => hasUnsavedChanges ? setShowSavePrompt(true) : onClose()}
                   className="flex items-center gap-1 text-stone-600 hover:text-stone-900 font-medium text-sm transition-colors flex-shrink-0 mb-1"
-                >
+          >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="hidden sm:inline">Back</span>
-                </button>
-                
+          </button>
+          
                 {/* Folder Tab Bar - Active tab connects to content below */}
                 <div className="flex-1 flex justify-center items-end relative max-w-md mx-auto">
                   {/* Tab container - transparent background, no border/background */}
                   <div className="relative flex items-end gap-0 bg-transparent">
                     {/* Analysis Tab */}
-                    <button
-                      onClick={() => setActiveTab("details")}
+              <button
+                onClick={() => setActiveTab("details")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
-                        activeTab === "details" 
+                  activeTab === "details" 
                           ? "z-20 bg-white text-rose-600" 
                           : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
                       }`}
@@ -4197,13 +4766,13 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     >
                       <Search className="w-4 h-4" />
                       <span>Analysis</span>
-                    </button>
+              </button>
                     
                     {/* Listing Tab */}
-                    <button
-                      onClick={() => setActiveTab("listing")}
+              <button
+                onClick={() => setActiveTab("listing")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
-                        activeTab === "listing" 
+                  activeTab === "listing" 
                           ? "z-20 bg-white text-violet-600" 
                           : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
                       }`}
@@ -4219,10 +4788,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     >
                       <Tag className="w-4 h-4" />
                       <span>Listing</span>
-                    </button>
-                  </div>
-                </div>
-                
+              </button>
+            </div>
+          </div>
+          
                 {/* Pill action buttons */}
                 <div className="flex items-center gap-2 flex-shrink-0 mb-1">
                   <button
@@ -4263,13 +4832,13 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </button>
         )}
         {hasNext && (
-          <button
+                      <button
             onClick={() => handleItemTransition('next')}
             className="fixed right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/60 hover:bg-white/90 rounded-full shadow-lg border border-stone-200/50 text-stone-400 hover:text-stone-700 transition-all opacity-60 hover:opacity-100"
             title="Next item"
           >
             <ChevronRight className="w-5 h-5" />
-          </button>
+                      </button>
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
@@ -4287,7 +4856,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     className="w-full h-full object-cover lg:object-contain cursor-pointer"
                     onClick={() => setIsLightboxOpen(true)}
                   />
-                </div>
+                      </div>
               ) : (
                 <button 
                   onClick={() => addPhotoInputRef.current?.click()}
@@ -4315,13 +4884,13 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     </button>
                   ))}
                   {/* Add Photo as thumbnail */}
-                  <button
-                    onClick={() => addPhotoInputRef.current?.click()}
+              <button
+                onClick={() => addPhotoInputRef.current?.click()}
                     className="flex-shrink-0 w-12 h-12 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
                     title="Add more photos"
-                  >
+              >
                     <Plus size={18} />
-                  </button>
+              </button>
                 </div>
               )}
               <input
@@ -4368,7 +4937,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   <HelpCircle size={11} />
                   TBD
                 </button>
-              </div>
+            </div>
               
               {/* Item Details - Inside the card */}
               <div className="p-2.5 space-y-1.5 border-t border-stone-100">
@@ -4384,62 +4953,61 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 {/* 2-column grid for fields - more compact */}
                 <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Category</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Category</label>
+                    <TruncatedMetadataField
+                      label="Category"
                       value={formData.category || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      onChange={(val) => setFormData((p) => ({ ...p, category: val }))}
                       placeholder="Category"
+                      fieldKey="category"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Era</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Era</label>
+                    <TruncatedMetadataField
+                      label="Era"
                       value={formData.era || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, era: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      onChange={(val) => setFormData((p) => ({ ...p, era: val }))}
                       placeholder="Era"
+                      fieldKey="era"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Condition</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Condition</label>
+                    <TruncatedMetadataField
+                      label="Condition"
                       value={formData.condition || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      onChange={(val) => setFormData((p) => ({ ...p, condition: val }))}
                       placeholder="Condition"
+                      fieldKey="condition"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Materials</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Materials</label>
+                    <TruncatedMetadataField
+                      label="Materials"
                       value={formData.materials || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, materials: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      onChange={(val) => setFormData((p) => ({ ...p, materials: val }))}
                       placeholder="Materials"
+                      fieldKey="materials"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Style</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Style</label>
+                    <TruncatedMetadataField
+                      label="Style"
                       value={formData.style || ""}
-                      onChange={(e) => setFormData((p) => ({ ...p, style: e.target.value }))}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
+                      onChange={(val) => setFormData((p) => ({ ...p, style: val }))}
                       placeholder="Style"
+                      fieldKey="style"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-semibold text-stone-400 uppercase">Maker, Markings</label>
-                    <input
-                      type="text"
+                    <label className="block text-[8px] font-semibold text-stone-400 uppercase mb-0.5">Maker, Markings</label>
+                    <TruncatedMetadataField
+                      label="Maker, Markings"
                       value={formData.maker ? (formData.markings ? `${formData.maker}, ${formData.markings}` : formData.maker) : (formData.markings || "")}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         // Split on first comma if present
                         const commaIdx = val.indexOf(',');
                         if (commaIdx > -1) {
@@ -4452,15 +5020,15 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                           setFormData((p) => ({ ...p, maker: val, markings: "" }));
                         }
                       }}
-                      className="w-full p-1 text-[10px] bg-stone-50 border-0 rounded focus:outline-none focus:ring-1 focus:ring-rose-500 focus:bg-white"
                       placeholder="Maker, hallmarks..."
+                      fieldKey="maker_markings"
                     />
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
+
             {/* RIGHT COLUMN: Tab Content - Connected seamlessly to active tab */}
             <div className="flex-1 min-w-0">
               {/* White background wrapper that connects seamlessly to active tab - tab overlaps by 1px for seamless connection */}
@@ -4489,110 +5057,110 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                             <div className="text-2xl font-bold text-emerald-700">
                               ${formData.valuation_low || 0} – ${formData.valuation_high || 0}
                             </div>
-                            {formData.confidence && (
-                              <div 
+                  {formData.confidence && (
+                    <div 
                                 className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                  formData.confidence === 'high' 
-                                    ? 'bg-emerald-200 text-emerald-800' 
-                                    : formData.confidence === 'medium' 
-                                      ? 'bg-amber-200 text-amber-800' 
-                                      : 'bg-red-200 text-red-800'
-                                }`}
-                              >
-                                <Gauge className="w-3 h-3" />
+                        formData.confidence === 'high' 
+                          ? 'bg-emerald-200 text-emerald-800' 
+                          : formData.confidence === 'medium' 
+                            ? 'bg-amber-200 text-amber-800' 
+                            : 'bg-red-200 text-red-800'
+                      }`}
+                    >
+                      <Gauge className="w-3 h-3" />
                                 {formData.confidence} confidence
-                              </div>
-                            )}
-                          </div>
+                    </div>
+                  )}
+                </div>
                           {/* Editable value */}
                           <div className="flex items-center gap-1 text-xs">
                             <span className="text-stone-400">Edit:</span>
-                            <input
-                              type="number"
-                              value={formData.valuation_low || ""}
+                  <input
+                    type="number"
+                    value={formData.valuation_low || ""}
                               onChange={(e) => setFormData((p) => ({ ...p, valuation_low: e.target.value ? Number(e.target.value) : null }))}
                               className="w-16 p-1 text-xs bg-white/80 border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               placeholder="Low"
-                            />
+                  />
                             <span className="text-stone-300">–</span>
-                            <input
-                              type="number"
-                              value={formData.valuation_high || ""}
+                  <input
+                    type="number"
+                    value={formData.valuation_high || ""}
                               onChange={(e) => setFormData((p) => ({ ...p, valuation_high: e.target.value ? Number(e.target.value) : null }))}
                               className="w-16 p-1 text-xs bg-white/80 border border-stone-200 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               placeholder="High"
-                            />
-                          </div>
-                        </div>
-                        {formData.confidence_reason && (
+                  />
+                </div>
+              </div>
+              {formData.confidence_reason && (
                           <p className="text-[10px] text-emerald-600/80 italic mt-1">
-                            {formData.confidence_reason}
-                          </p>
-                        )}
+                  {formData.confidence_reason}
+                </p>
+              )}
                       </div>
                       {formData.reasoning && (
                         <div className="px-3 py-2 border-t border-emerald-100">
                           <p className="text-xs text-stone-600 leading-relaxed">
                             <span className="font-semibold text-stone-700">Why this price:</span> {formData.reasoning}
                           </p>
-                        </div>
-                      )}
+            </div>
+          )}
                     </div>
                   )}
               
                   {/* Details Card */}
                   <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-3 space-y-3">
                     {/* Improve Analysis - collapsible questions */}
-                    {formData.questions && formData.questions.length > 0 && (
+              {formData.questions && formData.questions.length > 0 && (
                       <div className="bg-rose-50 border border-rose-100 rounded-xl overflow-hidden">
-                        <div 
+                  <div 
                           className="bg-rose-100/50 px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-rose-100 transition-colors"
-                          onClick={() => setShowQuestions(!showQuestions)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <HelpCircle className="w-4 h-4 text-rose-600" />
+                    onClick={() => setShowQuestions(!showQuestions)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-rose-600" />
                             <span className="text-sm font-bold text-rose-900">Improve Analysis</span>
-                            <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold text-rose-600 bg-white/50 px-2 py-0.5 rounded-full">
                               {formData.questions.length}
-                            </span>
+                    </span>
                           </div>
-                          <ChevronRight className={`w-4 h-4 text-rose-400 transition-transform ${showQuestions ? 'rotate-90' : ''}`} />
-                        </div>
-                        
-                        {showQuestions && (
+                      <ChevronRight className={`w-4 h-4 text-rose-400 transition-transform ${showQuestions ? 'rotate-90' : ''}`} />
+                  </div>
+                  
+                  {showQuestions && (
                           <div className="p-3 space-y-2">
-                            {formData.questions.map((q, idx) => (
+                      {formData.questions.map((q, idx) => (
                               <div key={idx}>
                                 <label className="block text-xs font-semibold text-rose-800 mb-1">{q}</label>
-                                <input
-                                  type="text"
-                                  inputMode="text"
-                                  enterKeyHint="next"
-                                  placeholder="Your answer..."
-                                  value={formData.clarifications?.[q] || ""}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      clarifications: {
-                                        ...prev.clarifications,
-                                        [q]: e.target.value,
-                                      },
-                                    }))
-                                  }
+                            <input
+                              type="text"
+                              inputMode="text"
+                              enterKeyHint="next"
+                              placeholder="Your answer..."
+                              value={formData.clarifications?.[q] || ""}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  clarifications: {
+                                    ...prev.clarifications,
+                                    [q]: e.target.value,
+                                  },
+                                }))
+                              }
                                   className="w-full p-2 text-sm bg-white border border-rose-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                                />
-                              </div>
-                            ))}
-                            <button
-                              onClick={handleAnalyze}
+                            />
+                        </div>
+                      ))}
+                      <button
+                        onClick={handleAnalyze}
                               className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
-                            >
+                      >
                               <RefreshCw className="w-3 h-3" /> Re-Appraise
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
                     {/* Description - expanded */}
                     <div>
@@ -4611,46 +5179,46 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     </div>
 
                     {/* Market Comps */}
-                    {marketLinks.length > 0 && (
+            {marketLinks.length > 0 && (
                       <div>
                         <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> Market Comps
-                        </h4>
+                    <ExternalLink className="w-3 h-3" /> Market Comps
+                  </h4>
                         <div className="grid grid-cols-4 md:grid-cols-5 gap-1">
-                          {marketLinks.map((link, i) => (
-                            <a
-                              key={i}
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              referrerPolicy="no-referrer"
+                  {marketLinks.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      referrerPolicy="no-referrer"
                               className={`flex items-center justify-center px-1.5 py-1.5 rounded border transition-all hover:shadow-sm text-[10px] font-medium ${link.color}`}
-                            >
+                    >
                               {link.name}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
                     {/* Notes / Context */}
-                    <div>
+              <div>
                       <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                         <MessageCircle className="w-3 h-3" /> Notes / Context
-                      </label>
-                      <textarea
-                        value={formData.provenance?.user_story || formData.userNotes || ""}
-                        onChange={(e) => setFormData(prev => ({
+                </label>
+                <textarea
+                       value={formData.provenance?.user_story || formData.userNotes || ""}
+                       onChange={(e) => setFormData(prev => ({
                           ...prev,
                           userNotes: e.target.value,
                           provenance: { ...prev.provenance, user_story: e.target.value }
-                        }))}
+                       }))}
                         rows={2}
                         placeholder="Add provenance, history, or notes... These details + any edits above are included when you Re-analyze with AI"
                         className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-xs leading-relaxed placeholder:text-stone-400 resize-y"
-                      />
-                    </div>
-                  </div>
+                />
+              </div>
+            </div>
 
               {/* --- Ask About This Item (AI Chat) --- */}
               <div className="bg-white rounded-lg border border-stone-200 shadow-sm overflow-hidden">
@@ -4739,8 +5307,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   </div>
                 )}
               </div>
-                </div>
-                )}
+            </div>
+          )}
               </div>
             </div>
           </div>
@@ -4749,36 +5317,36 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {/* FOOTER with Delete and Save - Enhanced shadow/glow */}
         <div className="sticky bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t border-stone-200/30 px-4 py-3 z-10" style={{ boxShadow: "0 -4px 16px rgba(0,0,0,0.12)" }}>
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            {/* Trash Button */}
-            <button
-              onClick={() => {
-                if (confirm("Delete this item permanently? This cannot be undone.")) {
-                  onDelete(item.id);
-                  onClose();
-                }
-              }}
+          {/* Trash Button */}
+          <button
+            onClick={() => {
+              if (confirm("Delete this item permanently? This cannot be undone.")) {
+                onDelete(item.id);
+                onClose();
+              }
+            }}
               className="flex items-center gap-1.5 px-3 py-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-sm font-medium"
-              title="Delete item"
-            >
+            title="Delete item"
+          >
               <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">Delete</span>
-            </button>
-            
-            {/* Save Button */}
-            <button
-              onClick={handleSaveAndClose}
-              disabled={!hasUnsavedChanges}
+          </button>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveAndClose}
+            disabled={!hasUnsavedChanges}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg ${
-                hasUnsavedChanges
+              hasUnsavedChanges
                   ? "bg-gradient-to-r from-stone-900 to-stone-800 hover:from-black hover:to-stone-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
                   : "bg-stone-200 text-stone-400 cursor-not-allowed shadow-sm"
-              }`}
-            >
-              <Check className="w-4 h-4" />
+            }`}
+          >
+            <Check className="w-4 h-4" />
               <span>Save</span>
-            </button>
-          </div>
+          </button>
         </div>
+      </div>
       </div>
       
       {/* Share Item Modal */}
@@ -7684,11 +8252,11 @@ export default function App() {
           for (const file of imagesToAnalyze) {
             try {
               const b64 = await imageToBase64FullRes(file); // Full resolution for AI
-              if (b64 && typeof b64 === 'string' && b64.startsWith('data:')) {
+            if (b64 && typeof b64 === 'string' && b64.startsWith('data:')) {
                 analysisBase64.push(b64);
-              }
-            } catch (err) {
-              console.error("Failed to convert file to base64:", err);
+            }
+          } catch (err) {
+            console.error("Failed to convert file to base64:", err);
             }
           }
         }
@@ -7932,40 +8500,40 @@ export default function App() {
       
       const blob = await response.blob();
       
-      return new Promise((resolve) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              const maxSize = 300;
-              let width = img.width;
-              let height = img.height;
-              if (width > maxSize || height > maxSize) {
-                if (width > height) {
-                  height = (height / width) * maxSize;
-                  width = maxSize;
-                } else {
-                  width = (width / height) * maxSize;
-                  height = maxSize;
-                }
-              }
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, width, height);
-              resolve({
-                dataUrl: canvas.toDataURL('image/jpeg', 0.8),
-                width: img.width,
-                height: img.height
-              });
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxSize = 300;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve({
+            dataUrl: canvas.toDataURL('image/jpeg', 0.8),
+            width: img.width,
+            height: img.height
+          });
             } catch (e) {
               console.warn('Canvas draw failed:', e);
               resolve(null);
             }
-          };
-          img.onerror = () => resolve(null);
+      };
+      img.onerror = () => resolve(null);
           img.src = reader.result;
         };
         reader.onerror = () => resolve(null);
@@ -8012,8 +8580,8 @@ export default function App() {
         };
         // Add timeout to prevent hanging
         setTimeout(() => resolve(null), 5000);
-        img.src = url;
-      });
+      img.src = url;
+    });
     }
   };
 
@@ -9023,25 +9591,25 @@ export default function App() {
                   <div className="hidden md:block w-px h-4 bg-stone-200" />
                 
                 {/* Sort */}
-                <div className="relative group/sort">
-                  <button 
-                    onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                    disabled={dataLoading}
-                    className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
-                  >
-                    <ArrowUpDown className="w-3.5 h-3.5" />
+              <div className="relative group/sort">
+                <button 
+                  onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                  disabled={dataLoading}
+                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-all"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
                     {/* Hide text on mobile, show on desktop */}
                     <span className="hidden md:inline">
-                      {{
-                        "date-desc": "Newest",
-                        "date-asc": "Oldest",
-                        "value-desc": "High $",
-                        "value-asc": "Low $",
-                        "alpha-asc": "A-Z",
-                        "category-asc": "Category"
-                      }[sortBy]}
-                    </span>
-                  </button>
+                    {{
+                      "date-desc": "Newest",
+                      "date-asc": "Oldest",
+                      "value-desc": "High $",
+                      "value-asc": "Low $",
+                      "alpha-asc": "A-Z",
+                      "category-asc": "Category"
+                    }[sortBy]}
+                  </span>
+                </button>
                 
                 {/* Sort Menu Dropdown */}
                 {isSortMenuOpen && (
@@ -9070,8 +9638,8 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                </div>
               </div>
+            </div>
             </div>
             )}
           </div>
