@@ -4175,15 +4175,15 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 
                 {/* Folder Tab Bar - Active tab connects to content below */}
                 <div className="flex-1 flex justify-center items-end relative max-w-md mx-auto">
-                  {/* Tab container - transparent background */}
-                  <div className="relative flex items-end gap-0">
+                  {/* Tab container - transparent background, no border/background */}
+                  <div className="relative flex items-end gap-0 bg-transparent">
                     {/* Analysis Tab */}
                     <button
                       onClick={() => setActiveTab("details")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                         activeTab === "details" 
-                          ? "z-20 bg-white text-rose-600 rounded-t-xl" 
-                          : "z-10 text-stone-500 bg-[#F5F3F0] rounded-t-xl translate-y-0.5 hover:translate-y-0"
+                          ? "z-20 bg-white text-rose-600" 
+                          : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
                       }`}
                       style={activeTab === "details" ? {
                         borderRadius: "12px 12px 0 0",
@@ -4204,8 +4204,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       onClick={() => setActiveTab("listing")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                         activeTab === "listing" 
-                          ? "z-20 bg-white text-violet-600 rounded-t-xl" 
-                          : "z-10 text-stone-500 bg-[#F5F3F0] rounded-t-xl translate-y-0.5 hover:translate-y-0"
+                          ? "z-20 bg-white text-violet-600" 
+                          : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
                       }`}
                       style={activeTab === "listing" ? {
                         borderRadius: "12px 12px 0 0",
@@ -4464,7 +4464,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             {/* RIGHT COLUMN: Tab Content - Connected seamlessly to active tab */}
             <div className="flex-1 min-w-0">
               {/* White background wrapper that connects seamlessly to active tab - tab overlaps by 1px for seamless connection */}
-              <div className="bg-white rounded-b-2xl" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+              <div className="bg-white rounded-b-2xl border-x border-b border-stone-200 -mt-px" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
                 {activeTab === "listing" ? (
                   <div className="p-4">
                     <ListingGenerator formData={formData} setFormData={setFormData} />
@@ -4739,7 +4739,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   </div>
                 )}
               </div>
-                  </div>
+                </div>
                 )}
               </div>
             </div>
