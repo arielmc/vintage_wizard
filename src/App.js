@@ -4571,7 +4571,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         <div className="sticky top-0 z-10">
           {/* Transparent background - no container color */}
           <div className="bg-transparent pb-0">
-            <div className="max-w-7xl mx-auto px-4 pt-3">
+            <div className="max-w-7xl mx-auto px-4 pt-2">
               {/* Single row: Back + Tabs + Actions (all on same line) */}
               <div className="flex items-end justify-between gap-3">
                 {/* Back button */}
@@ -4652,11 +4652,11 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
         </div>
         
-        {/* Navigation Chevrons - Fixed on edges, higher z-index to stay above content */}
+        {/* Navigation Chevrons - Fixed outside content area */}
         {hasPrev && (
           <button
             onClick={() => handleItemTransition('prev')}
-            className="fixed left-2 md:left-4 lg:left-[calc(50%-560px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
+            className="fixed left-2 md:left-4 lg:left-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
             title="Previous item"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -4665,7 +4665,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {hasNext && (
           <button
             onClick={() => handleItemTransition('next')}
-            className="fixed right-2 md:right-4 lg:right-[calc(50%-560px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
+            className="fixed right-2 md:right-4 lg:right-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
             title="Next item"
           >
             <ChevronRight className="w-5 h-5" />
@@ -4673,7 +4673,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
-        <div className="max-w-7xl mx-auto px-4 pt-2 pb-4 md:pt-4 md:pb-6">
+        <div className="max-w-7xl mx-auto px-4 pt-0 pb-4 md:pb-6">
           {/* Unified panel - white for Analysis, blue tint for Listing */}
           <div 
             className={`rounded-2xl border border-stone-200/30 transition-colors duration-300 ${
