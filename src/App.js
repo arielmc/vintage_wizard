@@ -4707,13 +4707,18 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
         <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
-          <div className="flex flex-col lg:flex-row gap-6">
+          {/* Unified white panel that both columns sit on - connects to tabs */}
+          <div 
+            className="bg-white rounded-2xl lg:rounded-tl-none shadow-lg border border-stone-200/50"
+            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
+          >
+          <div className="flex flex-col lg:flex-row">
             {/* LEFT COLUMN: Photos + Details */}
-            <div className="lg:w-[360px] lg:shrink-0 relative z-20">
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-visible">
+            <div className="lg:w-[360px] lg:shrink-0 relative z-20 lg:border-r lg:border-stone-100">
+            <div className="overflow-visible p-4">
               {/* Hero Image - cropped on mobile, square on desktop */}
               {formData.images.length > 0 ? (
-                <div className="aspect-[4/3] lg:aspect-square bg-stone-100">
+                <div className="aspect-[4/3] lg:aspect-square bg-stone-100 rounded-xl overflow-hidden">
                   <img
                     src={formData.images[activeImageIdx]}
                     alt={formData.title || "Item"}
@@ -4892,10 +4897,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
             </div>
           </div>
 
-            {/* RIGHT COLUMN: Tab Content - Connected seamlessly to active tab */}
+            {/* RIGHT COLUMN: Tab Content - Already inside unified white panel */}
             <div className="flex-1 min-w-0 relative z-10">
-              {/* White background wrapper that connects seamlessly to active tab - tab overlaps by 1px for seamless connection */}
-              <div className="bg-white rounded-b-2xl border-x border-b border-stone-200 -mt-px" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+              {/* Content area - no additional background needed */}
+              <div className="p-4 lg:p-6">
                 {activeTab === "listing" ? (
                   <div className="p-4">
                     <ListingGenerator formData={formData} setFormData={setFormData} />
@@ -5172,8 +5177,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               </div>
             </div>
           )}
-              </div>
             </div>
+          </div>
+          </div>
           </div>
         </div>
           
