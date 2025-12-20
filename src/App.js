@@ -577,8 +577,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
       3. DETAILS: Notable features, materials, craftsmanship, or unique characteristics
       4. TRANSLATIONS: If there is text in another language (Hebrew, French, Japanese, etc.), provide a translation or explain what it says
       5. SALES APPEAL: Why a collector or buyer would want this item
-      6. DAD JOKE (REQUIRED): End with a clever, punny dad joke related to THIS SPECIFIC item. The joke should reference something unique about the item - the maker name, a visual detail, the era, the category, or a quirky feature. Format as: "🤓 [your dad joke]" at the very end.
-      Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points (except in the dad joke if needed for effect).
+      Write in a confident, knowledgeable tone - like an expert sharing insights. Avoid exclamation points. Do NOT include dad jokes in this field.
     - sales_description: A separate sales description for listings. TUNER DEFAULTS:
       * Minimal emojis (avoid emojis except optionally the final dad joke marker "🤓")
       * Include fun fact ON (a short "Tidbit:" line if relevant)
@@ -3674,9 +3673,23 @@ Return ONLY valid JSON, no markdown or extra text.`;
           </div>
         </div>
         <textarea 
+          ref={(el) => {
+            if (el && window.innerWidth >= 768) {
+              el.style.height = 'auto';
+              el.style.height = Math.max(el.scrollHeight, 150) + 'px';
+            }
+          }}
           value={currentDesc}
-          onChange={(e) => handleDescChange(e.target.value)}
-          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-600 h-28 md:h-32 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y leading-relaxed"
+          onChange={(e) => {
+            handleDescChange(e.target.value);
+            // Auto-expand on desktop/tablet
+            if (window.innerWidth >= 768) {
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            }
+          }}
+          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white leading-relaxed"
+          style={{ minHeight: '150px', resize: 'none', overflow: 'hidden' }}
           placeholder="Enter listing description..."
         />
       </div>
@@ -3887,9 +3900,8 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
         </div>
         <style>{`
           .metadata-value {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            overflow: visible;
             max-width: 100%;
             cursor: pointer;
             padding: 4px 8px;
@@ -3900,42 +3912,26 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
             font-size: 10px;
             line-height: 1.4;
             min-height: 24px;
-            display: flex;
-            align-items: center;
-          }
-          @media (min-width: 769px) {
-            .metadata-value {
-              white-space: normal;
-              overflow: visible;
-              text-overflow: unset;
-              word-wrap: break-word;
-              word-break: break-word;
-            }
-            .metadata-value.has-overflow::after {
-              display: none;
-            }
+            display: block;
+            word-wrap: break-word;
+            word-break: break-word;
           }
           .metadata-value:hover {
             background: #F5F3F0;
             border-color: #E5E0D9;
           }
-          .metadata-value.has-overflow {
-            position: relative;
+          @media (max-width: 768px) {
+            .metadata-value {
+              min-height: 32px;
+              padding: 6px 10px;
+            }
           }
-          .metadata-value.has-overflow::after {
-            content: '';
-            position: absolute;
-            right: 1px;
-            top: 1px;
-            bottom: 1px;
-            width: 32px;
-            background: linear-gradient(to right, transparent, #FAFAF8);
-            border-radius: 0 5px 5px 0;
-            pointer-events: none;
-            transition: background 0.2s;
-          }
-          .metadata-value.has-overflow:hover::after {
-            background: linear-gradient(to right, transparent, #F5F3F0);
+          @media (max-width: 480px) {
+            .metadata-value {
+              min-height: 40px;
+              padding: 8px 12px;
+              font-size: 11px;
+            }
           }
         `}</style>
       </>
@@ -4093,9 +4089,8 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
       </div>
       <style>{`
         .metadata-value {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: normal;
+          overflow: visible;
           max-width: 100%;
           cursor: pointer;
           padding: 4px 8px;
@@ -4106,42 +4101,13 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
           font-size: 10px;
           line-height: 1.4;
           min-height: 24px;
-          display: flex;
-          align-items: center;
-        }
-        @media (min-width: 769px) {
-          .metadata-value {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-            word-wrap: break-word;
-            word-break: break-word;
-          }
-          .metadata-value.has-overflow::after {
-            display: none;
-          }
+          display: block;
+          word-wrap: break-word;
+          word-break: break-word;
         }
         .metadata-value:hover {
           background: #F5F3F0;
           border-color: #E5E0D9;
-        }
-        .metadata-value.has-overflow {
-          position: relative;
-        }
-        .metadata-value.has-overflow::after {
-          content: '';
-          position: absolute;
-          right: 1px;
-          top: 1px;
-          bottom: 1px;
-          width: 32px;
-          background: linear-gradient(to right, transparent, #FAFAF8);
-          border-radius: 0 5px 5px 0;
-          pointer-events: none;
-          transition: background 0.2s;
-        }
-        .metadata-value.has-overflow:hover::after {
-          background: linear-gradient(to right, transparent, #F5F3F0);
         }
         @media (max-width: 768px) {
           .metadata-value {
@@ -4633,7 +4599,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onClick={() => setActiveTab("listing")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                   activeTab === "listing" 
-                          ? "z-20 bg-white text-violet-600 border-t border-l border-r border-stone-200/30" 
+                          ? "z-20 bg-[#f1f6ff] text-violet-600 border-t border-l border-r border-stone-200/30" 
                           : "z-10 text-stone-500 bg-stone-200/60 hover:bg-stone-200/80"
                       }`}
                       style={{
@@ -4676,34 +4642,36 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           </div>
         </div>
         
-        {/* Navigation Chevrons - Fixed on edges */}
+        {/* Navigation Chevrons - Fixed on edges, higher z-index to stay above content */}
         {hasPrev && (
           <button
             onClick={() => handleItemTransition('prev')}
-            className="fixed left-4 lg:left-[calc(50%-620px)] top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/80 hover:bg-white rounded-full shadow-md border border-stone-200/50 text-stone-500 hover:text-stone-800 transition-all hover:scale-105"
+            className="fixed left-2 md:left-4 lg:left-[calc(50%-560px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
             title="Previous item"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
         )}
         {hasNext && (
-                      <button
+          <button
             onClick={() => handleItemTransition('next')}
-            className="fixed right-4 lg:right-[calc(50%-620px)] top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/80 hover:bg-white rounded-full shadow-md border border-stone-200/50 text-stone-500 hover:text-stone-800 transition-all hover:scale-105"
+            className="fixed right-2 md:right-4 lg:right-[calc(50%-560px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
             title="Next item"
           >
             <ChevronRight className="w-5 h-5" />
-                      </button>
+          </button>
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
         <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
-          {/* Unified white panel that both columns sit on - no shadow to connect with tabs */}
+          {/* Unified panel - white for Analysis, blue tint for Listing */}
           <div 
-            className="bg-white rounded-2xl lg:rounded-tl-none border border-stone-200/30"
+            className={`rounded-2xl lg:rounded-tl-none border border-stone-200/30 transition-colors duration-300 ${
+              activeTab === "listing" ? "bg-[#f1f6ff]" : "bg-white"
+            }`}
           >
-          <div className="flex flex-col lg:flex-row">
-            {/* LEFT COLUMN: Photos + Details */}
+          <div className={`flex lg:flex-row ${activeTab === "listing" ? "flex-col-reverse" : "flex-col"}`}>
+            {/* LEFT COLUMN: Photos + Details - On mobile listing view, this comes AFTER the tuner */}
             <div className="lg:w-[380px] lg:shrink-0 relative z-20 lg:border-r lg:border-stone-100">
             <div className="overflow-visible p-5 lg:p-6">
               {/* Hero Image - cropped on mobile, square on desktop */}
