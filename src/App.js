@@ -4706,7 +4706,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
-        <div className="max-w-6xl mx-auto px-4 pt-4 pb-4 md:pb-6">
+        <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
           {/* Unified white panel that both columns sit on */}
           <div 
             className="bg-white rounded-2xl shadow-lg border border-stone-200/50"
@@ -5030,19 +5030,30 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 </div>
               )}
 
-                    {/* Description - expanded */}
+                    {/* Description - auto-expand on desktop */}
                     <div>
                       <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5">
                         Description
                       </label>
                       <textarea
-                        rows={5}
+                        ref={(el) => {
+                          if (el && window.innerWidth >= 1024) {
+                            el.style.height = 'auto';
+                            el.style.height = Math.max(el.scrollHeight, 100) + 'px';
+                          }
+                        }}
                         value={formData.details_description || formData.sales_blurb || ""}
-                        onChange={(e) =>
-                          setFormData((p) => ({ ...p, details_description: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          setFormData((p) => ({ ...p, details_description: e.target.value }));
+                          // Auto-expand on desktop
+                          if (window.innerWidth >= 1024) {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                          }
+                        }}
                         placeholder="AI will generate a detailed description..."
-                        className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-xs resize-y leading-relaxed"
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm resize-none lg:resize-none leading-relaxed"
+                        style={{ minHeight: '100px' }}
                       />
                     </div>
 
@@ -5069,21 +5080,34 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               </div>
             )}
 
-                    {/* Notes / Context */}
+                    {/* Notes / Context - auto-expand on desktop */}
               <div>
                       <label className="block text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                         <MessageCircle className="w-3 h-3" /> Notes / Context
                 </label>
                 <textarea
+                       ref={(el) => {
+                         if (el && window.innerWidth >= 1024) {
+                           el.style.height = 'auto';
+                           el.style.height = Math.max(el.scrollHeight, 60) + 'px';
+                         }
+                       }}
                        value={formData.provenance?.user_story || formData.userNotes || ""}
-                       onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          userNotes: e.target.value,
-                          provenance: { ...prev.provenance, user_story: e.target.value }
-                       }))}
-                        rows={2}
+                       onChange={(e) => {
+                          setFormData(prev => ({
+                             ...prev,
+                             userNotes: e.target.value,
+                             provenance: { ...prev.provenance, user_story: e.target.value }
+                          }));
+                          // Auto-expand on desktop
+                          if (window.innerWidth >= 1024) {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                          }
+                       }}
                         placeholder="Add provenance, history, or notes... These details + any edits above are included when you Re-analyze with AI"
-                        className="w-full p-2 bg-stone-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-xs leading-relaxed placeholder:text-stone-400 resize-y"
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-sm leading-relaxed placeholder:text-stone-400 resize-none lg:resize-none"
+                        style={{ minHeight: '60px' }}
                 />
               </div>
             </div>
