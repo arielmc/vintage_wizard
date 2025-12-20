@@ -9071,36 +9071,13 @@ export default function App() {
                <Sparkles className="w-4 h-4 text-rose-400" fill="currentColor" />
             </div>
             <h1 className="text-sm md:text-base font-serif font-bold text-stone-900 tracking-tight">
-              <span className="md:hidden">Vintage Wizard</span>
+              <span className="md:hidden">{user.displayName?.split(' ')[0] || "My"}'s Vintage Wizard</span>
               <span className="hidden md:inline">{user.displayName?.split(' ')[0] || "My"}'s Collection</span>
             </h1>
           </div>
           
-          {/* Spacer to push buttons right on mobile */}
+          {/* Spacer on mobile - clean header with just logo and title */}
           <div className="flex-1 md:hidden" />
-          
-          {/* Mobile Top Right Buttons */}
-          <div className="md:hidden flex items-center gap-2">
-            {/* Share Button - triggers dropdown */}
-            <button
-              onClick={() => setMobileExportOpen(!mobileExportOpen)}
-              className={`p-2 rounded-lg transition-all ${
-                mobileExportOpen 
-                  ? "bg-rose-100 text-rose-700" 
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              <Share2 className="w-5 h-5" />
-            </button>
-            
-            {/* Add Button - Smaller circular */}
-            <button
-              onClick={() => setIsAddMenuOpen(true)}
-              className="w-9 h-9 bg-stone-900 rounded-full flex items-center justify-center shadow-md hover:bg-stone-800 transition-colors active:scale-95"
-            >
-              <Plus className="w-5 h-5 text-white" />
-            </button>
-          </div>
           
           {/* Search Bar - Desktop only (mobile uses bottom nav) */}
           <div className="hidden md:flex flex-1 max-w-xs relative">
