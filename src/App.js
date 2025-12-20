@@ -3922,15 +3922,20 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
           }
           @media (max-width: 768px) {
             .metadata-value {
-              min-height: 32px;
-              padding: 6px 10px;
+              min-height: 40px;
+              max-height: 120px;
+              overflow-y: auto;
+              padding: 10px 12px;
+              font-size: 12px;
+              line-height: 1.5;
             }
           }
           @media (max-width: 480px) {
             .metadata-value {
-              min-height: 40px;
-              padding: 8px 12px;
-              font-size: 11px;
+              min-height: 48px;
+              max-height: 150px;
+              padding: 12px 14px;
+              font-size: 13px;
             }
           }
         `}</style>
@@ -4111,15 +4116,20 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
         }
         @media (max-width: 768px) {
           .metadata-value {
-            min-height: 32px;
-            padding: 6px 10px;
+            min-height: 40px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.5;
           }
         }
         @media (max-width: 480px) {
           .metadata-value {
-            min-height: 40px;
-            padding: 8px 12px;
-            font-size: 11px;
+            min-height: 48px;
+            max-height: 150px;
+            padding: 12px 14px;
+            font-size: 13px;
           }
         }
         @media (hover: none) and (pointer: coarse) {
