@@ -5615,6 +5615,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
                 item={item}
                 onExpand={() => setExpandedItemIndex(idx)}
                 isForSaleMode={isForSaleMode}
+                ownerName={ownerName}
               />
             ))}
           </div>
@@ -5627,6 +5628,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           item={filteredItems[expandedItemIndex]}
           isExpandedView={true}
           isForSaleMode={isForSaleMode}
+          ownerName={ownerName}
           onClose={() => setExpandedItemIndex(null)}
           onNext={() => setExpandedItemIndex(prev => Math.min(prev + 1, filteredItems.length - 1))}
           onPrev={() => setExpandedItemIndex(prev => Math.max(prev - 1, 0))}
@@ -5741,7 +5743,7 @@ const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) =>
           >
             <div className="p-4 border-b border-stone-100">
               <div className="flex items-center justify-between">
-                <h2 className="font-bold text-stone-900">Contact Seller</h2>
+                <h2 className="font-bold text-stone-900">Contact {ownerName || "Seller"}</h2>
                 <button onClick={() => setContactModalItem(null)} className="p-2 text-stone-400 hover:bg-stone-100 rounded-full">
                   <X className="w-5 h-5" />
                 </button>
@@ -5853,7 +5855,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
       >
         {/* Header */}
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="font-bold text-stone-900">Contact Seller</h3>
+          <h3 className="font-bold text-stone-900">Contact {ownerName || "Seller"}</h3>
           <button onClick={onClose} className="p-1 text-stone-400 hover:text-stone-600">
             <X size={20} />
           </button>
@@ -5921,7 +5923,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
 
 // Simplified card for shared view (read-only)
 // Shared Item Card with expanded view, image gallery, and item navigation
-const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose, onNext, onPrev, hasNext, hasPrev, onContactSeller }) => {
+const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, ownerName, onClose, onNext, onPrev, hasNext, hasPrev, onContactSeller }) => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState(null); // 'next' | 'prev'
@@ -6439,7 +6441,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, onClose
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg shadow-rose-200 active:scale-95"
             >
               <MessageCircle className="w-4 h-4" />
-              Contact Seller
+              Contact {ownerName || "Seller"}
             </button>
             <span className="text-xl font-bold text-emerald-700">
               ${item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6) || 'Contact'}
