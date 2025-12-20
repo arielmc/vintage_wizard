@@ -4587,7 +4587,8 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
       {/* Full-page layout container */}
       <div 
         ref={modalContentRef}
-        className="min-h-screen bg-[#FDFBF7]"
+        className="min-h-screen"
+        style={{ background: "linear-gradient(135deg, #dcd8bf 0%, #d4dde6 100%)" }}
       >
         
         {/* STICKY HEADER - Folder Tab Design */}
@@ -4615,17 +4616,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onClick={() => setActiveTab("details")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                   activeTab === "details" 
-                          ? "z-20 bg-white text-rose-600" 
-                          : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
+                          ? "z-20 bg-white text-rose-600 border-t border-l border-r border-stone-200/30" 
+                          : "z-10 text-stone-500 bg-stone-200/60 hover:bg-stone-200/80"
                       }`}
-                      style={activeTab === "details" ? {
+                      style={{
                         borderRadius: "12px 12px 0 0",
-                        boxShadow: "0 -2px 8px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.08), 2px 0 8px rgba(0,0,0,0.08)",
-                        borderBottom: "none",
-                        marginBottom: "-1px"
-                      } : {
-                        borderRadius: "12px 12px 0 0",
-                        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06), 0 -1px 2px rgba(0,0,0,0.04)"
+                        marginBottom: activeTab === "details" ? "-1px" : "0"
                       }}
                     >
                       <Search className="w-4 h-4" />
@@ -4637,17 +4633,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                 onClick={() => setActiveTab("listing")}
                       className={`flex items-center gap-2 py-3 px-6 transition-all duration-300 font-bold text-sm relative ${
                   activeTab === "listing" 
-                          ? "z-20 bg-white text-violet-600" 
-                          : "z-10 text-stone-500 bg-[#F5F3F0] translate-y-0.5 hover:translate-y-0"
+                          ? "z-20 bg-white text-violet-600 border-t border-l border-r border-stone-200/30" 
+                          : "z-10 text-stone-500 bg-stone-200/60 hover:bg-stone-200/80"
                       }`}
-                      style={activeTab === "listing" ? {
+                      style={{
                         borderRadius: "12px 12px 0 0",
-                        boxShadow: "0 -2px 8px rgba(0,0,0,0.08), -2px 0 8px rgba(0,0,0,0.08), 2px 0 8px rgba(0,0,0,0.08)",
-                        borderBottom: "none",
-                        marginBottom: "-1px"
-                      } : {
-                        borderRadius: "12px 12px 0 0",
-                        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06), 0 -1px 2px rgba(0,0,0,0.04)"
+                        marginBottom: activeTab === "listing" ? "-1px" : "0"
                       }}
                     >
                       <Tag className="w-4 h-4" />
@@ -4689,7 +4680,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {hasPrev && (
           <button
             onClick={() => handleItemTransition('prev')}
-            className="fixed left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/60 hover:bg-white/90 rounded-full shadow-lg border border-stone-200/50 text-stone-400 hover:text-stone-700 transition-all opacity-60 hover:opacity-100"
+            className="fixed left-4 lg:left-[calc(50%-620px)] top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/80 hover:bg-white rounded-full shadow-md border border-stone-200/50 text-stone-500 hover:text-stone-800 transition-all hover:scale-105"
             title="Previous item"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -4698,7 +4689,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {hasNext && (
                       <button
             onClick={() => handleItemTransition('next')}
-            className="fixed right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/60 hover:bg-white/90 rounded-full shadow-lg border border-stone-200/50 text-stone-400 hover:text-stone-700 transition-all opacity-60 hover:opacity-100"
+            className="fixed right-4 lg:right-[calc(50%-620px)] top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/80 hover:bg-white rounded-full shadow-md border border-stone-200/50 text-stone-500 hover:text-stone-800 transition-all hover:scale-105"
             title="Next item"
           >
             <ChevronRight className="w-5 h-5" />
@@ -4707,10 +4698,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
         <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
-          {/* Unified white panel that both columns sit on */}
+          {/* Unified white panel that both columns sit on - no shadow to connect with tabs */}
           <div 
-            className="bg-white rounded-2xl shadow-lg border border-stone-200/50"
-            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
+            className="bg-white rounded-2xl lg:rounded-tl-none border border-stone-200/30"
           >
           <div className="flex flex-col lg:flex-row">
             {/* LEFT COLUMN: Photos + Details */}
@@ -4722,7 +4712,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   <img
                     src={formData.images[activeImageIdx]}
                     alt={formData.title || "Item"}
-                    className="w-full h-full object-cover lg:object-contain cursor-pointer"
+                    className="w-full h-full object-contain cursor-pointer bg-stone-50"
                     onClick={() => setIsLightboxOpen(true)}
                   />
                       </div>
@@ -5037,23 +5027,23 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       </label>
                       <textarea
                         ref={(el) => {
-                          if (el && window.innerWidth >= 1024) {
+                          if (el && window.innerWidth >= 768) {
                             el.style.height = 'auto';
-                            el.style.height = Math.max(el.scrollHeight, 100) + 'px';
+                            el.style.height = Math.max(el.scrollHeight, 150) + 'px';
                           }
                         }}
                         value={formData.details_description || formData.sales_blurb || ""}
                         onChange={(e) => {
                           setFormData((p) => ({ ...p, details_description: e.target.value }));
-                          // Auto-expand on desktop
-                          if (window.innerWidth >= 1024) {
+                          // Auto-expand on desktop/tablet
+                          if (window.innerWidth >= 768) {
                             e.target.style.height = 'auto';
                             e.target.style.height = e.target.scrollHeight + 'px';
                           }
                         }}
                         placeholder="AI will generate a detailed description..."
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm resize-none lg:resize-none leading-relaxed"
-                        style={{ minHeight: '100px' }}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm leading-relaxed"
+                        style={{ minHeight: '150px', resize: 'none', overflow: 'hidden' }}
                       />
                     </div>
 
