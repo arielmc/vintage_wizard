@@ -4561,7 +4561,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         <div className="sticky top-0 z-10">
           {/* Transparent background - no container color */}
           <div className="bg-transparent pb-0">
-            <div className="max-w-6xl mx-auto px-4 pt-3">
+            <div className="max-w-7xl mx-auto px-4 pt-3">
               {/* Single row: Back + Tabs + Actions (all on same line) */}
               <div className="flex items-end justify-between gap-3">
                 {/* Back button */}
@@ -4584,12 +4584,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   activeTab === "details" 
                           ? "z-20 bg-white text-rose-600 border-t border-l border-r border-stone-200/30" 
                           : "z-10 text-stone-500 bg-stone-200/60 hover:bg-stone-200/80"
-                      }`}
+                }`}
                       style={{
                         borderRadius: "12px 12px 0 0",
                         marginBottom: activeTab === "details" ? "-1px" : "0"
                       }}
-                    >
+              >
                       <Search className="w-4 h-4" />
                       <span>Analysis</span>
               </button>
@@ -4601,12 +4601,12 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   activeTab === "listing" 
                           ? "z-20 bg-[#f1f6ff] text-violet-600 border-t border-l border-r border-stone-200/30" 
                           : "z-10 text-stone-500 bg-stone-200/60 hover:bg-stone-200/80"
-                      }`}
+                }`}
                       style={{
                         borderRadius: "12px 12px 0 0",
                         marginBottom: activeTab === "listing" ? "-1px" : "0"
                       }}
-                    >
+              >
                       <Tag className="w-4 h-4" />
                       <span>Listing</span>
               </button>
@@ -4663,10 +4663,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         )}
         
         {/* === MAIN CONTENT - Side by side on desktop, stacked on mobile === */}
-        <div className="max-w-6xl mx-auto px-4 pt-0 pb-4 md:pb-6">
+        <div className="max-w-7xl mx-auto px-4 pt-2 pb-4 md:pt-4 md:pb-6">
           {/* Unified panel - white for Analysis, blue tint for Listing */}
           <div 
-            className={`rounded-2xl lg:rounded-tl-none border border-stone-200/30 transition-colors duration-300 ${
+            className={`rounded-2xl border border-stone-200/30 transition-colors duration-300 ${
               activeTab === "listing" ? "bg-[#f1f6ff]" : "bg-white"
             }`}
           >
@@ -4683,15 +4683,15 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                     className="w-full h-full object-contain cursor-pointer bg-stone-50"
                     onClick={() => setIsLightboxOpen(true)}
                   />
-                      </div>
+                        </div>
               ) : (
-                <button 
+                      <button
                   onClick={() => addPhotoInputRef.current?.click()}
                   className="aspect-[4/3] lg:aspect-square bg-stone-100 flex flex-col items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-500 transition-colors cursor-pointer w-full"
                 >
                   <Camera size={40} />
                   <span className="text-sm font-medium mt-2">Add Photos</span>
-                </button>
+                      </button>
               )}
               
               {/* Thumbnail Strip + Add Button */}
@@ -5053,9 +5053,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                        value={formData.provenance?.user_story || formData.userNotes || ""}
                        onChange={(e) => {
                           setFormData(prev => ({
-                             ...prev,
+                          ...prev,
                              userNotes: e.target.value,
-                             provenance: { ...prev.provenance, user_story: e.target.value }
+                          provenance: { ...prev.provenance, user_story: e.target.value }
                           }));
                           // Auto-expand on desktop
                           if (window.innerWidth >= 1024) {
@@ -5166,7 +5166,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         </div>
           
         {/* FOOTER with Delete and Save - Floating on mobile, integrated on desktop */}
-        <div className="footer-bar sticky lg:relative bottom-0 left-0 right-0 bg-white/98 lg:bg-white backdrop-blur-md lg:backdrop-blur-none border-t border-stone-200/30 lg:border-stone-200 px-4 py-3 lg:py-4 z-10 lg:mt-6 lg:max-w-6xl lg:mx-auto lg:rounded-xl lg:border lg:shadow-sm">
+        <div className="footer-bar sticky lg:relative bottom-0 left-0 right-0 bg-white/98 lg:bg-white backdrop-blur-md lg:backdrop-blur-none border-t border-stone-200/30 lg:border-stone-200 px-4 py-3 lg:py-4 z-10 lg:mt-6 lg:max-w-7xl lg:mx-auto lg:rounded-xl lg:border lg:shadow-sm">
           <style>{`
             .footer-bar {
               box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
@@ -5177,7 +5177,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               }
             }
           `}</style>
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Trash Button */}
           <button
             onClick={() => {
