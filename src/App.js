@@ -2235,7 +2235,7 @@ const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
         <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-col gap-3">
           <button 
             onClick={() => onConfirm(mode, "analyze_now")}
-            className="w-full bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+            className="btn-primary w-full bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-stone-200 flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4 text-rose-300" /> Upload & Analyze
           </button>
@@ -2425,8 +2425,8 @@ const ItemCard = ({ item, onClick, isSelected, isSelectionMode, onToggleSelect, 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
-      className={`group bg-white rounded-xl shadow-sm transition-all duration-200 border overflow-hidden cursor-pointer flex flex-col h-full relative select-none ${
-        isSelected ? "border-[3px] border-rose-500" : "border-stone-100 hover:shadow-md border"
+      className={`card-hover group bg-white rounded-xl shadow-sm border overflow-hidden cursor-pointer flex flex-col h-full relative select-none ${
+        isSelected ? "border-[3px] border-rose-500" : "border-stone-100 border"
       }`}
     >
       {/* Selection Overlay */}
@@ -3568,7 +3568,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              className="w-full py-4 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 hover:from-rose-400 hover:via-fuchsia-400 hover:to-violet-400 text-white text-sm font-bold rounded-xl shadow-xl shadow-fuchsia-500/30 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed group"
+              className="btn-ai w-full py-4 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500 hover:from-rose-400 hover:via-fuchsia-400 hover:to-violet-400 text-white text-sm font-bold rounded-xl shadow-xl shadow-fuchsia-500/30 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed group"
             >
               {isRegenerating ? (
                 <>
@@ -3640,7 +3640,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentTitle)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+            <button onClick={() => handleCopy(currentTitle)} className="btn-copy text-rose-600 text-[10px] font-bold flex items-center gap-0.5">
               <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
@@ -3667,7 +3667,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentDesc)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+            <button onClick={() => handleCopy(currentDesc)} className="btn-copy text-rose-600 text-[10px] font-bold flex items-center gap-0.5">
               <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
@@ -3706,7 +3706,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 <RefreshCw className="w-2.5 h-2.5" /> Reset
               </button>
             )}
-            <button onClick={() => handleCopy(currentTags)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+            <button onClick={() => handleCopy(currentTags)} className="btn-copy text-rose-600 text-[10px] font-bold flex items-center gap-0.5">
               <Copy className="w-2.5 h-2.5" /> Copy
             </button>
           </div>
@@ -3728,7 +3728,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
             {itemSku}
           </span>
         </div>
-        <button onClick={() => handleCopy(itemSku)} className="text-rose-600 text-[10px] font-bold hover:underline flex items-center gap-0.5">
+        <button onClick={() => handleCopy(itemSku)} className="btn-copy text-rose-600 text-[10px] font-bold flex items-center gap-0.5">
           <Copy className="w-2.5 h-2.5" /> Copy
         </button>
       </div>
@@ -3737,7 +3737,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
       <div className="pt-2 border-t border-stone-200">
       <button 
           onClick={() => handleCopy(`${currentTitle}\n\nPrice: $${currentListingPrice || 'TBD'}\n\n${currentDesc}\n\n${currentTags}\n\nSKU: ${itemSku}`)}
-          className="w-full py-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white text-sm font-bold rounded-lg shadow-md shadow-rose-200/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+          className="btn-rose w-full py-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white text-sm font-bold rounded-lg shadow-md shadow-rose-200/50 flex items-center justify-center gap-2"
       >
           <Copy className="w-4 h-4" /> Copy All Listing
       </button>
@@ -3757,7 +3757,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
                 target="_blank"
                 rel="noopener noreferrer"
                 referrerPolicy="no-referrer"
-                className={`flex items-center justify-center px-1.5 py-1.5 rounded border transition-all hover:shadow-sm text-[10px] font-medium ${link.color}`}
+                className={`btn-comp flex items-center justify-center px-1.5 py-1.5 rounded border text-[10px] font-medium ${link.color}`}
               >
                 {link.name}
               </a>
@@ -4554,7 +4554,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               </button>
               <button 
                 onClick={() => { setShowSavePrompt(false); handleSaveAndClose(); }}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 rounded-xl transition-colors"
+                className="btn-primary flex-1 px-4 py-2.5 text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 rounded-xl"
               >
                 Save
               </button>
@@ -4651,7 +4651,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                   <button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || formData.images.length === 0}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-violet-50 to-violet-100/50 hover:from-violet-100 hover:to-violet-200 rounded-full text-xs font-semibold text-violet-700 hover:text-violet-800 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed border border-violet-200/50"
+                    className="btn-ai flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-violet-50 to-violet-100/50 hover:from-violet-100 hover:to-violet-200 rounded-full text-xs font-semibold text-violet-700 hover:text-violet-800 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed border border-violet-200/50"
                     title={formData.title ? "Re-analyze with AI" : "Analyze with AI"}
                   >
                     {isAnalyzing ? (
@@ -4679,7 +4679,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {hasPrev && (
           <button
             onClick={() => handleItemTransition('prev')}
-            className="fixed left-2 md:left-4 lg:left-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
+            className="btn-nav fixed left-2 md:left-4 lg:left-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900"
             title="Previous item"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -4688,7 +4688,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
         {hasNext && (
           <button
             onClick={() => handleItemTransition('next')}
-            className="fixed right-2 md:right-4 lg:right-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900 transition-all hover:scale-110"
+            className="btn-nav fixed right-2 md:right-4 lg:right-[calc(50%-700px)] top-1/2 -translate-y-1/2 z-50 p-3 bg-white hover:bg-stone-50 rounded-full shadow-lg border border-stone-200 text-stone-600 hover:text-stone-900"
             title="Next item"
           >
             <ChevronRight className="w-5 h-5" />
@@ -5062,7 +5062,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       target="_blank"
                       rel="noopener noreferrer"
                       referrerPolicy="no-referrer"
-                              className={`flex items-center justify-center px-1.5 py-1.5 rounded border transition-all hover:shadow-sm text-[10px] font-medium ${link.color}`}
+                              className={`btn-comp flex items-center justify-center px-1.5 py-1.5 rounded border text-[10px] font-medium ${link.color}`}
                     >
                               {link.name}
                     </a>
@@ -5230,9 +5230,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           <button
             onClick={handleSaveAndClose}
             disabled={!hasUnsavedChanges}
-              className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg ${
+              className={`btn-primary flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg ${
               hasUnsavedChanges
-                  ? "bg-gradient-to-r from-stone-900 to-stone-800 hover:from-black hover:to-stone-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+                  ? "bg-gradient-to-r from-stone-900 to-stone-800 hover:from-black hover:to-stone-900 text-white shadow-[0_4px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.2)]"
                   : "bg-stone-200 text-stone-400 cursor-not-allowed shadow-sm"
             }`}
           >
@@ -6005,7 +6005,7 @@ const SharedItemCard = ({ item, onExpand, isExpandedView, isForSaleMode, ownerNa
     return (
       <div
         onClick={() => onExpand?.(item)}
-        className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-stone-100 overflow-hidden cursor-pointer"
+        className="card-hover group bg-white rounded-xl shadow-sm border border-stone-100 overflow-hidden cursor-pointer"
       >
         <div className="relative aspect-square bg-stone-100">
           {images[0] ? (
@@ -9062,6 +9062,150 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] font-sans text-stone-900 pb-32 md:pb-8">
+      {/* Premium Global Button Hover Styles */}
+      <style>{`
+        /* Primary dark buttons - elegant lift with glow */
+        .btn-primary {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px -5px rgba(28, 25, 23, 0.35), 0 0 0 1px rgba(28, 25, 23, 0.05);
+        }
+        .btn-primary:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px -2px rgba(28, 25, 23, 0.3);
+        }
+
+        /* Rose/Pink gradient buttons - warm glow */
+        .btn-rose {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-rose:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 10px 30px -5px rgba(225, 29, 72, 0.4), 0 4px 15px -3px rgba(225, 29, 72, 0.3);
+        }
+        .btn-rose:active {
+          transform: translateY(0) scale(0.98);
+        }
+
+        /* Violet/Purple buttons - magical glow */
+        .btn-violet {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-violet:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 25px -5px rgba(139, 92, 246, 0.45), 0 0 20px -5px rgba(167, 139, 250, 0.3);
+        }
+
+        /* Ghost/outline buttons - subtle lift */
+        .btn-ghost {
+          position: relative;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-ghost:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Icon buttons - soft pulse */
+        .btn-icon {
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-icon:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.15);
+        }
+        .btn-icon:active {
+          transform: scale(0.95);
+        }
+
+        /* Tab buttons - smooth underline glow */
+        .btn-tab {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-tab:hover:not(.active) {
+          background: rgba(0, 0, 0, 0.06);
+          box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* Market comp links - color pop */
+        .btn-comp {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-comp:hover {
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 20px -3px currentColor;
+          filter: brightness(1.1);
+        }
+
+        /* Copy buttons - satisfying press */
+        .btn-copy {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-copy:hover {
+          color: #e11d48;
+          transform: scale(1.05);
+        }
+        .btn-copy:active {
+          transform: scale(0.9);
+        }
+
+        /* Navigation chevrons - smooth glide */
+        .btn-nav {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-nav:hover {
+          transform: translateY(-50%) scale(1.15);
+          box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Status pill buttons */
+        .btn-status {
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-status:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Regenerate/AI buttons - shimmer effect */
+        .btn-ai {
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-ai::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          transition: left 0.5s ease;
+        }
+        .btn-ai:hover::before {
+          left: 100%;
+        }
+        .btn-ai:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px -5px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Card hover for grid items */
+        .card-hover {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03);
+        }
+      `}</style>
       {/* --- Header --- */}
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-100 sticky top-0 z-30 overflow-visible">
         {/* Row 1: Logo + Search + Actions */}
@@ -9107,7 +9251,7 @@ export default function App() {
                <button
                  onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
                  disabled={isUploading}
-                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 bg-stone-900 text-white hover:bg-stone-800 hover:shadow-md hover:scale-[1.02] shadow-sm active:scale-95 disabled:opacity-50"
+                 className="btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 shadow-sm disabled:opacity-50"
                >
                  <Plus className="w-4 h-4" />
                  <span>Add</span>
