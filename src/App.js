@@ -3044,7 +3044,7 @@ const LoginScreen = () => {
 };
 
 // --- LISTING GENERATOR COMPONENT WITH TONE TUNER ---
-const ListingGenerator = ({ formData, setFormData }) => {
+const ListingGenerator = ({ formData, setFormData, marketLinks = [] }) => {
   // Listing Tuner state - initialize from formData or defaults
   const [toneSettings, setToneSettings] = useState({
     salesIntensity: formData.tone_sales ?? 4,
@@ -3742,6 +3742,29 @@ Return ONLY valid JSON, no markdown or extra text.`;
           <Copy className="w-4 h-4" /> Copy All Listing
       </button>
       </div>
+
+      {/* Market Comps */}
+      {marketLinks.length > 0 && (
+        <div className="pt-3">
+          <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <ExternalLink className="w-3 h-3" /> Market Comps
+          </h4>
+          <div className="grid grid-cols-4 md:grid-cols-5 gap-1">
+            {marketLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                referrerPolicy="no-referrer"
+                className={`flex items-center justify-center px-1.5 py-1.5 rounded border transition-all hover:shadow-sm text-[10px] font-medium ${link.color}`}
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -4871,7 +4894,7 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
               <div className="p-5 lg:p-6">
                 {activeTab === "listing" ? (
                   <div>
-                    <ListingGenerator formData={formData} setFormData={setFormData} />
+                    <ListingGenerator formData={formData} setFormData={setFormData} marketLinks={marketLinks} />
                   </div>
                 ) : (
                   <div className="space-y-3">
