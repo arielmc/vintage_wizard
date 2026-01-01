@@ -2149,7 +2149,7 @@ const SkeletonCard = ({ showMessage = false, messageIndex = 0 }) => {
   );
 };
 
-// Global Loading Overlay Component with fun rotating messages
+// Global Loading Overlay Component - Enhanced for high visibility
 const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
   const [msgIndex, setMsgIndex] = useState(0);
   const funMessages = [
@@ -2171,18 +2171,53 @@ const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200">
-      <div className="relative mb-6">
-        {/* Spinning ring */}
-        <div className="w-20 h-20 border-4 border-stone-200 border-t-rose-500 rounded-full animate-spin" />
-        {/* Center icon */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Sparkles className="w-8 h-8 text-rose-400 animate-pulse" />
-        </div>
+    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-rose-900/95 via-pink-900/95 to-orange-900/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+      {/* Animated background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
-      <p className="text-lg font-bold text-stone-800">{message}</p>
-      <p className="text-sm text-stone-500 mt-2 transition-all duration-300">{funMessages[msgIndex]}</p>
-      {subMessage && <p className="text-xs text-stone-400 mt-1">{subMessage}</p>}
+      
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center max-w-md mx-auto px-6 text-center">
+        {/* Animated icon container */}
+        <div className="relative mb-8">
+          {/* Outer spinning ring */}
+          <div className="w-32 h-32 border-4 border-white/20 border-t-rose-400 rounded-full animate-spin" />
+          {/* Inner spinning ring (reverse) */}
+          <div className="absolute inset-3 border-4 border-white/10 border-b-orange-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+          {/* Center icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Sparkles className="w-12 h-12 text-white animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Title */}
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+          {message}
+        </h2>
+        
+        {/* Rotating fun messages */}
+        <p className="text-lg text-white/80 transition-all duration-500 min-h-[28px]">
+          {funMessages[msgIndex]}
+        </p>
+        
+        {subMessage && (
+          <p className="text-sm text-white/60 mt-2">{subMessage}</p>
+        )}
+        
+        {/* Progress hint */}
+        <div className="mt-8 flex items-center gap-2 text-white/60 text-sm">
+          <Loader className="w-4 h-4 animate-spin" />
+          <span>This usually takes 5-10 seconds</span>
+        </div>
+        
+        {/* Don't close warning */}
+        <p className="mt-4 text-xs text-white/40">
+          Please don't close this window
+        </p>
+      </div>
     </div>
   );
 };
@@ -5251,7 +5286,81 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
           onClose={() => setShowShareItemModal(false)}
         />
       )}
+      
+      {/* AI Analysis Loading Modal - Prominent full-screen overlay */}
+      {isAnalyzing && (
+        <div className="fixed inset-0 z-[200] bg-gradient-to-br from-violet-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          {/* Animated background effects */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-500" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+          
+          {/* Main content */}
+          <div className="relative z-10 flex flex-col items-center max-w-md mx-auto px-6 text-center">
+            {/* Animated icon container */}
+            <div className="relative mb-8">
+              {/* Outer spinning ring */}
+              <div className="w-32 h-32 border-4 border-white/20 border-t-violet-400 rounded-full animate-spin" />
+              {/* Inner spinning ring (reverse) */}
+              <div className="absolute inset-3 border-4 border-white/10 border-b-pink-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-white animate-pulse" />
+              </div>
+            </div>
+            
+            {/* Title */}
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              ✨ AI Wizard at Work
+            </h2>
+            
+            {/* Rotating fun messages */}
+            <AILoadingMessages />
+            
+            {/* Progress hint */}
+            <div className="mt-8 flex items-center gap-2 text-white/60 text-sm">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span>This usually takes 5-10 seconds</span>
+            </div>
+            
+            {/* Don't close warning */}
+            <p className="mt-4 text-xs text-white/40">
+              Please don't close this window
+            </p>
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+// AI Loading Messages Component with rotating fun text
+const AILoadingMessages = () => {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const messages = [
+    "Consulting the AI oracle...",
+    "Analyzing vintage details...",
+    "Decoding maker's marks...",
+    "Estimating market value...",
+    "Finding comparable sales...",
+    "Crunching auction data...",
+    "Identifying patterns...",
+    "Almost there...",
+  ];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIndex(prev => (prev + 1) % messages.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <p className="text-lg text-white/80 transition-all duration-500 min-h-[28px]">
+      {messages[msgIndex]}
+    </p>
   );
 };
 
@@ -7636,6 +7745,7 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [isGlobalAIAnalyzing, setIsGlobalAIAnalyzing] = useState(false); // For quick-analyze loading overlay
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false); // For mobile batch status menu
   const [isProcessing, setIsProcessing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -7745,6 +7855,7 @@ export default function App() {
   }
 
   const handleQuickAnalyze = async (item) => {
+      setIsGlobalAIAnalyzing(true);
       try {
         const analysis = await analyzeImagesWithGemini(
           item.images || [item.image],
@@ -7758,6 +7869,8 @@ export default function App() {
       } catch (err) {
         console.error("Quick analysis failed", err);
         alert("Analysis failed. Please check your Gemini API Key.");
+      } finally {
+        setIsGlobalAIAnalyzing(false);
       }
   };
 
@@ -9814,18 +9927,49 @@ export default function App() {
 
       {/* --- Mobile FAB removed for cleaner mobile UI --- */}
 
-      {/* Processing Spinner Overlay */}
+      {/* Processing Spinner Overlay - Full screen prominent version */}
       {isProcessing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl p-8 flex flex-col items-center max-w-sm mx-auto text-center shadow-2xl animate-in zoom-in-95">
-            <div className="w-16 h-16 mb-4 relative">
-               <div className="absolute inset-0 border-4 border-stone-100 rounded-full"></div>
-               <div className="absolute inset-0 border-4 border-rose-500 rounded-full border-t-transparent animate-spin"></div>
-               <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-rose-500 animate-pulse" />
+        <div className="fixed inset-0 z-[200] bg-gradient-to-br from-violet-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          {/* Animated background effects */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-500" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+          
+          {/* Main content */}
+          <div className="relative z-10 flex flex-col items-center max-w-md mx-auto px-6 text-center">
+            {/* Animated icon container */}
+            <div className="relative mb-8">
+              {/* Outer spinning ring */}
+              <div className="w-32 h-32 border-4 border-white/20 border-t-violet-400 rounded-full animate-spin" />
+              {/* Inner spinning ring (reverse) */}
+              <div className="absolute inset-3 border-4 border-white/10 border-b-pink-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-white animate-pulse" />
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-stone-800 mb-2">Analyzing Item...</h3>
-            <p className="text-stone-500 text-sm">
-               Our AI is identifying your item, estimating its value, and finding resale comps.
+            
+            {/* Title */}
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              ✨ AI Wizard at Work
+            </h2>
+            
+            {/* Description */}
+            <p className="text-lg text-white/80 mb-2">
+              Identifying your item and finding its value
+            </p>
+            
+            {/* Progress hint */}
+            <div className="mt-8 flex items-center gap-2 text-white/60 text-sm">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span>This usually takes 5-10 seconds</span>
+            </div>
+            
+            {/* Don't close warning */}
+            <p className="mt-4 text-xs text-white/40">
+              Please don't close this window
             </p>
           </div>
         </div>
@@ -9908,41 +10052,108 @@ export default function App() {
         />
       )}
       
-      {/* Batch Processing Overlay with Progress */}
+      {/* Batch Processing Overlay with Progress - Full screen prominent */}
       {isBatchProcessing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl p-8 flex flex-col items-center max-w-sm mx-auto text-center shadow-2xl animate-in zoom-in-95">
-            {/* Animated icon */}
-            <div className="w-20 h-20 mb-5 relative">
-              <div className="absolute inset-0 border-4 border-stone-100 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-rose-500 rounded-full border-t-transparent animate-spin"></div>
-              <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-rose-500 animate-pulse" />
+        <div className="fixed inset-0 z-[200] bg-gradient-to-br from-emerald-900/95 via-teal-900/95 to-cyan-900/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          {/* Animated background effects */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl animate-pulse delay-500" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+          
+          {/* Main content */}
+          <div className="relative z-10 flex flex-col items-center max-w-md mx-auto px-6 text-center">
+            {/* Animated icon container */}
+            <div className="relative mb-8">
+              {/* Outer spinning ring */}
+              <div className="w-32 h-32 border-4 border-white/20 border-t-emerald-400 rounded-full animate-spin" />
+              {/* Inner spinning ring (reverse) */}
+              <div className="absolute inset-3 border-4 border-white/10 border-b-teal-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-white animate-pulse" />
+              </div>
             </div>
             
-            {/* Progress */}
-            <div className="w-full mb-4">
-              <div className="flex justify-between text-xs text-stone-500 mb-1">
-                <span>Processing...</span>
-                <span>{batchProgress.current} of {batchProgress.total}</span>
+            {/* Title */}
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              ✨ Batch AI Processing
+            </h2>
+            
+            {/* Progress bar */}
+            <div className="w-full max-w-xs mb-4">
+              <div className="flex justify-between text-sm text-white/70 mb-2">
+                <span>Analyzing items...</span>
+                <span className="font-bold">{batchProgress.current} of {batchProgress.total}</span>
               </div>
-              <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full transition-all duration-500"
                   style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }}
                 />
               </div>
             </div>
             
-            {/* Fun message */}
-            <h3 className="text-lg font-bold text-stone-800 mb-2">
-              AI at Work ✨
-            </h3>
-            <p className="text-stone-500 text-sm min-h-[40px] flex items-center">
+            {/* Rotating fun messages */}
+            <p className="text-lg text-white/80 transition-all duration-500 min-h-[28px]">
               {batchProgress.message || "Analyzing your vintage treasures..."}
             </p>
             
+            {/* Progress hint */}
+            <div className="mt-8 flex items-center gap-2 text-white/60 text-sm">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span>Processing {batchProgress.total} items</span>
+            </div>
+            
             {/* Don't close warning */}
-            <p className="text-[10px] text-stone-400 mt-4">
+            <p className="mt-4 text-xs text-white/40">
+              Please don't close this window
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Global AI Analysis Loading Modal - For quick-analyze from item cards */}
+      {isGlobalAIAnalyzing && (
+        <div className="fixed inset-0 z-[200] bg-gradient-to-br from-violet-900/95 via-purple-900/95 to-indigo-900/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          {/* Animated background effects */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-500" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          </div>
+          
+          {/* Main content */}
+          <div className="relative z-10 flex flex-col items-center max-w-md mx-auto px-6 text-center">
+            {/* Animated icon container */}
+            <div className="relative mb-8">
+              {/* Outer spinning ring */}
+              <div className="w-32 h-32 border-4 border-white/20 border-t-violet-400 rounded-full animate-spin" />
+              {/* Inner spinning ring (reverse) */}
+              <div className="absolute inset-3 border-4 border-white/10 border-b-pink-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+              {/* Center icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles className="w-12 h-12 text-white animate-pulse" />
+              </div>
+            </div>
+            
+            {/* Title */}
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              ✨ AI Wizard at Work
+            </h2>
+            
+            {/* Rotating fun messages */}
+            <AILoadingMessages />
+            
+            {/* Progress hint */}
+            <div className="mt-8 flex items-center gap-2 text-white/60 text-sm">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span>This usually takes 5-10 seconds</span>
+            </div>
+            
+            {/* Don't close warning */}
+            <p className="mt-4 text-xs text-white/40">
               Please don't close this window
             </p>
           </div>
