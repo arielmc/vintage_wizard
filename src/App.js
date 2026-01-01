@@ -2152,8 +2152,8 @@ const SkeletonCard = ({ showMessage = false, messageIndex = 0 }) => {
 
 // Global Loading Overlay Component - Clean modal style
 const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
-  const [msgIndex, setMsgIndex] = useState(0);
-  const funMessages = [
+  const [currentMsg, setCurrentMsg] = useState("");
+  const funMessages = useMemo(() => [
     "Consulting the AI oracle...",
     "Teaching robots about antiques...",
     "Summoning appraisal spirits...",
@@ -2170,15 +2170,19 @@ const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
     "Googling with extra AI sauce...",
     "Asking 1000 vintage dealers at once...",
     "Scanning for hidden signatures...",
-    "Almost there...",
-  ];
+  ], []);
+  
+  const getRandomMessage = useCallback(() => {
+    return funMessages[Math.floor(Math.random() * funMessages.length)];
+  }, [funMessages]);
   
   useEffect(() => {
+    setCurrentMsg(getRandomMessage());
     const interval = setInterval(() => {
-      setMsgIndex(prev => (prev + 1) % funMessages.length);
+      setCurrentMsg(getRandomMessage());
     }, 2200);
     return () => clearInterval(interval);
-  }, []);
+  }, [getRandomMessage]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}>
@@ -2195,7 +2199,7 @@ const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
         
         {/* Rotating fun messages */}
         <p className="text-stone-500 text-sm min-h-[20px] transition-all duration-300">
-          {funMessages[msgIndex]}
+          {currentMsg}
         </p>
         
         {subMessage && (
@@ -5473,10 +5477,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
   );
 };
 
-// AI Loading Messages Component with rotating fun text
+// AI Loading Messages Component with rotating fun text (randomized order)
 const AILoadingMessages = () => {
-  const [msgIndex, setMsgIndex] = useState(0);
-  const messages = [
+  const [currentMsg, setCurrentMsg] = useState("");
+  const messages = useMemo(() => [
     "Consulting the AI oracle...",
     "Analyzing vintage vibes...",
     "Decoding maker's marks...",
@@ -5496,19 +5500,23 @@ const AILoadingMessages = () => {
     "Crunching auction data...",
     "Looking up what the cool kids collect...",
     "Googling with extra AI magic...",
-    "Almost there...",
-  ];
+  ], []);
+  
+  const getRandomMessage = useCallback(() => {
+    return messages[Math.floor(Math.random() * messages.length)];
+  }, [messages]);
   
   useEffect(() => {
+    setCurrentMsg(getRandomMessage());
     const interval = setInterval(() => {
-      setMsgIndex(prev => (prev + 1) % messages.length);
+      setCurrentMsg(getRandomMessage());
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [getRandomMessage]);
   
   return (
     <p className="text-stone-500 text-sm min-h-[20px] transition-all duration-300">
-      {messages[msgIndex]}
+      {currentMsg}
     </p>
   );
 };
