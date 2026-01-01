@@ -3092,6 +3092,7 @@ const ListingGenerator = ({ formData, setFormData, marketLinks = [] }) => {
   });
   const [isTunerOpen, setIsTunerOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [showSearchTerms, setShowSearchTerms] = useState(false); // For editable keywords
 
   // Category presets - Dad jokes ON for all categories! 🤓
   const categoryPresets = {
@@ -3779,12 +3780,92 @@ Return ONLY valid JSON, no markdown or extra text.`;
       </button>
       </div>
 
-      {/* Market Comps */}
+      {/* Market Comps with Editable Search Terms */}
       {marketLinks.length > 0 && (
-        <div className="pt-3">
-          <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-            <ExternalLink className="w-3 h-3" /> Market Comps
-          </h4>
+        <div className="pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" /> Market Comps
+            </h4>
+            <button
+              onClick={() => setShowSearchTerms(!showSearchTerms)}
+              className="text-[10px] text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+            >
+              <Settings className="w-3 h-3" />
+              {showSearchTerms ? 'Hide' : 'Edit'} Keywords
+            </button>
+          </div>
+          
+          {/* Editable Search Terms Panel */}
+          {showSearchTerms && (
+            <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 space-y-2">
+              <p className="text-[10px] text-violet-600 mb-2">
+                Edit search keywords to refine market comp results. Changes apply immediately.
+              </p>
+              
+              {/* Primary Search (eBay Sold) */}
+              <div>
+                <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                  eBay Search <span className="text-stone-400">(detailed)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.search_terms || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, search_terms: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="e.g., Men's star sapphire ring 14k gold vintage"
+                />
+              </div>
+              
+              {/* Broad Search (other sites) */}
+              <div>
+                <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                  Broad Search <span className="text-stone-400">(Ruby Lane, 1stDibs, etc.)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.search_terms_broad || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, search_terms_broad: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="e.g., star sapphire ring"
+                />
+              </div>
+              
+              {/* Auction Search */}
+              <div>
+                <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                  Auction Search <span className="text-stone-400">(LiveAuctioneers, etc.)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.search_terms_auction || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, search_terms_auction: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="e.g., star sapphire cabochon ring"
+                />
+              </div>
+              
+              {/* Discogs Search (only for music) */}
+              {(formData.category || '').toLowerCase().includes('music') || 
+               (formData.category || '').toLowerCase().includes('record') || 
+               (formData.category || '').toLowerCase().includes('vinyl') ? (
+                <div>
+                  <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                    Discogs Search <span className="text-stone-400">(Artist + Album)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.search_terms_discogs || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, search_terms_discogs: e.target.value }))}
+                    className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    placeholder="e.g., Artist Album Name"
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+          
+          {/* Market Comp Links */}
           <div className="grid grid-cols-4 md:grid-cols-5 gap-1">
             {marketLinks.map((link, i) => (
               <a
@@ -4233,6 +4314,9 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
   
   // Share item state
   const [showShareItemModal, setShowShareItemModal] = useState(false);
+  
+  // Search terms visibility state
+  const [showSearchTerms, setShowSearchTerms] = useState(false);
 
   // Handle item navigation with dip-to-black transition
   const handleItemTransition = (direction) => {
@@ -5084,12 +5168,92 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       />
                     </div>
 
-                    {/* Market Comps */}
+                    {/* Market Comps with Editable Search Terms */}
             {marketLinks.length > 0 && (
-                      <div>
-                        <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <ExternalLink className="w-3 h-3" /> Market Comps
-                  </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider flex items-center gap-1">
+                            <ExternalLink className="w-3 h-3" /> Market Comps
+                          </h4>
+                          <button
+                            onClick={() => setShowSearchTerms(!showSearchTerms)}
+                            className="text-[10px] text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+                          >
+                            <Settings className="w-3 h-3" />
+                            {showSearchTerms ? 'Hide' : 'Edit'} Keywords
+                          </button>
+                        </div>
+                        
+                        {/* Editable Search Terms Panel */}
+                        {showSearchTerms && (
+                          <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 space-y-2">
+                            <p className="text-[10px] text-violet-600 mb-2">
+                              Edit search keywords to refine market comp results. Changes apply immediately.
+                            </p>
+                            
+                            {/* Primary Search (eBay Sold) */}
+                            <div>
+                              <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                                eBay Search <span className="text-stone-400">(detailed)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.search_terms || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, search_terms: e.target.value }))}
+                                className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                placeholder="e.g., Men's star sapphire ring 14k gold vintage"
+                              />
+                            </div>
+                            
+                            {/* Broad Search (other sites) */}
+                            <div>
+                              <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                                Broad Search <span className="text-stone-400">(Ruby Lane, 1stDibs, etc.)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.search_terms_broad || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, search_terms_broad: e.target.value }))}
+                                className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                placeholder="e.g., star sapphire ring"
+                              />
+                            </div>
+                            
+                            {/* Auction Search */}
+                            <div>
+                              <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                                Auction Search <span className="text-stone-400">(LiveAuctioneers, etc.)</span>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.search_terms_auction || ''}
+                                onChange={(e) => setFormData(prev => ({ ...prev, search_terms_auction: e.target.value }))}
+                                className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                placeholder="e.g., star sapphire cabochon ring"
+                              />
+                            </div>
+                            
+                            {/* Discogs Search (only for music) */}
+                            {(formData.category || '').toLowerCase().includes('music') || 
+                             (formData.category || '').toLowerCase().includes('record') || 
+                             (formData.category || '').toLowerCase().includes('vinyl') ? (
+                              <div>
+                                <label className="text-[10px] font-medium text-stone-600 flex items-center gap-1 mb-0.5">
+                                  Discogs Search <span className="text-stone-400">(Artist + Album)</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={formData.search_terms_discogs || ''}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, search_terms_discogs: e.target.value }))}
+                                  className="w-full px-2 py-1.5 text-xs border border-violet-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                  placeholder="e.g., Artist Album Name"
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+                        
+                        {/* Market Comp Links */}
                         <div className="grid grid-cols-4 md:grid-cols-5 gap-1">
                   {marketLinks.map((link, i) => (
                     <a
