@@ -4839,30 +4839,58 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
                       </button>
               )}
               
-              {/* Thumbnail Strip + Add Button */}
+              {/* Thumbnail Strip + Add Button - Draggable for reordering */}
               {formData.images.length > 0 && (
                 <div className="flex gap-1.5 p-2 overflow-x-auto border-t border-stone-100">
                   {formData.images.map((img, idx) => (
-                    <button
+                    <div
                       key={img}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={(e) => handleDrop(e, idx)}
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`relative group flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${
                         idx === activeImageIdx 
-                          ? 'border-rose-500 shadow-md' 
-                          : 'border-stone-200 opacity-60 hover:opacity-100'
+                          ? 'border-rose-500 shadow-md scale-105' 
+                          : draggedIdx === idx
+                            ? 'border-violet-400 opacity-50'
+                            : 'border-stone-200 opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
+                      {/* Remove button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newImages = formData.images.filter((_, i) => i !== idx);
+                          setFormData(prev => ({ ...prev, images: newImages }));
+                          if (activeImageIdx >= newImages.length) {
+                            setActiveImageIdx(Math.max(0, newImages.length - 1));
+                          }
+                        }}
+                        className="absolute top-0 right-0 w-5 h-5 bg-black/60 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        title="Remove photo"
+                      >
+                        <X size={12} />
+                      </button>
+                      {/* Drag hint on first image */}
+                      {idx === 0 && formData.images.length > 1 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[8px] text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Drag to reorder
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {/* Add Photo as thumbnail */}
-              <button
-                onClick={() => addPhotoInputRef.current?.click()}
-                    className="flex-shrink-0 w-12 h-12 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
+                  <button
+                    onClick={() => addPhotoInputRef.current?.click()}
+                    className="flex-shrink-0 w-14 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
                     title="Add more photos"
-              >
+                  >
                     <Plus size={18} />
-              </button>
+                  </button>
                 </div>
               )}
               <input
