@@ -1,6 +1,6 @@
 {
   "name": "vintage-wizard",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI-powered vintage item identification and valuation tool",
   "keywords": ["vintage", "antique", "valuation", "ai", "gemini", "resale"],
   "main": "src/index.tsx",

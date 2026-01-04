@@ -37,6 +37,13 @@ Create a `.env` file:
 
 ```
 REACT_APP_GEMINI_API_KEY=your_gemini_api_key
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+REACT_APP_FIREBASE_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
 ### Development
@@ -56,34 +63,93 @@ firebase deploy
 
 ```
 src/
-├── config/          # Firebase and app constants
-├── services/        # API integrations (Gemini, Analytics)
-├── utils/           # Helper functions
-├── components/      # React components by feature
-│   ├── common/      # Shared UI components
-│   ├── upload/      # Photo upload flow
-│   ├── inventory/   # Item management
-│   ├── auth/        # Login/Profile
-│   └── sharing/     # Public sharing features
-└── App.jsx          # Main app and routing
+├── config/
+│   ├── firebase.js         # Firebase initialization & exports
+│   ├── constants.js         # App constants, limits, API config
+│   └── index.js             # Barrel export
+│
+├── services/
+│   ├── gemini.js            # AI analysis & chat functions
+│   └── index.js             # Barrel export
+│
+├── utils/
+│   ├── imageUtils.js        # Image compression, base64, upload
+│   ├── helpers.js           # formatTimeAgo, getDisplayTitle, feedback
+│   ├── marketplaceLinks.js  # Category-aware marketplace URL generator
+│   └── index.js             # Barrel export
+│
+├── components/
+│   ├── common/
+│   │   ├── LoadingOverlay.jsx
+│   │   ├── AILoadingMessages.jsx
+│   │   ├── ProcessingOverlay.jsx
+│   │   ├── StatusBadge.jsx
+│   │   ├── SkeletonCard.jsx
+│   │   ├── QuickActionMenu.jsx
+│   │   ├── TruncatedMetadataField.jsx
+│   │   ├── TipJar.jsx
+│   │   └── index.js
+│   ├── auth/
+│   │   ├── LoginScreen.jsx
+│   │   ├── ProfilePage.jsx
+│   │   └── index.js
+│   ├── inventory/
+│   │   ├── ItemCard.jsx
+│   │   └── index.js
+│   ├── sharing/
+│   │   ├── ShareModal.jsx
+│   │   ├── ShareItemModal.jsx
+│   │   ├── ContactSellerModal.jsx
+│   │   └── index.js
+│   ├── upload/
+│   │   ├── UploadStagingModal.jsx
+│   │   ├── ThumbnailItem.jsx
+│   │   └── index.js
+│   └── index.js             # Master barrel export
+│
+└── App.js                   # Main app with routing & state
+```
+
+## Imports
+
+New code can import cleanly from barrel exports:
+
+```javascript
+// Config & Services
+import { db, auth, logAnalyticsEvent } from './config';
+import { analyzeImagesWithGemini } from './services';
+
+// Utilities
+import { compressImage, formatTimeAgo, getMarketplaceLinks } from './utils';
+
+// Components
+import { 
+  LoadingOverlay, 
+  StatusBadge, 
+  ItemCard, 
+  ShareModal,
+  LoginScreen 
+} from './components';
 ```
 
 ## Version History
 
+- **0.2.0** - Complete modular architecture
+  - 30+ files extracted from monolithic App.js
+  - Full barrel exports for all modules
+  - Auth: LoginScreen, ProfilePage
+  - Common: 8 shared UI components
+  - Inventory: ItemCard
+  - Sharing: ShareModal, ShareItemModal, ContactSellerModal
+  - Upload: UploadStagingModal, ThumbnailItem
+  - App.js remains functional with main routing logic
+
 - **0.1.1** - Expanded modular structure
-  - Added `src/components/inventory/` (ItemCard)
-  - Added `src/components/sharing/` (ShareModal)
-  - Added `src/components/upload/` (UploadStagingModal)
+  - Added inventory, sharing, upload components
   - Added QuickActionMenu to common components
-  - All modules have barrel exports for clean imports
 
 - **0.1.0** - Initial modular refactor
-  - Created `src/config/` for Firebase and app constants
-  - Created `src/services/` for Gemini AI integration
-  - Created `src/utils/` for image utilities, helpers, and marketplace links
-  - Created `src/components/common/` for shared UI (LoadingOverlay, StatusBadge, etc.)
-  - Created `src/components/auth/` for authentication (LoginScreen)
-  - App.js still contains the main app logic (gradual migration in progress)
+  - Created config/, services/, utils/, components/ structure
 
 ## License
 
