@@ -1,8 +1,8 @@
 {
-  "name": "react",
-  "version": "1.0.0",
-  "description": "",
-  "keywords": [],
+  "name": "vintage-wizard",
+  "version": "0.1.0",
+  "description": "AI-powered vintage item identification and valuation tool",
+  "keywords": ["vintage", "antique", "valuation", "ai", "gemini", "resale"],
   "main": "src/index.tsx",
   "dependencies": {
     "@firebase/auth": "1.11.1",
