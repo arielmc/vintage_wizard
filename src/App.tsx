@@ -1,10 +1,16 @@
 // @ts-nocheck
-// Build: 2026-01-01-v2 - Enhanced AI loading overlays
+// Build: 2026-01-01-v3 - Component extraction in progress
 // NOTE: This file is gradually being migrated to TypeScript
 // Type checking is disabled until the refactoring is complete
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Routes, Route, useNavigate, useParams, useLocation, useSearchParams, Navigate } from "react-router-dom";
+
+// Extracted components
+import { ScannerInterface } from './components/scanner';
+
+// NOTE: Most components are still defined inline in this file
+// Gradually migrating to separate files in ./components/
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -110,156 +116,7 @@ import {
   CheckSquare,
 } from "lucide-react";
 
-// --- SCANNER COMPONENT (Native Camera) ---
-const ScannerInterface = ({ onFinishSession, onCancel }: { onFinishSession: (items: File[][]) => void; onCancel: () => void }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [activePhotos, setActivePhotos] = useState<File[]>([]); // Files for CURRENT item
-  const [completedItems, setCompletedItems] = useState<File[][]>([]); // Array of arrays of Files
-  const [flash, setFlash] = useState(false);
-
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera();
-  }, []);
-
-  const startCamera = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" }, 
-        audio: false 
-      });
-      setStream(s);
-      if (videoRef.current) videoRef.current.srcObject = s;
-    } catch (err) {
-      console.error("Camera error:", err);
-      alert("Could not access camera. Please ensure permissions are granted.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  };
-
-  const takePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    // Flash animation
-    setFlash(true);
-    setTimeout(() => setFlash(false), 100);
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw video frame
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Convert to blob/file
-    canvas.toBlob((blob) => {
-      const file = new File([blob], `scan_${Date.now()}.jpg`, { type: "image/jpeg" });
-      setActivePhotos(prev => [...prev, file]);
-    }, 'image/jpeg', 0.8);
-  };
-
-  const handleNextItem = () => {
-    if (activePhotos.length === 0) return;
-    setCompletedItems(prev => [...prev, activePhotos]);
-    setActivePhotos([]); // Clear for next item
-  };
-
-  const handleFinish = () => {
-    // If there are pending photos, add them as the last item
-    let finalItems = [...completedItems];
-    if (activePhotos.length > 0) {
-      finalItems.push(activePhotos);
-    }
-    onFinishSession(finalItems);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Flash Overlay */}
-      <div className={`absolute inset-0 bg-white pointer-events-none transition-opacity duration-100 z-20 ${flash ? 'opacity-100' : 'opacity-0'}`} />
-
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/50 to-transparent text-white">
-        <div className="flex items-center gap-2">
-           <span className="font-bold text-lg">Item #{completedItems.length + 1}</span>
-           <span className="text-xs opacity-70">({activePhotos.length} photos)</span>
-        </div>
-        <button 
-          onClick={handleFinish}
-          className="bg-white text-black px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg"
-        >
-          Finish ({completedItems.length + (activePhotos.length > 0 ? 1 : 0)})
-        </button>
-      </div>
-
-      {/* Camera View */}
-      <div className="flex-1 relative overflow-hidden">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <canvas ref={canvasRef} className="hidden" />
-        
-        {/* Close Button */}
-        <button onClick={onCancel} className="absolute top-20 right-4 text-white/50 hover:text-white z-10">
-           <XCircle size={32} />
-        </button>
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="bg-black pb-8 pt-4 px-4 flex flex-col gap-4">
-        {/* Thumbnail Strip */}
-        <div className="h-16 flex gap-2 overflow-x-auto no-scrollbar">
-           {activePhotos.map((f, i) => (
-              <div key={i} className="h-full aspect-square rounded-lg overflow-hidden border border-white/20">
-                 <img src={URL.createObjectURL(f)} className="w-full h-full object-cover" alt="recent" />
-              </div>
-           ))}
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-between px-4">
-           {/* Spacer */}
-           <div className="w-12" />
-           
-           {/* Shutter */}
-           <button 
-             onClick={takePhoto}
-             className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center active:scale-95 transition-transform"
-           >
-              <div className="w-16 h-16 bg-white rounded-full" />
-           </button>
-
-           {/* Next Item */}
-           <button 
-             onClick={handleNextItem}
-             disabled={activePhotos.length === 0}
-             className={`flex flex-col items-center gap-1 text-white transition-opacity ${activePhotos.length === 0 ? 'opacity-30' : 'opacity-100'}`}
-           >
-              <div className="w-12 h-12 rounded-full bg-stone-800 flex items-center justify-center border border-stone-600">
-                 <ArrowRight size={24} />
-              </div>
-              <span className="text-[10px] font-bold uppercase">Next Item</span>
-           </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Note: ScannerInterface is imported from ./components/scanner
 
 // --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
@@ -732,9 +589,8 @@ const MAX_BASE64_SIZE_BYTES = 900000; // ~900KB to stay safely under Firestore 1
 // Valid image MIME types
 const VALID_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
 
-// --- Image Helper ---
-// Convert image to base64 for AI analysis - FULL RESOLUTION (no compression)
-// Details matter for accurate identification (marks, signatures, hallmarks)
+// --- Image Utilities ---
+// Convert image to base64 for AI analysis - FULL RESOLUTION
 const imageToBase64FullRes = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -745,61 +601,36 @@ const imageToBase64FullRes = (file) => {
 };
 
 // Moderate compression for storing base64 in Firestore subcollection
-// Progressively compresses until under MAX_BASE64_SIZE_BYTES
 const compressImageForBase64Storage = (file) => {
   return new Promise((resolve, reject) => {
-    // Validate file type
     if (!file.type.startsWith('image/') && !VALID_IMAGE_TYPES.includes(file.type)) {
       reject(new Error(`Invalid file type: ${file.type || file.name}`));
       return;
     }
-    
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
       img.src = event.target.result;
       img.onload = () => {
-        // Progressive compression: try larger first, reduce if too big
         const attempts = [
           { maxDim: 1600, quality: 0.85 },
           { maxDim: 1200, quality: 0.75 },
           { maxDim: 1000, quality: 0.65 },
           { maxDim: 800, quality: 0.55 },
         ];
-        
         for (const { maxDim, quality } of attempts) {
           const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-          
-          if (width > height) {
-            if (width > maxDim) {
-              height *= maxDim / width;
-              width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width *= maxDim / height;
-              height = maxDim;
-            }
-          }
-          
+          let width = img.width, height = img.height;
+          if (width > height) { if (width > maxDim) { height *= maxDim / width; width = maxDim; } }
+          else { if (height > maxDim) { width *= maxDim / height; height = maxDim; } }
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-          
+          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
           const base64 = canvas.toDataURL("image/jpeg", quality);
-          
-          // Check if under size limit (base64 string length ≈ byte size)
-          if (base64.length < MAX_BASE64_SIZE_BYTES) {
-            resolve(base64);
-            return;
-          }
+          if (base64.length < MAX_BASE64_SIZE_BYTES) { resolve(base64); return; }
         }
-        
-        // Final fallback: smallest size
+        // Final fallback
         const canvas = document.createElement("canvas");
         let width = img.width, height = img.height;
         const maxDim = 600;
@@ -810,13 +641,13 @@ const compressImageForBase64Storage = (file) => {
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", 0.5));
       };
-      img.onerror = (err) => reject(new Error(`Failed to load image: ${file.name}`));
+      img.onerror = () => reject(new Error(`Failed to load image: ${file.name}`));
     };
-    reader.onerror = (err) => reject(new Error(`Failed to read file: ${file.name}`));
+    reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
   });
 };
 
-// Compress image and return as base64 (for AI analysis) or Blob (for Storage)
+// Compress image - return base64 or Blob
 const compressImage = (file, returnBlob = false) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -826,34 +657,16 @@ const compressImage = (file, returnBlob = false) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1200; // Increased for better quality
-        if (width > height) {
-          if (width > maxDim) {
-            height *= maxDim / width;
-            width = maxDim;
-          }
-        } else {
-          if (height > maxDim) {
-            width *= maxDim / height;
-            height = maxDim;
-          }
-        }
+        let width = img.width, height = img.height;
+        const maxDim = 1200;
+        if (width > height) { if (width > maxDim) { height *= maxDim / width; width = maxDim; } }
+        else { if (height > maxDim) { width *= maxDim / height; height = maxDim; } }
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-        
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
         if (returnBlob) {
-          // Return Blob for Firebase Storage upload
-          canvas.toBlob(
-            (blob) => resolve(blob),
-            "image/jpeg",
-            0.85 // Higher quality for storage
-          );
+          canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.85);
         } else {
-          // Return base64 for AI analysis (slightly lower quality to reduce API payload)
           resolve(canvas.toDataURL("image/jpeg", 0.7));
         }
       };
@@ -2098,29 +1911,25 @@ const StagingArea = ({ files, onConfirm, onCancel, onAddMoreFiles, isProcessingB
 };
 
 // --- Components ---
+
+// Status Badge Component
 const StatusBadge = ({ status }) => {
   const colors = {
-    keep: "bg-blue-100 text-blue-800 border-blue-200", // Now Blue
-    sell: "bg-green-100 text-green-800 border-green-200", // Now Green
-    TBD: "bg-amber-100 text-amber-800 border-amber-200", // Now Yellow/Amber
-    draft: "bg-amber-100 text-amber-800 border-amber-200", // Legacy support
-    unprocessed: "bg-amber-100 text-amber-800 border-amber-200", // Legacy support
+    keep: "bg-blue-100 text-blue-800 border-blue-200",
+    sell: "bg-green-100 text-green-800 border-green-200",
+    TBD: "bg-amber-100 text-amber-800 border-amber-200",
+    draft: "bg-amber-100 text-amber-800 border-amber-200",
+    unprocessed: "bg-amber-100 text-amber-800 border-amber-200",
   };
-  // Normalize status for display
   const displayStatus = (status === "unprocessed" || status === "draft" || status === "maybe") ? "TBD" : status;
-  
   return (
-    <span
-      className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-        colors[displayStatus] || colors.TBD
-      } uppercase tracking-wide`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${colors[displayStatus] || colors.TBD} uppercase tracking-wide`}>
       {displayStatus}
     </span>
   );
 };
 
-// Enhanced Skeleton with shimmer effect and loading indicator
+// Skeleton Card with shimmer effect
 const SkeletonCard = ({ showMessage = false, messageIndex = 0 }) => {
   const loadingHints = [
     "Loading treasures...",
@@ -5509,94 +5318,10 @@ const EditModal = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasN
   );
 };
 
-// AI Loading Messages Component with rotating fun text (randomized order)
-const AILoadingMessages = () => {
-  const [currentMsg, setCurrentMsg] = useState("");
-  const messages = useMemo(() => [
-    "Consulting the AI oracle...",
-    "Analyzing vintage vibes...",
-    "Decoding maker's marks...",
-    "Estimating market value...",
-    "Finding comparable sales...",
-    "Channeling the Antiques Roadshow...",
-    "Asking 1000 dealers at once...",
-    "Checking: heirloom or yard sale?",
-    "Running through the time machine...",
-    "Dusting off price guides...",
-    "Scanning for hidden signatures...",
-    "Cross-referencing auction archives...",
-    "Determining the vibe: MCM or just old?",
-    "Consulting grandma's attic wisdom...",
-    "Checking if this sparks profit...",
-    "Summoning estate sale spirits...",
-    "Crunching auction data...",
-    "Looking up what the cool kids collect...",
-    "Googling with extra AI magic...",
-  ], []);
-  
-  const getRandomMessage = useCallback(() => {
-    return messages[Math.floor(Math.random() * messages.length)];
-  }, [messages]);
-  
-  useEffect(() => {
-    setCurrentMsg(getRandomMessage());
-    const interval = setInterval(() => {
-      setCurrentMsg(getRandomMessage());
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [getRandomMessage]);
-  
-  return (
-    <p className="text-stone-500 text-sm min-h-[20px] transition-all duration-300">
-      {currentMsg}
-    </p>
-  );
-};
-
-// Helper: Play success haptic feedback (no sound - just vibration on mobile)
-const playSuccessFeedback = () => {
-  // Haptic feedback only (works on mobile)
-  if (navigator.vibrate) {
-    navigator.vibrate(50);
-  }
-};
-
-// Helper: Format relative time
-const formatTimeAgo = (isoString) => {
-  if (!isoString) return null;
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
-
-// Helper: Get smart display title (avoids "Unknown")
-const getDisplayTitle = (item) => {
-  // Don't show "Unknown" maker in title
-  const title = item.title || "";
-  const maker = item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null;
-  const style = item.style && item.style.toLowerCase() !== "unknown" ? item.style : null;
-  const category = item.category || "";
-  
-  // If title starts with "Unknown" or is empty, create a better one
-  if (!title || title.toLowerCase().startsWith("unknown")) {
-    const parts = [style, category].filter(Boolean);
-    return parts.length > 0 ? parts.join(" ") : "Untitled Item";
-  }
-  
-  // Remove "Unknown" prefix if present
-  return title.replace(/^Unknown\s*/i, "").trim() || "Untitled Item";
-};
+// Note: AILoadingMessages is imported from ./components/common
 
 // --- SHARED COLLECTION VIEW (Public) ---
+// Note: playSuccessFeedback, formatTimeAgo, getDisplayTitle are imported from ./utils/helpers
 const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
