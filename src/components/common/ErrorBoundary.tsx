@@ -1,51 +1,54 @@
-import React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
+}
 
 /**
  * Error Boundary - Catches JavaScript errors anywhere in the child component tree
  * and displays a fallback UI instead of crashing the whole app.
  */
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error) {
-    // Update state so the next render shows the fallback UI
+  static getDerivedStateFromError(_error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
-    // Log the error for debugging
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('🚨 App Error Caught:', error);
     console.error('Component Stack:', errorInfo?.componentStack);
     
     this.setState({ error, errorInfo });
-    
-    // Optional: Send to error tracking service
-    // logErrorToService(error, errorInfo);
   }
 
-  handleReload = () => {
+  handleReload = (): void => {
     window.location.reload();
   };
 
-  handleRetry = () => {
+  handleRetry = (): void => {
     this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 bg-gradient-to-br from-stone-50 to-stone-100 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-            {/* Icon */}
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle className="w-8 h-8 text-amber-600" />
             </div>
             
-            {/* Message */}
             <h1 className="text-2xl font-bold text-stone-900 mb-2">
               Oops, something went wrong
             </h1>
@@ -53,7 +56,6 @@ class ErrorBoundary extends React.Component {
               The app encountered an unexpected error. Your data is safe — try refreshing or retry.
             </p>
             
-            {/* Actions */}
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
@@ -70,7 +72,6 @@ class ErrorBoundary extends React.Component {
               </button>
             </div>
             
-            {/* Error details (collapsible for debugging) */}
             {this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="text-xs text-stone-400 cursor-pointer hover:text-stone-600">

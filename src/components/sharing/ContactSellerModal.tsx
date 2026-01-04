@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent, MouseEvent } from 'react';
 import { X, Check, Loader, MessageCircle } from 'lucide-react';
+import type { InventoryItem } from '../../types';
+
+interface ContactMessage {
+  message: string;
+  email: string;
+  itemTitle: string;
+  itemId: string;
+}
+
+interface ContactSellerModalProps {
+  item: InventoryItem;
+  ownerName: string | null;
+  onClose: () => void;
+  onSend: (data: ContactMessage) => Promise<void>;
+  sourceUrl?: string;
+}
 
 /**
  * Modal for contacting seller about an item
  */
-const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }) => {
+const ContactSellerModal: React.FC<ContactSellerModalProps> = ({ 
+  item, 
+  ownerName, 
+  onClose, 
+  onSend, 
+}) => {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -13,7 +34,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
   const itemTitle = item.listing_title || item.title || "Vintage Item";
   const itemPrice = item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6);
   
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !email.trim()) return;
     
@@ -26,12 +47,14 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
     try {
       await onSend({ message, email, itemTitle, itemId: item.id });
       setSent(true);
-    } catch (err) {
+    } catch {
       alert("Failed to send message. Please try again.");
     } finally {
       setSending(false);
     }
   };
+
+  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation();
   
   if (sent) {
     return (
@@ -41,7 +64,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
       >
         <div 
           className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4"
-          onClick={e => e.stopPropagation()}
+          onClick={stopPropagation}
         >
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
             <Check className="w-8 h-8 text-emerald-600" />
@@ -68,7 +91,7 @@ const ContactSellerModal = ({ item, ownerName, onClose, onSend, sourceUrl = "" }
     >
       <div 
         className="bg-white rounded-2xl max-w-md w-full overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={stopPropagation}
       >
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <h3 className="font-bold text-stone-900">Contact {ownerName || "Seller"}</h3>

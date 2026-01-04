@@ -1,3 +1,5 @@
+import type { MarketplaceLink } from '../types';
+
 /**
  * Generate marketplace search links based on category
  * 
@@ -8,7 +10,13 @@
  * - Auction sites: Maker + object type + era
  * - Most retail sites: Broad 2-4 word queries work best
  */
-export const getMarketplaceLinks = (category, searchTerms, broadTerms, discogsTerms, auctionTerms) => {
+export const getMarketplaceLinks = (
+  category: string | undefined,
+  searchTerms: string | undefined,
+  broadTerms?: string,
+  discogsTerms?: string,
+  auctionTerms?: string
+): MarketplaceLink[] => {
   if (!searchTerms) return [];
   
   // eBay gets the full detailed query
@@ -47,16 +55,14 @@ export const getMarketplaceLinks = (category, searchTerms, broadTerms, discogsTe
   
   const cat = (category || "").toLowerCase();
 
-  const links = [
+  const links: MarketplaceLink[] = [
     {
       name: "eBay Sold",
-      domain: "ebay.com",
       url: `https://www.ebay.com/sch/i.html?_nkw=${ebayQuery}&_sacat=0&LH_Sold=1&LH_Complete=1`,
       color: "text-blue-700 bg-blue-50 border-blue-200",
     },
     {
       name: "Google Images",
-      domain: "google.com",
       url: `https://www.google.com/search?q=${broadQuery}&tbm=isch`,
       color: "text-stone-700 bg-stone-50 border-stone-200",
     },

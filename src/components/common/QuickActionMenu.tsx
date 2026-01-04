@@ -1,15 +1,48 @@
 import React, { useEffect, useRef } from 'react';
-import { Heart, DollarSign, HelpCircle, Check, Trash2 } from 'lucide-react';
+import { Heart, DollarSign, HelpCircle, Check, Trash2, LucideIcon } from 'lucide-react';
+import type { InventoryItem, ItemStatus } from '../../types';
+
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface QuickActionMenuProps {
+  position: Position;
+  item: InventoryItem;
+  onClose: () => void;
+  onStatusChange: (id: string, status: ItemStatus) => void;
+  onDelete: (id: string) => void;
+}
+
+interface StatusOption {
+  value: ItemStatus;
+  label: string;
+  icon: LucideIcon;
+  color: string;
+}
+
+const statusOptions: StatusOption[] = [
+  { value: 'keep', label: 'Mark as Keep', icon: Heart, color: 'text-emerald-600' },
+  { value: 'sell', label: 'Mark as Sell', icon: DollarSign, color: 'text-amber-600' },
+  { value: 'TBD', label: 'Mark as TBD', icon: HelpCircle, color: 'text-blue-600' },
+];
 
 /**
  * Context menu for quick item actions
  */
-const QuickActionMenu = ({ position, item, onClose, onStatusChange, onDelete }) => {
-  const menuRef = useRef(null);
+const QuickActionMenu: React.FC<QuickActionMenuProps> = ({ 
+  position, 
+  item, 
+  onClose, 
+  onStatusChange, 
+  onDelete 
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -21,18 +54,12 @@ const QuickActionMenu = ({ position, item, onClose, onStatusChange, onDelete }) 
     };
   }, [onClose]);
 
-  const adjustedStyle = {
+  const adjustedStyle: React.CSSProperties = {
     position: 'fixed',
     top: Math.min(position.y, window.innerHeight - 220),
     left: Math.min(position.x, window.innerWidth - 160),
     zIndex: 100,
   };
-
-  const statusOptions = [
-    { value: 'keep', label: 'Mark as Keep', icon: Heart, color: 'text-emerald-600' },
-    { value: 'sell', label: 'Mark as Sell', icon: DollarSign, color: 'text-amber-600' },
-    { value: 'TBD', label: 'Mark as TBD', icon: HelpCircle, color: 'text-blue-600' },
-  ];
 
   return (
     <div 

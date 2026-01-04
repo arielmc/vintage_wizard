@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, MouseEvent } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { User } from "firebase/auth";
 import { db } from '../../config/firebase';
 import { APP_ID } from '../../config/constants';
 import { playSuccessFeedback } from '../../utils';
+import type { InventoryItem, ShareData } from '../../types';
 import { 
   Share2, 
   X, 
@@ -15,14 +17,23 @@ import {
   Mail
 } from 'lucide-react';
 
+type ShareMode = 'library' | 'forsale';
+
+interface ShareModalProps {
+  user: User;
+  items: InventoryItem[];
+  onClose: () => void;
+  origin?: 'top' | 'bottom';
+}
+
 /**
  * Modal for sharing collection via link
  */
-const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
-  const [shareData, setShareData] = useState(null);
+const ShareModal: React.FC<ShareModalProps> = ({ user, items, onClose, origin = 'bottom' }) => {
+  const [shareData, setShareData] = useState<ShareData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(null);
-  const [selectedMode, setSelectedMode] = useState(null);
+  const [copied, setCopied] = useState<ShareMode | null>(null);
+  const [selectedMode, setSelectedMode] = useState<ShareMode | null>(null);
 
   const sellItemsCount = items.filter(i => i.status === "sell").length;
 
@@ -33,12 +44,12 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
         const shareDoc = await getDoc(shareDocRef);
         
         if (shareDoc.exists()) {
-          setShareData(shareDoc.data());
+          setShareData(shareDoc.data() as ShareData);
         } else {
-          const newShareData = {
+          const newShareData: ShareData = {
             userId: user.uid,
             ownerName: user.displayName || "A collector",
-            ownerEmail: user.email,
+            ownerEmail: user.email || undefined,
             token: Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16),
             isActive: true,
             createdAt: new Date().toISOString(),
@@ -60,14 +71,14 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
     loadOrCreateShare();
   }, [user]);
 
-  const getShareUrl = (mode) => {
+  const getShareUrl = (mode: ShareMode): string => {
     const baseUrl = window.location.origin;
     let url = `${baseUrl}/share/${user.uid}?token=${shareData?.token || ""}&mode=${mode}`;
     if (mode === 'forsale') url += '&filter=sell';
     return url;
   };
 
-  const handleCopy = (mode) => {
+  const handleCopy = (mode: ShareMode) => {
     navigator.clipboard.writeText(getShareUrl(mode));
     setCopied(mode);
     playSuccessFeedback();
@@ -79,8 +90,12 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
     const newToken = Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
     const shareDocRef = doc(db, "artifacts", APP_ID, "shares", user.uid);
     await updateDoc(shareDocRef, { token: newToken });
-    setShareData({ ...shareData, token: newToken });
+    if (shareData) {
+      setShareData({ ...shareData, token: newToken });
+    }
   };
+
+  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation();
 
   const containerClass = origin === 'top' 
     ? "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-20 md:pt-24 p-4"
@@ -94,9 +109,8 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
     <div className={containerClass} onClick={onClose}>
       <div 
         className={modalClass}
-        onClick={e => e.stopPropagation()}
+        onClick={stopPropagation}
       >
-        {/* Header */}
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
@@ -123,7 +137,6 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
                 Share Link
               </label>
               
-              {/* Library View Option */}
               <button
                 onClick={() => setSelectedMode(selectedMode === 'library' ? null : 'library')}
                 className={`w-full p-4 rounded-xl border-2 transition-all text-left mb-3 ${
@@ -174,7 +187,6 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
                 )}
               </button>
               
-              {/* For Sale View Option */}
               <button
                 onClick={() => setSelectedMode(selectedMode === 'forsale' ? null : 'forsale')}
                 disabled={sellItemsCount === 0}
@@ -233,7 +245,6 @@ const ShareModal = ({ user, items, onClose, origin = 'bottom' }) => {
               </button>
             </div>
             
-            {/* Security Note */}
             <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl">
               <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-800">

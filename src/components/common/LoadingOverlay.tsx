@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
 
+interface LoadingOverlayProps {
+  message?: string;
+  subMessage?: string;
+}
+
 /**
  * Loading overlay with rotating witty messages
  */
-const LoadingOverlay = ({ message = "Processing...", subMessage = "" }) => {
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ 
+  message = "Processing...", 
+  subMessage = "" 
+}) => {
   const [currentMsg, setCurrentMsg] = useState("");
+  
   const funMessages = useMemo(() => [
     "Consulting the AI oracle...",
     "Teaching robots about antiques...",

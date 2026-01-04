@@ -1,7 +1,9 @@
+import type { InventoryItem } from '../types';
+
 /**
  * Play success haptic feedback (vibration on mobile, no sound)
  */
-export const playSuccessFeedback = () => {
+export const playSuccessFeedback = (): void => {
   if (navigator.vibrate) {
     navigator.vibrate(50);
   }
@@ -10,11 +12,11 @@ export const playSuccessFeedback = () => {
 /**
  * Format relative time from ISO string
  */
-export const formatTimeAgo = (isoString) => {
+export const formatTimeAgo = (isoString: string | undefined | null): string | null => {
   if (!isoString) return null;
   const date = new Date(isoString);
   const now = new Date();
-  const diffMs = now - date;
+  const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
@@ -29,9 +31,8 @@ export const formatTimeAgo = (isoString) => {
 /**
  * Get smart display title (avoids showing "Unknown")
  */
-export const getDisplayTitle = (item) => {
+export const getDisplayTitle = (item: Partial<InventoryItem>): string => {
   const title = item.title || "";
-  const maker = item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null;
   const style = item.style && item.style.toLowerCase() !== "unknown" ? item.style : null;
   const category = item.category || "";
   

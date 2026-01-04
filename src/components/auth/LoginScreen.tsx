@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { 
   GoogleAuthProvider, 
   signInWithPopup, 
@@ -8,10 +8,10 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
-  updateProfile
+  updateProfile,
+  AuthError
 } from "firebase/auth";
-import { auth } from '../../config/firebase';
-import { logAnalyticsEvent } from '../../config/firebase';
+import { auth, logAnalyticsEvent } from '../../config/firebase';
 import { 
   Sparkles, 
   Loader, 
@@ -22,14 +22,23 @@ import {
   Camera,
   Zap,
   Star,
-  Share2
+  Share2,
+  LucideIcon
 } from 'lucide-react';
+
+type AuthMode = 'login' | 'signup' | 'forgot';
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+}
 
 /**
  * Login/Signup screen component
  */
-const LoginScreen = () => {
-  const [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
+const LoginScreen: React.FC = () => {
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -51,7 +60,8 @@ const LoginScreen = () => {
       await signInWithPopup(auth, provider);
       logAnalyticsEvent('user_login', { method: 'google' });
     } catch (error) {
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      const authError = error as AuthError;
+      if (authError.code === 'auth/popup-blocked' || authError.code === 'auth/popup-closed-by-user' || authError.code === 'auth/cancelled-popup-request') {
         try {
           const provider = new GoogleAuthProvider();
           await signInWithRedirect(auth, provider);
@@ -60,12 +70,12 @@ const LoginScreen = () => {
           setError("Login failed. Please try again.");
         }
       } else {
-        setError(error.message || "Login failed");
+        setError(authError.message || "Login failed");
       }
     }
   };
 
-  const handleSignUp = async (e) => {
+  const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -95,15 +105,16 @@ const LoginScreen = () => {
       setVerificationSent(true);
       logAnalyticsEvent('user_registered', { method: 'email' });
     } catch (error) {
+      const authError = error as AuthError;
       let errorMessage = "Sign up failed";
-      if (error.code === 'auth/email-already-in-use') {
+      if (authError.code === 'auth/email-already-in-use') {
         errorMessage = "This email is already registered. Try signing in instead.";
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (authError.code === 'auth/invalid-email') {
         errorMessage = "Please enter a valid email address";
-      } else if (error.code === 'auth/weak-password') {
+      } else if (authError.code === 'auth/weak-password') {
         errorMessage = "Password is too weak. Please use a stronger password.";
       } else {
-        errorMessage = error.message;
+        errorMessage = authError.message;
       }
       setError(errorMessage);
     } finally {
@@ -111,7 +122,7 @@ const LoginScreen = () => {
     }
   };
 
-  const handleSignIn = async (e) => {
+  const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -120,17 +131,18 @@ const LoginScreen = () => {
       await signInWithEmailAndPassword(auth, email, password);
       logAnalyticsEvent('user_login', { method: 'email' });
     } catch (error) {
+      const authError = error as AuthError;
       let errorMessage = "Sign in failed";
-      if (error.code === 'auth/user-not-found') {
+      if (authError.code === 'auth/user-not-found') {
         errorMessage = "No account found with this email";
-      } else if (error.code === 'auth/wrong-password') {
+      } else if (authError.code === 'auth/wrong-password') {
         errorMessage = "Incorrect password";
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (authError.code === 'auth/invalid-email') {
         errorMessage = "Please enter a valid email address";
-      } else if (error.code === 'auth/user-disabled') {
+      } else if (authError.code === 'auth/user-disabled') {
         errorMessage = "This account has been disabled";
       } else {
-        errorMessage = error.message;
+        errorMessage = authError.message;
       }
       setError(errorMessage);
     } finally {
@@ -138,7 +150,7 @@ const LoginScreen = () => {
     }
   };
 
-  const handleForgotPassword = async (e) => {
+  const handleForgotPassword = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     
@@ -154,16 +166,17 @@ const LoginScreen = () => {
       alert(`Password reset email sent to ${email}!\n\nPlease check your inbox and spam folder.`);
       setMode("login");
     } catch (error) {
+      const authError = error as AuthError;
       console.error("Password reset error:", error);
       let errorMessage = "Failed to send reset email";
-      if (error.code === 'auth/user-not-found') {
+      if (authError.code === 'auth/user-not-found') {
         errorMessage = "No account found with this email address";
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (authError.code === 'auth/invalid-email') {
         errorMessage = "Please enter a valid email address";
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (authError.code === 'auth/too-many-requests') {
         errorMessage = "Too many requests. Please try again later.";
       } else {
-        errorMessage = `Failed to send email: ${error.message}`;
+        errorMessage = `Failed to send email: ${authError.message}`;
       }
       setError(errorMessage);
     } finally {
@@ -171,7 +184,7 @@ const LoginScreen = () => {
     }
   };
 
-  const features = [
+  const features: Feature[] = [
     { icon: Camera, title: "Snap & Identify", desc: "AI identifies your items" },
     { icon: Zap, title: "Instant Valuation", desc: "Real-time price estimates" },
     { icon: Star, title: "Expert Analysis", desc: "Era, maker & materials" },
@@ -180,16 +193,13 @@ const LoginScreen = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-white relative overflow-hidden">
-      {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(circle_at_1px_1px,black_1px,transparent_0)] bg-[length:24px_24px]" />
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-rose-50/40 to-amber-50/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-stone-50/50 to-blue-50/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
 
-      {/* Main Content */}
       <div className="relative z-10 w-full flex-1 flex flex-col">
         <div className="flex flex-col justify-center p-8 lg:p-16 xl:p-20 flex-1">
           <div className="max-w-md mx-auto w-full">
-            {/* Logo */}
             <div className="mb-10">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-11 h-11 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg shadow-rose-500/20 flex items-center justify-center">
@@ -202,9 +212,7 @@ const LoginScreen = () => {
               <p className="text-stone-600 text-sm ml-14">Your stuff — researched, organized & ready</p>
             </div>
 
-            {/* Auth Card */}
             <div className="bg-white rounded-3xl shadow-2xl shadow-stone-900/5 border border-stone-200/60 overflow-hidden">
-              {/* Tab Switcher */}
               <div className="flex border-b border-stone-100 bg-stone-50/50">
                 <button
                   onClick={() => {
@@ -240,7 +248,6 @@ const LoginScreen = () => {
               </div>
 
               <div className="p-8">
-                {/* Verification Success */}
                 {verificationSent && (
                   <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
                     <div className="flex items-start gap-2">
@@ -252,7 +259,6 @@ const LoginScreen = () => {
                   </div>
                 )}
 
-                {/* Error Message */}
                 {error && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
                     <div className="flex items-start gap-2">
@@ -262,7 +268,6 @@ const LoginScreen = () => {
                   </div>
                 )}
 
-                {/* Google Sign In */}
                 <button
                   onClick={handleGoogleLogin}
                   className="w-full bg-white hover:bg-stone-50 text-stone-900 font-semibold py-4 px-6 rounded-xl transition-all flex items-center justify-center gap-3 border-2 border-stone-200 hover:border-stone-300 shadow-sm hover:shadow-md mb-6 group"
@@ -275,14 +280,12 @@ const LoginScreen = () => {
                   <span>{mode === "signup" ? "Register with Gmail" : "Sign-In with Gmail"}</span>
                 </button>
 
-                {/* Divider */}
                 <div className="mb-6 flex items-center gap-4">
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
                   <span className="text-xs text-stone-400 font-medium">or continue with email</span>
                   <div className="flex-1 h-px bg-gradient-to-r from-transparent via-stone-200 to-transparent" />
                 </div>
 
-                {/* Forms */}
                 {mode === "forgot" ? (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
                     <div>
@@ -434,7 +437,6 @@ const LoginScreen = () => {
           </div>
         </div>
 
-        {/* Features Strip */}
         <div className="w-full bg-stone-50/50 border-t border-stone-200/60 py-8 overflow-hidden">
           <div className="flex gap-6 px-8 justify-center flex-wrap">
             {features.map((feature, idx) => (

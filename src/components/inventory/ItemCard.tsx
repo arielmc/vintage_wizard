@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, MouseEvent, TouchEvent } from 'react';
 import { 
   Camera, 
   ChevronLeft, 
@@ -8,34 +8,47 @@ import {
   Gauge
 } from 'lucide-react';
 import { formatTimeAgo, getDisplayTitle } from '../../utils';
+import type { InventoryItem } from '../../types';
+
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface ItemCardProps {
+  item: InventoryItem;
+  onClick: (item: InventoryItem) => void;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  onToggleSelect?: (id: string) => void;
+  onAnalyze?: (item: InventoryItem) => Promise<void>;
+  onQuickAction?: (item: InventoryItem, position: Position) => void;
+}
 
 /**
  * Item card component for grid display
  */
-const ItemCard = ({ 
+const ItemCard: React.FC<ItemCardProps> = ({ 
   item, 
   onClick, 
-  isSelected, 
-  isSelectionMode, 
+  isSelected = false, 
+  isSelectionMode = false, 
   onToggleSelect, 
   onAnalyze, 
   onQuickAction 
 }) => {
-  // Ensure images array exists, fallback to single image or empty
   const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  // Long-press handling for mobile
-  const longPressTimer = useRef(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
 
-  // Reset index if images change
   useEffect(() => { setActiveImgIdx(0); }, [item.id]);
 
   const displayImage = images.length > 0 ? images[activeImgIdx] : null;
 
-  const handleNextImage = (e) => {
+  const handleNextImage = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (activeImgIdx < images.length - 1) {
       setActiveImgIdx(prev => prev + 1);
@@ -44,7 +57,7 @@ const ItemCard = ({
     }
   };
 
-  const handlePrevImage = (e) => {
+  const handlePrevImage = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (activeImgIdx > 0) {
       setActiveImgIdx(prev => prev - 1);
@@ -53,29 +66,28 @@ const ItemCard = ({
     }
   };
 
-  const handleClick = (e) => {
+  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     if (isLongPressing) {
       setIsLongPressing(false);
       return;
     }
     if (isSelectionMode) {
       e.stopPropagation();
-      onToggleSelect(item.id);
+      onToggleSelect?.(item.id);
     } else {
       onClick(item);
     }
   };
 
-  const handleQuickAnalyze = async (e) => {
+  const handleQuickAnalyze = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (isAnalyzing) return;
+    if (isAnalyzing || !onAnalyze) return;
     setIsAnalyzing(true);
     await onAnalyze(item);
     setIsAnalyzing(false);
   };
 
-  // Right-click context menu (desktop)
-  const handleContextMenu = (e) => {
+  const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isSelectionMode && onQuickAction) {
@@ -83,8 +95,7 @@ const ItemCard = ({
     }
   };
 
-  // Long-press handlers (mobile)
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
     if (isSelectionMode) return;
     longPressTimer.current = setTimeout(() => {
       setIsLongPressing(true);
@@ -121,7 +132,6 @@ const ItemCard = ({
         isSelected ? "border-[3px] border-rose-500" : "border-stone-100 border"
       }`}
     >
-      {/* Selection Overlay */}
       {isSelectionMode && (
         <div className={`absolute top-2 left-2 z-20 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
           isSelected
@@ -145,7 +155,6 @@ const ItemCard = ({
           </div>
         )}
 
-        {/* Image Carousel Controls */}
         {!isSelectionMode && images.length > 1 && (
           <>
             <button 
@@ -161,7 +170,6 @@ const ItemCard = ({
               <ChevronRight size={16} strokeWidth={3} />
             </button>
             
-            {/* Dots Indicator */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
               {images.slice(0, 5).map((_, idx) => (
                 <div 
@@ -175,7 +183,7 @@ const ItemCard = ({
           </>
         )}
 
-        {item.valuation_high > 0 && (
+        {(item.valuation_high ?? 0) > 0 && (
           <div className="absolute bottom-1 md:bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2.5 pt-6 pointer-events-none">
             <div className="flex items-end justify-between">
               <div>
@@ -199,7 +207,6 @@ const ItemCard = ({
           </div>
         )}
         
-        {/* Status color line at bottom of image */}
         <div className={`absolute bottom-0 left-0 right-0 h-[3px] ${
           item.status === 'keep' ? 'bg-blue-500' :
           item.status === 'sell' ? 'bg-emerald-500' :

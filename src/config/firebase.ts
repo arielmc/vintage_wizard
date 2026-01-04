@@ -1,8 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { getAnalytics, logEvent } from "firebase/analytics";
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getAnalytics, logEvent, Analytics } from "firebase/analytics";
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -16,13 +16,13 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+const app: FirebaseApp = initializeApp(firebaseConfig);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 
 // Initialize Analytics (only in browser environment)
-let analytics = null;
+let analytics: Analytics | null = null;
 if (typeof window !== "undefined" && firebaseConfig.measurementId) {
   try {
     analytics = getAnalytics(app);
@@ -32,7 +32,10 @@ if (typeof window !== "undefined" && firebaseConfig.measurementId) {
 }
 
 // Helper function to log analytics events
-export const logAnalyticsEvent = (eventName, eventParams = {}) => {
+export const logAnalyticsEvent = (
+  eventName: string, 
+  eventParams: Record<string, unknown> = {}
+): void => {
   try {
     if (analytics) {
       logEvent(analytics, eventName, eventParams);

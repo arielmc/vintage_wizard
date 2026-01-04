@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 /**
  * Floating tip jar button with expand/collapse
  */
-const TipJar = () => {
+const TipJar: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
+type UploadMode = 'single' | 'batch';
+type UploadAction = 'analyze_now' | 'edit_first';
+
+interface UploadStagingModalProps {
+  files: File[];
+  onConfirm: (mode: UploadMode, action: UploadAction) => void;
+  onCancel: () => void;
+}
+
 /**
  * Modal shown after file selection to choose upload mode
  */
-const UploadStagingModal = ({ files, onConfirm, onCancel }) => {
-  const [mode, setMode] = useState("single");
-  const [previews, setPreviews] = useState([]);
+const UploadStagingModal: React.FC<UploadStagingModalProps> = ({ files, onConfirm, onCancel }) => {
+  const [mode] = useState<UploadMode>("single");
+  const [previews, setPreviews] = useState<string[]>([]);
 
   useEffect(() => {
     const urls = files.slice(0, 4).map((file) => URL.createObjectURL(file));

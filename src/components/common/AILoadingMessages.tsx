@@ -3,8 +3,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 /**
  * Rotating AI loading messages component
  */
-const AILoadingMessages = () => {
+const AILoadingMessages: React.FC = () => {
   const [currentMsg, setCurrentMsg] = useState("");
+  
   const messages = useMemo(() => [
     "Consulting the AI oracle...",
     "Analyzing vintage vibes...",

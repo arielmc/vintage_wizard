@@ -1,33 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 
+interface WittyMessage {
+  main: string;
+  sub: string;
+}
+
+const wittyMessages: WittyMessage[] = [
+  { main: "Uploading your treasures...", sub: "Finding them good homes in the cloud" },
+  { main: "Teaching AI about vintage...", sub: "It's taking notes furiously" },
+  { main: "Cataloging your collection...", sub: "Like a museum, but cooler" },
+  { main: "Processing pixels...", sub: "Every photo tells a story" },
+  { main: "Organizing the vault...", sub: "Marie Kondo would be proud" },
+  { main: "Summoning the archive spirits...", sub: "They're very helpful" },
+  { main: "Building your inventory...", sub: "Rome wasn't built in a day, but this is faster" },
+  { main: "Crunching the vintage data...", sub: "Abacus sold separately" },
+  { main: "Polishing your collection...", sub: "Digital white gloves engaged" },
+  { main: "Working some magic...", sub: "Vintage wizardry in progress" },
+  { main: "Almost there...", sub: "Good things come to those who wait" },
+  { main: "Handling with care...", sub: "Like a fine antique" },
+];
+
 /**
  * Processing overlay for upload/processing states
  */
-const ProcessingOverlay = () => {
+const ProcessingOverlay: React.FC = () => {
   const [messageIndex, setMessageIndex] = useState(0);
-  
-  const wittyMessages = [
-    { main: "Uploading your treasures...", sub: "Finding them good homes in the cloud" },
-    { main: "Teaching AI about vintage...", sub: "It's taking notes furiously" },
-    { main: "Cataloging your collection...", sub: "Like a museum, but cooler" },
-    { main: "Processing pixels...", sub: "Every photo tells a story" },
-    { main: "Organizing the vault...", sub: "Marie Kondo would be proud" },
-    { main: "Summoning the archive spirits...", sub: "They're very helpful" },
-    { main: "Building your inventory...", sub: "Rome wasn't built in a day, but this is faster" },
-    { main: "Crunching the vintage data...", sub: "Abacus sold separately" },
-    { main: "Polishing your collection...", sub: "Digital white gloves engaged" },
-    { main: "Working some magic...", sub: "Vintage wizardry in progress" },
-    { main: "Almost there...", sub: "Good things come to those who wait" },
-    { main: "Handling with care...", sub: "Like a fine antique" },
-  ];
   
   useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex(prev => (prev + 1) % wittyMessages.length);
     }, 2500);
     return () => clearInterval(interval);
-  }, [wittyMessages.length]);
+  }, []);
   
   const currentMessage = wittyMessages[messageIndex];
   

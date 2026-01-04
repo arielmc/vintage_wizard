@@ -1,17 +1,22 @@
 import React from 'react';
 
+interface SkeletonCardProps {
+  showMessage?: boolean;
+  messageIndex?: number;
+}
+
+const loadingHints = [
+  "Loading treasures...",
+  "Fetching your items...",
+  "Almost there...",
+  "Gathering inventory...",
+  "Unpacking goodies...",
+];
+
 /**
  * Skeleton card with shimmer effect for loading states
  */
-const SkeletonCard = ({ showMessage = false, messageIndex = 0 }) => {
-  const loadingHints = [
-    "Loading treasures...",
-    "Fetching your items...",
-    "Almost there...",
-    "Gathering inventory...",
-    "Unpacking goodies...",
-  ];
-  
+const SkeletonCard: React.FC<SkeletonCardProps> = ({ showMessage = false, messageIndex = 0 }) => {
   return (
     <div className="bg-white rounded-xl overflow-hidden border border-stone-100 shadow-sm flex flex-col h-full">
       <div className="aspect-square bg-gradient-to-r from-stone-100 via-stone-200 to-stone-100 bg-[length:200%_100%] animate-[shimmer_1.5s_infinite] relative">

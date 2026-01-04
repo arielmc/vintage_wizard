@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { updateProfile } from "firebase/auth";
+import React, { useState, MouseEvent } from 'react';
+import { updateProfile, User } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from '../../config/firebase';
 import { APP_ID } from '../../config/constants';
 import { playSuccessFeedback } from '../../utils';
+import type { InventoryItem } from '../../types';
 import { 
   ArrowLeft, 
   UserCircle, 
@@ -15,10 +16,18 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+interface ProfilePageProps {
+  user: User;
+  items: InventoryItem[];
+  onClose: () => void;
+  onLogout: () => void;
+  onDeleteAccount: () => void;
+}
+
 /**
  * User profile page with stats and account management
  */
-const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
+const ProfilePage: React.FC<ProfilePageProps> = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -46,6 +55,14 @@ const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleModalBackdropClick = (e: MouseEvent<HTMLDivElement>) => {
+    setShowDeleteConfirm(false);
+  };
+
+  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
   };
 
   return (
@@ -159,10 +176,10 @@ const ProfilePage = ({ user, items, onClose, onLogout, onDeleteAccount }) => {
       
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={handleModalBackdropClick}>
           <div 
             className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 fade-in duration-200"
-            onClick={e => e.stopPropagation()}
+            onClick={stopPropagation}
           >
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600" />

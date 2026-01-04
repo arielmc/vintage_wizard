@@ -1,9 +1,10 @@
 {
   "name": "vintage-wizard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AI-powered vintage item identification and valuation tool",
   "keywords": ["vintage", "antique", "valuation", "ai", "gemini", "resale"],
   "main": "src/index.tsx",
+  "type": "module",
   "dependencies": {
     "@firebase/auth": "1.11.1",
     "firebase": "12.6.0",

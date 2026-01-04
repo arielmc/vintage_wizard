@@ -1,4 +1,8 @@
+// @ts-nocheck
 // Build: 2026-01-01-v2 - Enhanced AI loading overlays
+// NOTE: This file is gradually being migrated to TypeScript
+// Type checking is disabled until the refactoring is complete
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Routes, Route, useNavigate, useParams, useLocation, useSearchParams, Navigate } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -107,12 +111,12 @@ import {
 } from "lucide-react";
 
 // --- SCANNER COMPONENT (Native Camera) ---
-const ScannerInterface = ({ onFinishSession, onCancel }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [stream, setStream] = useState(null);
-  const [activePhotos, setActivePhotos] = useState([]); // Files for CURRENT item
-  const [completedItems, setCompletedItems] = useState([]); // Array of arrays of Files
+const ScannerInterface = ({ onFinishSession, onCancel }: { onFinishSession: (items: File[][]) => void; onCancel: () => void }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [activePhotos, setActivePhotos] = useState<File[]>([]); // Files for CURRENT item
+  const [completedItems, setCompletedItems] = useState<File[][]>([]); // Array of arrays of Files
   const [flash, setFlash] = useState(false);
 
   useEffect(() => {
@@ -402,13 +406,13 @@ async function ensureBase64(img) {
 }
 
 // --- AI Logic ---
-async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
+async function analyzeImagesWithGemini(images: any[], userNotes: string, currentData: Record<string, any> = {}) {
   // Limit to 4 images max to avoid payload limits
   const rawImages = images.slice(0, 4);
   
   // Convert all images to base64
   const imagesToAnalyze = await Promise.all(rawImages.map(img => ensureBase64(img)));
-  const validImages = imagesToAnalyze.filter(img => img !== null);
+  const validImages = imagesToAnalyze.filter((img): img is string => img !== null);
 
   const knownDetails = [];
   if (currentData.title) knownDetails.push(`Title/Type: ${currentData.title}`);
@@ -594,7 +598,7 @@ async function analyzeImagesWithGemini(images, userNotes, currentData = {}) {
     throw new Error("No valid images to analyze. Please add photos first.");
   }
 
-  const imageParts = validImages.map((img) => ({
+  const imageParts = validImages.map((img: string) => ({
     inlineData: {
       mimeType: "image/jpeg",
       data: img.split(",")[1],
@@ -680,11 +684,11 @@ INSTRUCTIONS:
 - Don't repeat the full analysis - just answer their specific question.
 - Write in a calm, confident tone. Do NOT use exclamation points.`;
 
-    const parts = [{ text: systemPrompt }];
+    const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [{ text: systemPrompt }];
     
     // Add images if available (limit to 4 to avoid payload issues)
     if (images && images.length > 0) {
-      images.slice(0, 4).forEach(img => {
+      images.slice(0, 4).forEach((img: string) => {
         if (img.startsWith('data:image')) {
           parts.push({
             inline_data: {

@@ -1,16 +1,31 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent, CSSProperties } from 'react';
+
+interface TruncatedMetadataFieldProps {
+  label: string;
+  value: string | undefined;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  fieldKey?: string;
+  maxLength?: number;
+}
 
 /**
  * Editable metadata field with truncation and mobile drawer
  */
-const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey, maxLength = 200 }) => {
+const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder, 
+  maxLength = 200 
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const fieldRef = useRef(null);
-  const textareaRef = useRef(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const displayValue = value || placeholder || "";
 
@@ -56,7 +71,7 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
     setIsEditing(false);
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
       handleCancel();
     } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -65,6 +80,53 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
   };
 
   const handleBackdropClick = () => handleSave();
+
+  const metadataStyles = `
+    .metadata-value {
+      white-space: normal;
+      overflow: visible;
+      max-width: 100%;
+      cursor: pointer;
+      padding: 4px 8px;
+      background: #FAFAF8;
+      border-radius: 6px;
+      border: 1.5px solid transparent;
+      transition: all 0.2s;
+      font-size: 10px;
+      line-height: 1.4;
+      min-height: 24px;
+      display: block;
+      word-wrap: break-word;
+      word-break: break-word;
+    }
+    .metadata-value:hover {
+      background: #F5F3F0;
+      border-color: #E5E0D9;
+    }
+    @media (max-width: 768px) {
+      .metadata-value {
+        min-height: 40px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 10px 12px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+    }
+    @media (max-width: 480px) {
+      .metadata-value {
+        min-height: 48px;
+        max-height: 150px;
+        padding: 12px 14px;
+        font-size: 13px;
+      }
+    }
+    @media (hover: none) and (pointer: coarse) {
+      .tooltip:not(.editing) {
+        display: none !important;
+      }
+    }
+  `;
 
   // Mobile: Bottom drawer
   if (isMobile && isEditing) {
@@ -144,57 +206,23 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
             </div>
           </div>
         </div>
-        <style>{`
-          .metadata-value {
-            white-space: normal;
-            overflow: visible;
-            max-width: 100%;
-            cursor: pointer;
-            padding: 4px 8px;
-            background: #FAFAF8;
-            border-radius: 6px;
-            border: 1.5px solid transparent;
-            transition: all 0.2s;
-            font-size: 10px;
-            line-height: 1.4;
-            min-height: 24px;
-            display: block;
-            word-wrap: break-word;
-            word-break: break-word;
-          }
-          .metadata-value:hover {
-            background: #F5F3F0;
-            border-color: #E5E0D9;
-          }
-          @media (max-width: 768px) {
-            .metadata-value {
-              min-height: 40px;
-              max-height: 120px;
-              overflow-y: auto;
-              padding: 10px 12px;
-              font-size: 12px;
-              line-height: 1.5;
-            }
-          }
-          @media (max-width: 480px) {
-            .metadata-value {
-              min-height: 48px;
-              max-height: 150px;
-              padding: 12px 14px;
-              font-size: 13px;
-            }
-          }
-        `}</style>
+        <style>{metadataStyles}</style>
       </>
     );
   }
 
   // Desktop/Tablet: Tooltip behavior
+  const wrapperStyle: CSSProperties = { 
+    position: 'relative', 
+    overflow: 'visible', 
+    zIndex: isEditing ? 9999 : 'auto' 
+  };
+
   return (
     <>
       <div
         className="metadata-value-wrapper"
-        style={{ position: 'relative', overflow: 'visible', zIndex: isEditing ? 9999 : 'auto' }}
+        style={wrapperStyle}
         onMouseEnter={() => !isEditing && setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
@@ -336,52 +364,7 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
           </>
         )}
       </div>
-      <style>{`
-        .metadata-value {
-          white-space: normal;
-          overflow: visible;
-          max-width: 100%;
-          cursor: pointer;
-          padding: 4px 8px;
-          background: #FAFAF8;
-          border-radius: 6px;
-          border: 1.5px solid transparent;
-          transition: all 0.2s;
-          font-size: 10px;
-          line-height: 1.4;
-          min-height: 24px;
-          display: block;
-          word-wrap: break-word;
-          word-break: break-word;
-        }
-        .metadata-value:hover {
-          background: #F5F3F0;
-          border-color: #E5E0D9;
-        }
-        @media (max-width: 768px) {
-          .metadata-value {
-            min-height: 40px;
-            max-height: 120px;
-            overflow-y: auto;
-            padding: 10px 12px;
-            font-size: 12px;
-            line-height: 1.5;
-          }
-        }
-        @media (max-width: 480px) {
-          .metadata-value {
-            min-height: 48px;
-            max-height: 150px;
-            padding: 12px 14px;
-            font-size: 13px;
-          }
-        }
-        @media (hover: none) and (pointer: coarse) {
-          .tooltip:not(.editing) {
-            display: none !important;
-          }
-        }
-      `}</style>
+      <style>{metadataStyles}</style>
     </>
   );
 };

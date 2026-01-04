@@ -3,15 +3,15 @@ import { storage } from "../config/firebase";
 import { MAX_BASE64_SIZE_BYTES, VALID_IMAGE_TYPES } from "../config/constants";
 
 // URL Cache - Persists across component unmounts/remounts
-const fileUrlCache = new WeakMap();
+const fileUrlCache = new WeakMap<File, string>();
 
 /**
  * Get or create object URL for a File object
  */
-export const getFileUrl = (file) => {
+export const getFileUrl = (file: File | null | undefined): string | null => {
   if (!file) return null;
   if (fileUrlCache.has(file)) {
-    return fileUrlCache.get(file);
+    return fileUrlCache.get(file) || null;
   }
   const url = URL.createObjectURL(file);
   fileUrlCache.set(file, url);
@@ -22,10 +22,10 @@ export const getFileUrl = (file) => {
  * Convert image to base64 - FULL RESOLUTION (no compression)
  * Details matter for accurate identification (marks, signatures, hallmarks)
  */
-export const imageToBase64FullRes = (file) => {
+export const imageToBase64FullRes = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = (err) => reject(err);
     reader.readAsDataURL(file);
   });
@@ -35,7 +35,7 @@ export const imageToBase64FullRes = (file) => {
  * Moderate compression for storing base64 in Firestore subcollection
  * Progressively compresses until under MAX_BASE64_SIZE_BYTES
  */
-export const compressImageForBase64Storage = (file) => {
+export const compressImageForBase64Storage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     // Validate file type
     if (!file.type.startsWith('image/') && !VALID_IMAGE_TYPES.includes(file.type)) {
@@ -47,7 +47,7 @@ export const compressImageForBase64Storage = (file) => {
     reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target.result;
+      img.src = event.target?.result as string;
       img.onload = () => {
         // Progressive compression: try larger first, reduce if too big
         const attempts = [
@@ -77,7 +77,9 @@ export const compressImageForBase64Storage = (file) => {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+          }
           
           const base64 = canvas.toDataURL("image/jpeg", quality);
           
@@ -96,7 +98,10 @@ export const compressImageForBase64Storage = (file) => {
         else { width *= maxDim / height; height = maxDim; }
         canvas.width = width;
         canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+        }
         resolve(canvas.toDataURL("image/jpeg", 0.5));
       };
       img.onerror = () => reject(new Error(`Failed to load image: ${file.name}`));
@@ -106,15 +111,17 @@ export const compressImageForBase64Storage = (file) => {
 };
 
 /**
- * Compress image and return as base64 (for AI analysis) or Blob (for Storage)
+ * Compress image and return as base64 or Blob
  */
-export const compressImage = (file, returnBlob = false) => {
+export function compressImage(file: File, returnBlob: true): Promise<Blob>;
+export function compressImage(file: File, returnBlob?: false): Promise<string>;
+export function compressImage(file: File, returnBlob: boolean = false): Promise<string | Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target.result;
+      img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement("canvas");
         let width = img.width;
@@ -134,11 +141,16 @@ export const compressImage = (file, returnBlob = false) => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+        }
         
         if (returnBlob) {
           canvas.toBlob(
-            (blob) => resolve(blob),
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("Failed to create blob"));
+            },
             "image/jpeg",
             0.85
           );
@@ -150,12 +162,17 @@ export const compressImage = (file, returnBlob = false) => {
     };
     reader.onerror = (err) => reject(err);
   });
-};
+}
 
 /**
  * Upload image to Firebase Storage and return download URL
  */
-export const uploadImageToStorage = async (file, userId, itemId, imageIndex) => {
+export const uploadImageToStorage = async (
+  file: File, 
+  userId: string, 
+  itemId: string, 
+  imageIndex: number
+): Promise<string> => {
   try {
     const compressedBlob = await compressImage(file, true);
     const timestamp = Date.now();

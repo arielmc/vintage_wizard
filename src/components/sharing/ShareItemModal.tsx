@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, MouseEvent } from 'react';
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { User } from "firebase/auth";
 import { db } from '../../config/firebase';
 import { APP_ID } from '../../config/constants';
 import { playSuccessFeedback } from '../../utils';
+import type { InventoryItem, ItemShareData } from '../../types';
 import { 
   Share2, 
   X, 
@@ -13,13 +15,21 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 
+type ViewType = 'listing' | 'details';
+
+interface ShareItemModalProps {
+  item: InventoryItem;
+  user: User;
+  onClose: () => void;
+}
+
 /**
  * Modal for sharing individual item
  */
-const ShareItemModal = ({ item, user, onClose }) => {
-  const [shareData, setShareData] = useState(null);
+const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) => {
+  const [shareData, setShareData] = useState<ItemShareData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(null);
+  const [copied, setCopied] = useState<ViewType | null>(null);
 
   useEffect(() => {
     const loadShare = async () => {
@@ -27,7 +37,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
         const shareDocRef = doc(db, "artifacts", APP_ID, "item_shares", `${user.uid}_${item.id}`);
         const shareDoc = await getDoc(shareDocRef);
         if (shareDoc.exists()) {
-          setShareData(shareDoc.data());
+          setShareData(shareDoc.data() as ItemShareData);
         }
       } catch (err) {
         console.error("Error loading item share:", err);
@@ -38,13 +48,13 @@ const ShareItemModal = ({ item, user, onClose }) => {
     loadShare();
   }, [user.uid, item.id]);
 
-  const handleShareAndCopy = async (viewType) => {
+  const handleShareAndCopy = async (viewType: ViewType) => {
     try {
       let currentShareData = shareData;
       
       if (!currentShareData || currentShareData.viewType !== viewType) {
         const shareId = `${user.uid}_${item.id}`;
-        const newShareData = {
+        const newShareData: ItemShareData = {
           itemId: item.id,
           userId: user.uid,
           viewType: viewType,
@@ -53,7 +63,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
           createdAt: currentShareData?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ownerName: user.displayName || "A collector",
-          ownerEmail: user.email,
+          ownerEmail: user.email || undefined,
           itemTitle: item.title || "Untitled Item",
           itemImage: item.images?.[0] || item.image || null,
         };
@@ -83,9 +93,13 @@ const ShareItemModal = ({ item, user, onClose }) => {
     const shareId = `${user.uid}_${item.id}`;
     const shareDocRef = doc(db, "artifacts", APP_ID, "item_shares", shareId);
     await updateDoc(shareDocRef, { token: newToken });
-    setShareData({ ...shareData, token: newToken });
+    if (shareData) {
+      setShareData({ ...shareData, token: newToken });
+    }
     setCopied(null);
   };
+
+  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation();
 
   return (
     <div 
@@ -94,7 +108,7 @@ const ShareItemModal = ({ item, user, onClose }) => {
     >
       <div 
         className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
-        onClick={e => e.stopPropagation()}
+        onClick={stopPropagation}
       >
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
