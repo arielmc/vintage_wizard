@@ -71,6 +71,12 @@ src/
 ## Version History
 
 - **0.1.0** - Initial modular refactor
+  - Created `src/config/` for Firebase and app constants
+  - Created `src/services/` for Gemini AI integration
+  - Created `src/utils/` for image utilities, helpers, and marketplace links
+  - Created `src/components/common/` for shared UI (LoadingOverlay, StatusBadge, etc.)
+  - Created `src/components/auth/` for authentication (LoginScreen)
+  - App.js still contains the main app logic (gradual migration in progress)
 
 ## License
 
