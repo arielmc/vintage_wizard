@@ -70,6 +70,13 @@ src/
 
 ## Version History
 
+- **0.1.1** - Expanded modular structure
+  - Added `src/components/inventory/` (ItemCard)
+  - Added `src/components/sharing/` (ShareModal)
+  - Added `src/components/upload/` (UploadStagingModal)
+  - Added QuickActionMenu to common components
+  - All modules have barrel exports for clean imports
+
 - **0.1.0** - Initial modular refactor
   - Created `src/config/` for Firebase and app constants
   - Created `src/services/` for Gemini AI integration
