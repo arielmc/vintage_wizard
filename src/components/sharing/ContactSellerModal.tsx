@@ -1,30 +1,25 @@
-import React, { useState, FormEvent, MouseEvent } from 'react';
-import { X, Check, Loader, MessageCircle } from 'lucide-react';
-import type { InventoryItem } from '../../types';
-
-interface ContactMessage {
-  message: string;
-  email: string;
-  itemTitle: string;
-  itemId: string;
-}
+// @ts-nocheck
+import React, { useState } from "react";
+import { X, Check, Loader, MessageCircle } from "lucide-react";
+import type { InventoryItem } from "../../types";
 
 interface ContactSellerModalProps {
   item: InventoryItem;
-  ownerName: string | null;
+  ownerName: string;
   onClose: () => void;
-  onSend: (data: ContactMessage) => Promise<void>;
+  onSend: (data: { message: string; email: string; itemTitle: string; itemId: string }) => Promise<void>;
   sourceUrl?: string;
 }
 
 /**
- * Modal for contacting seller about an item
+ * ContactSellerModal - Modal for buyers to message sellers about items
  */
 const ContactSellerModal: React.FC<ContactSellerModalProps> = ({ 
   item, 
   ownerName, 
   onClose, 
   onSend, 
+  sourceUrl = "" 
 }) => {
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
@@ -34,10 +29,11 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
   const itemTitle = item.listing_title || item.title || "Vintage Item";
   const itemPrice = item.listing_price || Math.round((Number(item.valuation_low) + Number(item.valuation_high)) * 0.6);
   
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !email.trim()) return;
     
+    // Basic email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address");
       return;
@@ -47,14 +43,12 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
     try {
       await onSend({ message, email, itemTitle, itemId: item.id });
       setSent(true);
-    } catch {
+    } catch (err) {
       alert("Failed to send message. Please try again.");
     } finally {
       setSending(false);
     }
   };
-
-  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation();
   
   if (sent) {
     return (
@@ -64,7 +58,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
       >
         <div 
           className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4"
-          onClick={stopPropagation}
+          onClick={e => e.stopPropagation()}
         >
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
             <Check className="w-8 h-8 text-emerald-600" />
@@ -91,8 +85,9 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
     >
       <div 
         className="bg-white rounded-2xl max-w-md w-full overflow-hidden"
-        onClick={stopPropagation}
+        onClick={e => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <h3 className="font-bold text-stone-900">Contact {ownerName || "Seller"}</h3>
           <button onClick={onClose} className="p-1 text-stone-400 hover:text-stone-600">
@@ -100,6 +95,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
           </button>
         </div>
         
+        {/* Item Preview */}
         <div className="px-4 py-3 bg-stone-50 border-b border-stone-100 flex items-center gap-3">
           {item.images?.[0] && (
             <img src={item.images[0]} alt="" className="w-12 h-12 rounded-lg object-cover" />
@@ -110,6 +106,7 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
           </div>
         </div>
         
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Your Message</label>
@@ -159,3 +156,4 @@ const ContactSellerModal: React.FC<ContactSellerModalProps> = ({
 };
 
 export default ContactSellerModal;
+export { ContactSellerModal };

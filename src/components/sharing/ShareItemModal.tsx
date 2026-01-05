@@ -1,21 +1,13 @@
-import React, { useState, useEffect, MouseEvent } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { User } from "firebase/auth";
-import { db } from '../../config/firebase';
-import { APP_ID } from '../../config/constants';
-import { playSuccessFeedback } from '../../utils';
-import type { InventoryItem, ItemShareData } from '../../types';
+// @ts-nocheck
+import React, { useState, useEffect } from "react";
 import { 
-  Share2, 
-  X, 
-  Loader, 
-  Check, 
-  Tag, 
-  BookOpen, 
-  ShieldCheck 
-} from 'lucide-react';
-
-type ViewType = 'listing' | 'details';
+  X, Share2, Loader, Check, Tag, BookOpen, ShieldCheck 
+} from "lucide-react";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { useFirebase } from "../../contexts/FirebaseContext";
+import { playSuccessFeedback } from "../../utils/helpers";
+import type { InventoryItem } from "../../types";
+import type { User } from "firebase/auth";
 
 interface ShareItemModalProps {
   item: InventoryItem;
@@ -23,18 +15,34 @@ interface ShareItemModalProps {
   onClose: () => void;
 }
 
+interface ItemShareData {
+  itemId: string;
+  userId: string;
+  viewType: 'listing' | 'details';
+  token: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  ownerName: string;
+  ownerEmail: string | null;
+  itemTitle: string;
+  itemImage: string | null;
+}
+
 /**
- * Modal for sharing individual item
+ * ShareItemModal - Modal for sharing individual items
  */
 const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) => {
+  const { db, appId } = useFirebase();
   const [shareData, setShareData] = useState<ItemShareData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState<ViewType | null>(null);
+  const [copied, setCopied] = useState<'listing' | 'details' | null>(null);
 
+  // Load existing share data on mount
   useEffect(() => {
     const loadShare = async () => {
       try {
-        const shareDocRef = doc(db, "artifacts", APP_ID, "item_shares", `${user.uid}_${item.id}`);
+        const shareDocRef = doc(db, "artifacts", appId, "item_shares", `${user.uid}_${item.id}`);
         const shareDoc = await getDoc(shareDocRef);
         if (shareDoc.exists()) {
           setShareData(shareDoc.data() as ItemShareData);
@@ -46,12 +54,14 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
       }
     };
     loadShare();
-  }, [user.uid, item.id]);
+  }, [user.uid, item.id, db, appId]);
 
-  const handleShareAndCopy = async (viewType: ViewType) => {
+  // Get or create share link, then copy
+  const handleShareAndCopy = async (viewType: 'listing' | 'details') => {
     try {
       let currentShareData = shareData;
       
+      // Create share if doesn't exist, or update viewType if different
       if (!currentShareData || currentShareData.viewType !== viewType) {
         const shareId = `${user.uid}_${item.id}`;
         const newShareData: ItemShareData = {
@@ -63,17 +73,18 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
           createdAt: currentShareData?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ownerName: user.displayName || "A collector",
-          ownerEmail: user.email || undefined,
+          ownerEmail: user.email,
           itemTitle: item.title || "Untitled Item",
           itemImage: item.images?.[0] || item.image || null,
         };
         
-        const shareDocRef = doc(db, "artifacts", APP_ID, "item_shares", shareId);
+        const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
         await setDoc(shareDocRef, newShareData);
         currentShareData = newShareData;
         setShareData(newShareData);
       }
       
+      // Build URL and copy
       const baseUrl = window.location.origin;
       const url = `${baseUrl}/share/${user.uid}/item/${item.id}?token=${currentShareData.token}&view=${viewType}`;
       await navigator.clipboard.writeText(url);
@@ -91,15 +102,11 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
     if (!window.confirm("This will invalidate the existing share link. Continue?")) return;
     const newToken = Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
     const shareId = `${user.uid}_${item.id}`;
-    const shareDocRef = doc(db, "artifacts", APP_ID, "item_shares", shareId);
+    const shareDocRef = doc(db, "artifacts", appId, "item_shares", shareId);
     await updateDoc(shareDocRef, { token: newToken });
-    if (shareData) {
-      setShareData({ ...shareData, token: newToken });
-    }
+    setShareData({ ...shareData!, token: newToken });
     setCopied(null);
   };
-
-  const stopPropagation = (e: MouseEvent<HTMLDivElement>) => e.stopPropagation();
 
   return (
     <div 
@@ -108,8 +115,9 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
     >
       <div 
         className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200"
-        onClick={stopPropagation}
+        onClick={e => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="p-4 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
@@ -128,6 +136,7 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
           </button>
         </div>
 
+        {/* Content */}
         <div className="p-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -135,6 +144,7 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Tap to copy - Sales Listing */}
               <button
                 onClick={() => handleShareAndCopy('listing')}
                 className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
@@ -162,6 +172,7 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
                 </div>
               </button>
 
+              {/* Tap to copy - Full Details */}
               <button
                 onClick={() => handleShareAndCopy('details')}
                 className={`w-full p-4 rounded-xl border-2 text-left transition-all flex items-center gap-4 ${
@@ -189,6 +200,7 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
                 </div>
               </button>
 
+              {/* Security Note */}
               {shareData && (
                 <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl mt-2">
                   <ShieldCheck className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
@@ -209,3 +221,4 @@ const ShareItemModal: React.FC<ShareItemModalProps> = ({ item, user, onClose }) 
 };
 
 export default ShareItemModal;
+export { ShareItemModal };

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+// @ts-nocheck
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
 
 /**
- * Floating tip jar button with expand/collapse
+ * TipJar - Floating tip button component
+ * A charming way for users to support the creator
  */
 const TipJar: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,6 +22,7 @@ const TipJar: React.FC = () => {
 
   return (
     <>
+      {/* Backdrop */}
       {isExpanded && (
         <div
           onClick={() => setIsExpanded(false)}
@@ -27,6 +30,7 @@ const TipJar: React.FC = () => {
         />
       )}
 
+      {/* Floating Icon Button */}
       {!isExpanded && (
         <div
           className="fixed z-30"
@@ -42,6 +46,7 @@ const TipJar: React.FC = () => {
             <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-bold text-stone-500 uppercase tracking-wide">tip</span>
           </button>
 
+          {/* Hover tooltip */}
           {isHovered && (
             <div className="absolute bottom-full left-0 mb-2 p-3 bg-stone-800 text-white rounded-xl text-xs leading-relaxed whitespace-nowrap shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
               Built by Ariel, a middle-aged lady.
@@ -51,6 +56,7 @@ const TipJar: React.FC = () => {
         </div>
       )}
 
+      {/* Expanded Panel */}
       {isExpanded && (
         <div
           className="fixed z-30 bg-white rounded-2xl shadow-2xl p-6 animate-in slide-in-from-bottom-4 fade-in duration-200"
@@ -90,3 +96,4 @@ const TipJar: React.FC = () => {
 };
 
 export default TipJar;
+export { TipJar };

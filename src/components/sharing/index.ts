@@ -1,4 +1,3 @@
-// Sharing components exports
-export { default as ShareModal } from './ShareModal';
-export { default as ShareItemModal } from './ShareItemModal';
-export { default as ContactSellerModal } from './ContactSellerModal';
+export { ContactSellerModal } from "./ContactSellerModal";
+export { ShareModal } from "./ShareModal";
+export { ShareItemModal } from "./ShareItemModal";
