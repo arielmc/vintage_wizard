@@ -1,93 +1,97 @@
-import React, { useState, useEffect, useRef, MouseEvent, TouchEvent } from 'react';
-import { 
-  Camera, 
-  ChevronLeft, 
-  ChevronRight, 
-  Check, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Check,
   Sparkles,
-  Gauge
+  Gauge,
 } from 'lucide-react';
-import { formatTimeAgo, getDisplayTitle } from '../../utils';
+import { formatTimeAgo, getDisplayTitle } from '../../utils/helpers';
 import type { InventoryItem } from '../../types';
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface ItemCardProps {
+export interface ItemCardProps {
   item: InventoryItem;
   onClick: (item: InventoryItem) => void;
-  isSelected?: boolean;
-  isSelectionMode?: boolean;
-  onToggleSelect?: (id: string) => void;
-  onAnalyze?: (item: InventoryItem) => Promise<void>;
-  onQuickAction?: (item: InventoryItem, position: Position) => void;
+  isSelected: boolean;
+  isSelectionMode: boolean;
+  onToggleSelect: (itemId: string) => void;
+  onAnalyze: (item: InventoryItem) => Promise<void>;
+  onQuickAction?: (item: InventoryItem, position: { x: number; y: number }) => void;
 }
 
 /**
- * Item card component for grid display
+ * ItemCard - Displays an inventory item in grid view
+ * Features: Image carousel, selection mode, long-press context menu
  */
-const ItemCard: React.FC<ItemCardProps> = ({ 
-  item, 
-  onClick, 
-  isSelected = false, 
-  isSelectionMode = false, 
-  onToggleSelect, 
-  onAnalyze, 
-  onQuickAction 
+const ItemCard: React.FC<ItemCardProps> = ({
+  item,
+  onClick,
+  isSelected,
+  isSelectionMode,
+  onToggleSelect,
+  onAnalyze,
+  onQuickAction,
 }) => {
-  const images = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : []);
+  // Ensure images array exists, fallback to single image or empty
+  const images = item.images && item.images.length > 0 
+    ? item.images 
+    : (item.image ? [item.image] : []);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
+
+  // Long-press handling for mobile
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
 
-  useEffect(() => { setActiveImgIdx(0); }, [item.id]);
+  // Reset index if images change
+  useEffect(() => {
+    setActiveImgIdx(0);
+  }, [item.id]);
 
   const displayImage = images.length > 0 ? images[activeImgIdx] : null;
 
-  const handleNextImage = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleNextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activeImgIdx < images.length - 1) {
-      setActiveImgIdx(prev => prev + 1);
+      setActiveImgIdx((prev) => prev + 1);
     } else {
       setActiveImgIdx(0);
     }
   };
 
-  const handlePrevImage = (e: MouseEvent<HTMLButtonElement>) => {
+  const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (activeImgIdx > 0) {
-      setActiveImgIdx(prev => prev - 1);
+      setActiveImgIdx((prev) => prev - 1);
     } else {
       setActiveImgIdx(images.length - 1);
     }
   };
 
-  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
+  const handleClick = (e: React.MouseEvent) => {
     if (isLongPressing) {
       setIsLongPressing(false);
       return;
     }
     if (isSelectionMode) {
       e.stopPropagation();
-      onToggleSelect?.(item.id);
+      onToggleSelect(item.id);
     } else {
       onClick(item);
     }
   };
 
-  const handleQuickAnalyze = async (e: MouseEvent<HTMLButtonElement>) => {
+  const handleQuickAnalyze = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isAnalyzing || !onAnalyze) return;
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
     await onAnalyze(item);
     setIsAnalyzing(false);
   };
 
-  const handleContextMenu = (e: MouseEvent<HTMLDivElement>) => {
+  // Right-click context menu (desktop)
+  const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isSelectionMode && onQuickAction) {
@@ -95,7 +99,8 @@ const ItemCard: React.FC<ItemCardProps> = ({
     }
   };
 
-  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+  // Long-press handlers (mobile)
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (isSelectionMode) return;
     longPressTimer.current = setTimeout(() => {
       setIsLongPressing(true);
@@ -129,15 +134,18 @@ const ItemCard: React.FC<ItemCardProps> = ({
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
       className={`card-hover group bg-white rounded-xl shadow-sm border overflow-hidden cursor-pointer flex flex-col h-full relative select-none ${
-        isSelected ? "border-[3px] border-rose-500" : "border-stone-100 border"
+        isSelected ? 'border-[3px] border-rose-500' : 'border-stone-100 border'
       }`}
     >
+      {/* Selection Overlay */}
       {isSelectionMode && (
-        <div className={`absolute top-2 left-2 z-20 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-          isSelected
-            ? "bg-rose-500 border-rose-500"
-            : "bg-white/50 border-white backdrop-blur-sm"
-        }`}>
+        <div
+          className={`absolute top-2 left-2 z-20 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+            isSelected
+              ? 'bg-rose-500 border-rose-500'
+              : 'bg-white/50 border-white backdrop-blur-sm'
+          }`}
+        >
           {isSelected && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
         </div>
       )}
@@ -146,7 +154,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
         {displayImage ? (
           <img
             src={displayImage}
-            alt={item.title || "Item"}
+            alt={item.title || 'Item'}
             className="w-full h-full object-cover transition-transform duration-500"
           />
         ) : (
@@ -155,28 +163,30 @@ const ItemCard: React.FC<ItemCardProps> = ({
           </div>
         )}
 
+        {/* Image Carousel Controls */}
         {!isSelectionMode && images.length > 1 && (
           <>
-            <button 
+            <button
               onClick={handlePrevImage}
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
             >
               <ChevronLeft size={16} strokeWidth={3} />
             </button>
-            <button 
+            <button
               onClick={handleNextImage}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-1.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
             >
               <ChevronRight size={16} strokeWidth={3} />
             </button>
-            
+
+            {/* Dots Indicator */}
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
               {images.slice(0, 5).map((_, idx) => (
-                <div 
+                <div
                   key={idx}
                   className={`w-1.5 h-1.5 rounded-full shadow-sm ${
-                    idx === activeImgIdx ? "bg-white" : "bg-white/40"
-                  } ${idx === 4 && images.length > 5 ? "opacity-50" : ""}`} 
+                    idx === activeImgIdx ? 'bg-white' : 'bg-white/40'
+                  } ${idx === 4 && images.length > 5 ? 'opacity-50' : ''}`}
                 />
               ))}
             </div>
@@ -190,12 +200,17 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 <p className="text-white font-bold text-sm drop-shadow-md">
                   ${item.valuation_low} - ${item.valuation_high}
                 </p>
+                {/* Confidence Indicator */}
                 {item.confidence && (
-                  <div className={`hidden md:flex items-center gap-1 mt-0.5 ${
-                    item.confidence === 'high' ? 'text-emerald-300' :
-                    item.confidence === 'medium' ? 'text-amber-300' :
-                    'text-red-300'
-                  }`}>
+                  <div
+                    className={`hidden md:flex items-center gap-1 mt-0.5 ${
+                      item.confidence === 'high'
+                        ? 'text-emerald-300'
+                        : item.confidence === 'medium'
+                        ? 'text-amber-300'
+                        : 'text-red-300'
+                    }`}
+                  >
                     <Gauge className="w-2.5 h-2.5" />
                     <span className="text-[10px] font-medium uppercase tracking-wide">
                       {item.confidence}
@@ -206,34 +221,51 @@ const ItemCard: React.FC<ItemCardProps> = ({
             </div>
           </div>
         )}
-        
-        <div className={`absolute bottom-0 left-0 right-0 h-[3px] ${
-          item.status === 'keep' ? 'bg-blue-500' :
-          item.status === 'sell' ? 'bg-emerald-500' :
-          'bg-amber-500'
-        }`} />
+
+        {/* Status color line */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-[3px] ${
+            item.status === 'keep'
+              ? 'bg-blue-500'
+              : item.status === 'sell'
+              ? 'bg-emerald-500'
+              : 'bg-amber-500'
+          }`}
+        />
       </div>
 
       <div className="p-2 md:p-3 flex-1 flex flex-col">
         <h3 className="font-semibold text-stone-800 line-clamp-2 text-sm md:text-base mb-1">
           {getDisplayTitle(item)}
         </h3>
+        {/* Desktop: Full details */}
         <p className="hidden md:block text-xs text-stone-500 line-clamp-2 mb-2 flex-1">
           {[
-            item.maker && item.maker.toLowerCase() !== "unknown" ? item.maker : null,
-            item.style && item.style.toLowerCase() !== "unknown" ? item.style : null,
-            item.materials
-          ].filter(Boolean).join(" • ") || item.userNotes || "No details yet"}
+            item.maker && item.maker.toLowerCase() !== 'unknown' ? item.maker : null,
+            item.style && item.style.toLowerCase() !== 'unknown' ? item.style : null,
+            item.materials,
+          ]
+            .filter(Boolean)
+            .join(' • ') ||
+            item.userNotes ||
+            'No details yet'}
         </p>
         <div className="flex items-center justify-between text-[10px] md:text-xs text-stone-400 mt-auto pt-1.5 md:pt-2 border-t border-stone-50">
-          <span className="truncate">{item.category || "Unsorted"}</span>
+          <span className="truncate">{item.category || 'Unsorted'}</span>
+          {/* AI Timestamp */}
           {item.aiLastRun ? (
-            <span className="flex items-center gap-1 text-emerald-600" title={`AI analyzed ${new Date(item.aiLastRun).toLocaleString()}`}>
+            <span
+              className="flex items-center gap-1 text-emerald-600"
+              title={`AI analyzed ${new Date(item.aiLastRun).toLocaleString()}`}
+            >
               <Sparkles className="w-2.5 h-2.5" />
               <span className="hidden md:inline">{formatTimeAgo(item.aiLastRun)}</span>
             </span>
           ) : (
-            item.era && item.era.toLowerCase() !== "unknown" && <span className="hidden md:inline">{item.era}</span>
+            item.era &&
+            item.era.toLowerCase() !== 'unknown' && (
+              <span className="hidden md:inline">{item.era}</span>
+            )
           )}
         </div>
       </div>
