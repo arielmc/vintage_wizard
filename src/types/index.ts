@@ -160,12 +160,21 @@ export interface AIAnalysisResult {
   valuation_low?: number;
   valuation_high?: number;
   confidence?: ConfidenceLevel;
+  confidence_reason?: string;
+  reasoning?: string;
+  // Description fields (various names used)
   sales_blurb?: string;
+  details_description?: string;
   detailed_description?: string;
+  sales_description?: string;
+  listing_description?: string;
+  // Search terms
   search_terms?: string;
   search_terms_broad?: string;
   search_terms_auction?: string;
   search_terms_discogs?: string;
+  // Questions for user
+  questions?: string[];
   valuation_context?: ValuationContext;
 }
 
