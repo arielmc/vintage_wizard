@@ -8,3 +8,4 @@ export { default as QuickActionMenu } from './QuickActionMenu';
 export { default as TruncatedMetadataField } from './TruncatedMetadataField';
 export { default as TipJar } from './TipJar';
 export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as PhotoUploadOverlay } from './PhotoUploadOverlay';

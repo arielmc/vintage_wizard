@@ -1,50 +1,52 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sparkles } from 'lucide-react';
+import { AI_LOADING_MESSAGES, getRandomMessage } from '../../constants/loadingMessages';
 
 interface LoadingOverlayProps {
   message?: string;
   subMessage?: string;
+  /** Override the default AI messages with custom ones */
+  customMessages?: string[];
+  /** Accent color for the spinner (default: rose) */
+  accentColor?: 'rose' | 'violet' | 'emerald' | 'amber' | 'blue';
 }
 
 /**
  * Loading overlay with rotating witty messages
+ * Used for AI analysis, uploads, and other loading states
  */
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ 
   message = "Processing...", 
-  subMessage = "" 
+  subMessage = "",
+  customMessages,
+  accentColor = 'rose'
 }) => {
   const [currentMsg, setCurrentMsg] = useState("");
   
-  const funMessages = useMemo(() => [
-    "Consulting the AI oracle...",
-    "Teaching robots about antiques...",
-    "Summoning appraisal spirits...",
-    "Channeling grandma's attic wisdom...",
-    "Asking the estate sale gods...",
-    "Dusting off the price guides...",
-    "Decoding maker's marks...",
-    "Cross-referencing with eBay sold...",
-    "Checking if it's MCM or just old...",
-    "Determining: treasure or trash?",
-    "Consulting the ghost of Antiques Roadshow...",
-    "Running it through the time machine...",
-    "Checking if this sparks joy AND profit...",
-    "Googling with extra AI sauce...",
-    "Asking 1000 vintage dealers at once...",
-    "Scanning for hidden signatures...",
-  ], []);
+  const messages = customMessages || AI_LOADING_MESSAGES;
   
-  const getRandomMessage = useCallback(() => {
-    return funMessages[Math.floor(Math.random() * funMessages.length)];
-  }, [funMessages]);
+  const pickMessage = useCallback(() => {
+    return getRandomMessage(messages);
+  }, [messages]);
   
   useEffect(() => {
-    setCurrentMsg(getRandomMessage());
+    setCurrentMsg(pickMessage());
     const interval = setInterval(() => {
-      setCurrentMsg(getRandomMessage());
+      setCurrentMsg(pickMessage());
     }, 2200);
     return () => clearInterval(interval);
-  }, [getRandomMessage]);
+  }, [pickMessage]);
+
+  const colorClasses = {
+    rose: 'border-rose-500 text-rose-500',
+    violet: 'border-violet-500 text-violet-500',
+    emerald: 'border-emerald-500 text-emerald-500',
+    amber: 'border-amber-500 text-amber-500',
+    blue: 'border-blue-500 text-blue-500',
+  };
+
+  const spinnerColor = colorClasses[accentColor].split(' ')[0];
+  const iconColor = colorClasses[accentColor].split(' ')[1];
 
   return (
     <div 
@@ -55,8 +57,8 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         {/* Spinner */}
         <div className="relative w-20 h-20 mx-auto mb-6">
           <div className="absolute inset-0 border-4 border-stone-100 rounded-full" />
-          <div className="absolute inset-0 border-4 border-rose-500 rounded-full border-t-transparent animate-spin" />
-          <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-rose-500 animate-pulse" />
+          <div className={`absolute inset-0 border-4 ${spinnerColor} rounded-full border-t-transparent animate-spin`} />
+          <Sparkles className={`absolute inset-0 m-auto w-8 h-8 ${iconColor} animate-pulse`} />
         </div>
         
         {/* Title */}

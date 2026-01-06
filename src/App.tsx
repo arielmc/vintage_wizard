@@ -11,7 +11,7 @@ import { ScannerInterface } from './components/scanner';
 import { LoginScreen, ProfilePage } from './components/auth';
 import { ItemCard } from './components/inventory';
 import { ContactSellerModal, ShareModal, ShareItemModal } from './components/sharing';
-import { TipJar } from './components/common';
+import { TipJar, PhotoUploadOverlay, AILoadingMessages } from './components/common';
 import { EditModal } from './components/modals';
 
 // NOTE: Most components are still defined inline in this file
@@ -4893,6 +4893,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState(""); // Search state
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false); // For photo selection loading overlay
+  const [loadingPhotoCount, setLoadingPhotoCount] = useState(0); // Track how many photos are being loaded
   const [stagingFiles, setStagingFiles] = useState([]); // Files waiting for user decision
   const [authLoading, setAuthLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -5296,58 +5298,77 @@ export default function App() {
     setTimeout(() => setShareLinkCopied(null), 2000);
   };
 
-  const handleFileSelect = (e, mode) => {
+  const handleFileSelect = async (e, mode) => {
     let files = Array.from(e.target.files);
     if (files.length === 0) return;
     
-    // Filter to valid image types only
-    const validFiles = files.filter(f => 
-      f.type.startsWith('image/') || VALID_IMAGE_TYPES.includes(f.type.toLowerCase())
-    );
+    // Show loading overlay immediately for better mobile UX
+    setIsLoadingPhotos(true);
+    setLoadingPhotoCount(files.length);
     
-    const invalidCount = files.length - validFiles.length;
-    if (invalidCount > 0) {
-      console.warn(`Filtered out ${invalidCount} non-image files`);
-    }
+    // Small delay to allow the overlay to render before processing
+    await new Promise(resolve => setTimeout(resolve, 50));
     
-    files = validFiles;
-    if (files.length === 0) {
-      alert("No valid image files selected. Please select JPG, PNG, GIF, or WEBP files.");
-      e.target.value = "";
-      return;
-    }
-    
-    // Single upload: Accept first N, show friendly message if extras dropped
-    if (mode === 'single' && files.length > MAX_IMAGES_SINGLE_UPLOAD) {
-      const droppedCount = files.length - MAX_IMAGES_SINGLE_UPLOAD;
-      files = files.slice(0, MAX_IMAGES_SINGLE_UPLOAD);
-      // Show toast notification instead of blocking alert
-      setTimeout(() => {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
-        toast.innerHTML = `📷 Using first ${MAX_IMAGES_SINGLE_UPLOAD} photos (${droppedCount} extra not included)`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-      }, 100);
-    }
-    
-    // Bulk upload: Accept first N with message
-    if (mode === 'bulk' && files.length > MAX_IMAGES_BULK_SESSION) {
-      const droppedCount = files.length - MAX_IMAGES_BULK_SESSION;
-      files = files.slice(0, MAX_IMAGES_BULK_SESSION);
-      setTimeout(() => {
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
-        toast.innerHTML = `📷 Using first ${MAX_IMAGES_BULK_SESSION} photos (${droppedCount} extra not included)`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-      }, 100);
-    }
+    try {
+      // Filter to valid image types only
+      const validFiles = files.filter(f => 
+        f.type.startsWith('image/') || VALID_IMAGE_TYPES.includes(f.type.toLowerCase())
+      );
+      
+      const invalidCount = files.length - validFiles.length;
+      if (invalidCount > 0) {
+        console.warn(`Filtered out ${invalidCount} non-image files`);
+      }
+      
+      files = validFiles;
+      if (files.length === 0) {
+        alert("No valid image files selected. Please select JPG, PNG, GIF, or WEBP files.");
+        e.target.value = "";
+        setIsLoadingPhotos(false);
+        return;
+      }
+      
+      // Update count after filtering
+      setLoadingPhotoCount(files.length);
+      
+      // Single upload: Accept first N, show friendly message if extras dropped
+      if (mode === 'single' && files.length > MAX_IMAGES_SINGLE_UPLOAD) {
+        const droppedCount = files.length - MAX_IMAGES_SINGLE_UPLOAD;
+        files = files.slice(0, MAX_IMAGES_SINGLE_UPLOAD);
+        // Show toast notification instead of blocking alert
+        setTimeout(() => {
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
+          toast.innerHTML = `📷 Using first ${MAX_IMAGES_SINGLE_UPLOAD} photos (${droppedCount} extra not included)`;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 4000);
+        }, 100);
+      }
+      
+      // Bulk upload: Accept first N with message
+      if (mode === 'bulk' && files.length > MAX_IMAGES_BULK_SESSION) {
+        const droppedCount = files.length - MAX_IMAGES_BULK_SESSION;
+        files = files.slice(0, MAX_IMAGES_BULK_SESSION);
+        setTimeout(() => {
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-4 py-2 rounded-xl shadow-lg z-[100] animate-in fade-in slide-in-from-top duration-200 text-sm font-medium';
+          toast.innerHTML = `📷 Using first ${MAX_IMAGES_BULK_SESSION} photos (${droppedCount} extra not included)`;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 4000);
+        }, 100);
+      }
 
-    setStagingFiles(files);
-    
-    if (mode === 'bulk') {
-       navigate('/bulk-upload'); // Go to smart stacker
+      setStagingFiles(files);
+      
+      if (mode === 'bulk') {
+         navigate('/bulk-upload'); // Go to smart stacker
+      }
+    } finally {
+      // Hide loading after a short delay to ensure UI updates smoothly
+      setTimeout(() => {
+        setIsLoadingPhotos(false);
+        setLoadingPhotoCount(0);
+      }, 300);
     }
   };
 
@@ -7186,11 +7207,16 @@ export default function App() {
         />
       )}
       
+      {/* Photo Upload Loading Overlay - shows while photos are being selected/processed */}
+      {isLoadingPhotos && (
+        <PhotoUploadOverlay photoCount={loadingPhotoCount} />
+      )}
+      
       {/* Global Loading Overlay - shows during single item uploads (not bulk staging) */}
       {isUploading && !isBulkUploadRoute && (
         <LoadingOverlay 
-          message="Adding item..." 
-          subMessage="AI is analyzing your photo"
+          message="✨ Adding item..."
+          accentColor="rose"
         />
       )}
       
@@ -7211,8 +7237,8 @@ export default function App() {
             {/* Progress bar */}
             <div className="w-full mb-4">
               <div className="flex justify-between text-xs text-stone-500 mb-1">
-                <span>Analyzing items...</span>
-                <span className="font-bold">{batchProgress.current} of {batchProgress.total}</span>
+                <span>{batchProgress.current} of {batchProgress.total}</span>
+                <span className="font-bold">{Math.round((batchProgress.current / batchProgress.total) * 100)}%</span>
               </div>
               <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
                 <div 
@@ -7222,10 +7248,8 @@ export default function App() {
               </div>
             </div>
             
-            {/* Status message */}
-            <p className="text-stone-500 text-sm min-h-[20px]">
-              {batchProgress.message || "Analyzing your vintage treasures..."}
-            </p>
+            {/* Rotating witty messages */}
+            <AILoadingMessages />
             
             {/* Progress hint */}
             <p className="text-stone-400 text-xs mt-4">

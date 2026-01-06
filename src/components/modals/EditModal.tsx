@@ -27,36 +27,7 @@ import { playSuccessFeedback } from "../../utils/helpers";
 
 // Components
 import { ShareItemModal } from "../sharing/ShareItemModal";
-
-// AI Loading Messages component (inline for now)
-const AILoadingMessages = () => {
-  const messages = [
-    "Consulting the AI oracle...",
-    "Teaching robots about antiques...",
-    "Summoning appraisal spirits...",
-    "Channeling grandma's attic wisdom...",
-    "Asking the estate sale gods...",
-    "Dusting off the price guides...",
-    "Decoding maker's marks...",
-    "Cross-referencing with eBay sold...",
-    "Checking if it's MCM or just old...",
-    "Determining: treasure or trash?",
-  ];
-  const [current, setCurrent] = useState(0);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrent(prev => (prev + 1) % messages.length);
-    }, 2200);
-    return () => clearInterval(interval);
-  }, []);
-  
-  return (
-    <p className="text-stone-500 text-sm min-h-[20px] transition-all duration-300">
-      {messages[current]}
-    </p>
-  );
-};
+import { AILoadingMessages } from "../common";
 
 // Ensure image is base64
 async function ensureBase64(img: string | Blob | File): Promise<string | null> {
