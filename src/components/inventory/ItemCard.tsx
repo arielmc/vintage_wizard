@@ -41,7 +41,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Long-press handling for mobile
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLongPressing, setIsLongPressing] = useState(false);
 
   // Reset index if images change
