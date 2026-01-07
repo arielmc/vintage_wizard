@@ -5684,32 +5684,17 @@ export default function App() {
 
   // Helper: Load base64 images from Firestore subcollection for an item
   const loadBase64ImagesForItem = async (itemId) => {
-    // #region agent log
-    console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:entry', {itemId, userId: user?.uid, appId});
-    // #endregion
-    if (!user?.uid || !itemId) {
-      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:skip - no user or itemId');
-      return [];
-    }
+    if (!user?.uid || !itemId) return [];
     try {
-      // Correct path: artifacts/{appId}/users/{uid}/inventory/{itemId}/images_ai
-      const fullPath = `artifacts/${appId}/users/${user.uid}/inventory/${itemId}/images_ai`;
-      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:querying', fullPath);
       const imageDataRef = collection(db, 'artifacts', appId, 'users', user.uid, 'inventory', itemId, 'images_ai');
       const snapshot = await getDocs(imageDataRef);
-      const images = snapshot.docs
+      return snapshot.docs
         .map(doc => ({ ...doc.data(), id: doc.id }))
         .sort((a, b) => (a.index || 0) - (b.index || 0))
         .map(d => d.base64)
         .filter(Boolean);
-      // #region agent log
-      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:success', {itemId, count: images.length, docsFound: snapshot.docs.length});
-      // #endregion
-      return images;
     } catch (e) {
-      // #region agent log
-      console.warn('[PDF-DEBUG-A] loadBase64ImagesForItem:error', {itemId, error: e?.message, code: e?.code});
-      // #endregion
+      console.warn('Failed to load images from subcollection:', e?.message);
       return [];
     }
   };
@@ -5738,42 +5723,31 @@ export default function App() {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          // #region agent log
-          console.log('[PDF-DEBUG-A] base64ToImageForPDF:success', {width: img.width, height: img.height});
-          // #endregion
           resolve({
             dataUrl: canvas.toDataURL('image/jpeg', 0.8),
             width: img.width,
             height: img.height
           });
         } catch (e) {
-          console.warn('Canvas draw failed:', e);
           resolve(null);
         }
       };
-      img.onerror = () => {
-        console.warn('Base64 image load failed');
-        resolve(null);
-      };
+      img.onerror = () => resolve(null);
       img.src = base64;
     });
   };
 
   // Helper: Load image as base64 for PDF (preserves aspect ratio)
-  // Now primarily uses pre-loaded base64 data, falls back to URL fetch only if needed
+  // Primarily uses pre-loaded base64 data, falls back to URL fetch only if needed
   const loadImageForPDF = async (urlOrBase64) => {
     if (!urlOrBase64) return null;
-    
-    // #region agent log
-    console.log('[PDF-DEBUG-A] loadImageForPDF:start', {isBase64: urlOrBase64?.startsWith?.('data:'), urlLen: urlOrBase64?.length});
-    // #endregion
     
     // If already base64, use directly
     if (urlOrBase64.startsWith('data:')) {
       return base64ToImageForPDF(urlOrBase64);
     }
     
-    // For URLs, try fetch with no-cors as last resort (won't work for canvas but logs the attempt)
+    // For URLs, try fetch (usually fails due to CORS with Firebase Storage)
     try {
       const response = await fetch(urlOrBase64, { mode: 'cors' });
       if (!response.ok) throw new Error('Fetch failed');
@@ -5803,16 +5777,12 @@ export default function App() {
               canvas.height = height;
               const ctx = canvas.getContext('2d');
               ctx.drawImage(img, 0, 0, width, height);
-              // #region agent log
-              console.log('[PDF-DEBUG-A] loadImageForPDF:fetchSuccess', {width: img.width, height: img.height});
-              // #endregion
               resolve({
                 dataUrl: canvas.toDataURL('image/jpeg', 0.8),
                 width: img.width,
                 height: img.height
               });
             } catch (e) {
-              console.warn('Canvas draw failed:', e);
               resolve(null);
             }
           };
@@ -5823,10 +5793,6 @@ export default function App() {
         reader.readAsDataURL(blob);
       });
     } catch (fetchErr) {
-      // #region agent log
-      console.log('[PDF-DEBUG-A] loadImageForPDF:fetchFailed', {error: fetchErr?.message});
-      // #endregion
-      console.warn('URL fetch failed (CORS):', fetchErr.message);
       return null;
     }
   };
@@ -5898,9 +5864,6 @@ export default function App() {
     
     try {
       // Pre-load all base64 images from Firestore subcollections (avoids CORS issues)
-      // #region agent log
-      console.log('[PDF-DEBUG-A] Pre-loading base64 images for', items.length, 'items');
-      // #endregion
       const imageCache = {};
       await Promise.all(items.map(async (item) => {
         const base64Images = await loadBase64ImagesForItem(item.id);
@@ -5908,9 +5871,6 @@ export default function App() {
           imageCache[item.id] = base64Images;
         }
       }));
-      // #region agent log
-      console.log('[PDF-DEBUG-A] Pre-loaded images for', Object.keys(imageCache).length, 'items');
-      // #endregion
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       // Force plain built-in font to avoid wonky encoding/layout
@@ -6130,36 +6090,22 @@ export default function App() {
           // Use pre-loaded base64 images from Firestore subcollection (CORS-safe)
           const cachedBase64 = imageCache[item.id] || [];
           const imageSources = cachedBase64.length > 0 ? cachedBase64 : itemImages;
-          // #region agent log
-          console.log('[PDF-DEBUG-A] imageSources', {itemId: item.id, cachedCount: cachedBase64.length, urlCount: itemImages.length, usingCache: cachedBase64.length > 0});
-          // #endregion
           const loadedImages = await Promise.all(
             imageSources.slice(0, 4).map(src => loadImageForPDF(src))
           );
           const validImages = loadedImages.filter(Boolean);
           
           let imgEndY = yPos;
-          // #region agent log
-          console.log('[PDF-DEBUG-B] imageSection', {itemTitle:item.title?.substring(0,30),validImagesCount:validImages.length,totalImages:itemImages.length});
-          fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:PDF:imageSection',message:'Image section for item',data:{itemTitle:item.title?.substring(0,30),validImagesCount:validImages.length,totalImages:itemImages.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           if (validImages.length > 0) {
             // Hero image
             const heroImg = validImages[0];
             const heroMaxHeight = 45;
             const dims = fitImageToBox(heroImg.width, heroImg.height, imgColWidth, heroMaxHeight);
-            // #region agent log
-            console.log('[PDF-DEBUG-B] heroImage', {heroWidth:heroImg.width,heroHeight:heroImg.height,dimsWidth:dims.width,dimsHeight:dims.height,yPos});
-            fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:PDF:heroImage',message:'Placing hero image',data:{heroWidth:heroImg.width,heroHeight:heroImg.height,dimsWidth:dims.width,dimsHeight:dims.height,yPos},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
             try {
               pdf.addImage(heroImg.dataUrl, 'JPEG', margin, yPos, dims.width, dims.height, undefined, 'MEDIUM');
               imgEndY = yPos + dims.height + 3;
             } catch (e) {
-              // #region agent log
-              console.log('[PDF-DEBUG-B] addImageError', {error:e?.message});
-              fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:PDF:addImageError',message:'Failed to add image to PDF',data:{error:e?.message},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
+              // Image add failed, continue without it
             }
             
             // Secondary images stacked below
@@ -6253,10 +6199,7 @@ export default function App() {
             pdf.setFontSize(smallSize);
             pdf.setTextColor(50, 50, 50);
             const lines = wrapText(pdf, text, textColWidth);
-            // #region agent log
-            console.log('[PDF-DEBUG-C] renderTextBlock', {label,linesCount:lines.length,maxLines,textLen:text?.length,textYBefore,textYAfterLabel:textY});
-            // #endregion
-            const lineSpacing = 4; // Increased from 3.5 for better readability
+            const lineSpacing = 4;
             lines.slice(0, maxLines).forEach((line, idx) => {
               pdf.text(line, textColX, textY);
               textY += lineSpacing;
@@ -6330,10 +6273,6 @@ export default function App() {
           }
           
           // Calculate final Y position (max of image column and text column)
-          // #region agent log
-          console.log('[PDF-DEBUG-C] itemComplete', {itemTitle:item.title?.substring(0,30),imgEndY,textY,finalYPos:Math.max(imgEndY, textY) + 10});
-          fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:PDF:itemComplete',message:'Item layout complete',data:{itemTitle:item.title?.substring(0,30),imgEndY,textY,finalYPos:Math.max(imgEndY, textY) + 10},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           yPos = Math.max(imgEndY, textY) + 10;
         }
       }
