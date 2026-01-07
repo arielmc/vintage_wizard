@@ -5683,9 +5683,17 @@ export default function App() {
 
   // Helper: Load base64 images from Firestore subcollection for an item
   const loadBase64ImagesForItem = async (itemId) => {
-    if (!user?.uid || !itemId) return [];
+    // #region agent log
+    console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:entry', {itemId, userId: user?.uid, appId});
+    // #endregion
+    if (!user?.uid || !itemId) {
+      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:skip - no user or itemId');
+      return [];
+    }
     try {
       // Correct path: artifacts/{appId}/users/{uid}/inventory/{itemId}/images_ai
+      const fullPath = `artifacts/${appId}/users/${user.uid}/inventory/${itemId}/images_ai`;
+      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:querying', fullPath);
       const imageDataRef = collection(db, 'artifacts', appId, 'users', user.uid, 'inventory', itemId, 'images_ai');
       const snapshot = await getDocs(imageDataRef);
       const images = snapshot.docs
@@ -5694,11 +5702,13 @@ export default function App() {
         .map(d => d.base64)
         .filter(Boolean);
       // #region agent log
-      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem', {itemId, count: images.length, path: `artifacts/${appId}/users/${user.uid}/inventory/${itemId}/images_ai`});
+      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem:success', {itemId, count: images.length, docsFound: snapshot.docs.length});
       // #endregion
       return images;
     } catch (e) {
-      console.warn('Failed to load base64 from subcollection:', e);
+      // #region agent log
+      console.warn('[PDF-DEBUG-A] loadBase64ImagesForItem:error', {itemId, error: e?.message, code: e?.code});
+      // #endregion
       return [];
     }
   };
