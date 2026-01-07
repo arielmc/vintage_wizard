@@ -13,7 +13,7 @@ import { ItemCard } from './components/inventory';
 import { ContactSellerModal, ShareModal, ShareItemModal } from './components/sharing';
 import { TipJar, PhotoUploadOverlay, AILoadingMessages } from './components/common';
 import { EditModal } from './components/modals';
-import { getDisplayTitle, formatTimeAgo } from './utils/helpers';
+import { getDisplayTitle, formatTimeAgo, playSuccessFeedback } from './utils/helpers';
 
 // NOTE: Most components are still defined inline in this file
 // Gradually migrating to separate files in ./components/
