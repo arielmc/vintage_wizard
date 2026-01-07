@@ -27,7 +27,7 @@ import { playSuccessFeedback } from "../../utils/helpers";
 
 // Components
 import { ShareItemModal } from "../sharing/ShareItemModal";
-import { AILoadingMessages } from "../common";
+import { AILoadingMessages, TruncatedMetadataField } from "../common";
 
 // Ensure image is base64
 async function ensureBase64(img: string | Blob | File): Promise<string | null> {
