@@ -13,6 +13,7 @@ import { ItemCard } from './components/inventory';
 import { ContactSellerModal, ShareModal, ShareItemModal } from './components/sharing';
 import { TipJar, PhotoUploadOverlay, AILoadingMessages } from './components/common';
 import { EditModal } from './components/modals';
+import { getDisplayTitle, formatTimeAgo } from './utils/helpers';
 
 // NOTE: Most components are still defined inline in this file
 // Gradually migrating to separate files in ./components/
@@ -3384,7 +3385,7 @@ const TruncatedMetadataField = ({ label, value, onChange, placeholder, fieldKey,
 // Note: AILoadingMessages is imported from ./components/common
 
 // --- SHARED COLLECTION VIEW (Public) ---
-// Note: playSuccessFeedback, formatTimeAgo, getDisplayTitle are imported from ./utils/helpers
+// Note: formatTimeAgo, getDisplayTitle are imported from ./utils/helpers at top of file
 const SharedCollectionView = ({ shareId, shareToken, filterParam, viewMode }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
