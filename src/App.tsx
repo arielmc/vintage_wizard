@@ -5685,7 +5685,8 @@ export default function App() {
   const loadBase64ImagesForItem = async (itemId) => {
     if (!user?.uid || !itemId) return [];
     try {
-      const imageDataRef = collection(db, 'users', user.uid, 'items', itemId, 'imageData');
+      // Correct path: artifacts/{appId}/users/{uid}/inventory/{itemId}/images_ai
+      const imageDataRef = collection(db, 'artifacts', appId, 'users', user.uid, 'inventory', itemId, 'images_ai');
       const snapshot = await getDocs(imageDataRef);
       const images = snapshot.docs
         .map(doc => ({ ...doc.data(), id: doc.id }))
@@ -5693,7 +5694,7 @@ export default function App() {
         .map(d => d.base64)
         .filter(Boolean);
       // #region agent log
-      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem', {itemId, count: images.length});
+      console.log('[PDF-DEBUG-A] loadBase64ImagesForItem', {itemId, count: images.length, path: `artifacts/${appId}/users/${user.uid}/inventory/${itemId}/images_ai`});
       // #endregion
       return images;
     } catch (e) {
