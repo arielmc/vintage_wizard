@@ -2,7 +2,14 @@
   "name": "vintage-wizard",
   "version": "0.4.2",
   "description": "AI-powered vintage item identification and valuation tool",
-  "keywords": ["vintage", "antique", "valuation", "ai", "gemini", "resale"],
+  "keywords": [
+    "vintage",
+    "antique",
+    "valuation",
+    "ai",
+    "gemini",
+    "resale"
+  ],
   "main": "src/index.tsx",
   "type": "module",
   "dependencies": {
@@ -16,6 +23,7 @@
     "react-scripts": "^5.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.0.3",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
     "ajv": "^8.17.1",
