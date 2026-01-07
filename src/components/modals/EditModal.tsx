@@ -9,7 +9,7 @@ import {
   HelpCircle, MessageCircle, Send, ChevronLeft, ChevronRight, Save, 
   XCircle, ImagePlus, Copy, Share2, Heart, DollarSign, Trash2, 
   ChevronDown, ChevronUp, TrendingUp, Settings, Calendar, StickyNote,
-  Camera, Archive, Search
+  Camera, Archive, Search, Tag
 } from "lucide-react";
 import { collection, doc, getDocs, setDoc, serverTimestamp } from "firebase/firestore";
 

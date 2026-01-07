@@ -5853,16 +5853,19 @@ export default function App() {
   function sanitizePdfText(text) {
     if (!text || typeof text !== "string") return "";
     return text
-      .replace(/\r\n/g, "\n")
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
+      // Convert newlines to spaces for proper text wrapping
+      .replace(/\r\n/g, " ")
+      .replace(/\n/g, " ")
+      .replace(/[""]/g, '"')
+      .replace(/['']/g, "'")
       .replace(/[–—]/g, "-")
       .replace(/\u00A0/g, " ")
       // remove emojis + non-latin symbols that break built-in font encoding
       .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-      // remove any remaining non-printable/control chars except newline/tab
-      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "")
-      .replace(/[ \t]+/g, " ")
+      // remove any remaining non-printable/control chars
+      .replace(/[^\x20-\x7E]/g, "")
+      // collapse multiple spaces
+      .replace(/\s+/g, " ")
       .trim();
   }
 
@@ -6232,26 +6235,34 @@ export default function App() {
             textY += lineHeight + 1;
           }
           
-          // Helper to render a text block
+          // Helper to render a text block with proper line spacing
           const renderTextBlock = (label, text, maxLines = 6) => {
             if (!text) return;
             const textYBefore = textY;
-            textY += 3;
+            textY += 4;
+            
+            // Label
             pdf.setFontSize(smallSize);
+            pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(...grey);
             pdf.text(sanitizePdfText(`${label}:`), textColX, textY);
-            textY += lineHeight;
+            textY += lineHeight + 1;
             
-            pdf.setTextColor(60, 60, 60);
+            // Content - reset to normal font
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(smallSize);
+            pdf.setTextColor(50, 50, 50);
             const lines = wrapText(pdf, text, textColWidth);
             // #region agent log
             console.log('[PDF-DEBUG-C] renderTextBlock', {label,linesCount:lines.length,maxLines,textLen:text?.length,textYBefore,textYAfterLabel:textY});
-            fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:PDF:renderTextBlock',message:'Rendering text block',data:{label,linesCount:lines.length,maxLines,textLen:text?.length,textYBefore,textYAfterLabel:textY},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
             // #endregion
+            const lineSpacing = 4; // Increased from 3.5 for better readability
             lines.slice(0, maxLines).forEach((line, idx) => {
-              pdf.text(line, textColX, textY + idx * 3.5);
+              pdf.text(line, textColX, textY);
+              textY += lineSpacing;
             });
-            textY += Math.min(lines.length, maxLines) * 3.5;
+            // Add small gap after block
+            textY += 1;
           };
           
           // AI Description / Sales Blurb
