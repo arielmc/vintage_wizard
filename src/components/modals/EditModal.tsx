@@ -74,9 +74,10 @@ interface EditModalProps {
   onPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
+  ListingGenerator?: React.ComponentType<{ formData: any; setFormData: (fn: any) => void; marketLinks?: any[] }>;
 }
 
-const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev }) => {
+const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDelete, onNext, onPrev, hasNext, hasPrev, ListingGenerator }) => {
   // Get Firebase instances from context
   const { db, appId } = useFirebase();
   
@@ -842,7 +843,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDe
               <div className="p-5 lg:p-6">
                 {activeTab === "listing" ? (
                   <div>
-                    <ListingGenerator formData={formData} setFormData={setFormData} marketLinks={marketLinks} />
+                    {ListingGenerator ? (
+                      <ListingGenerator formData={formData} setFormData={setFormData} marketLinks={marketLinks} />
+                    ) : (
+                      <div className="p-4 text-stone-500">Listing Generator not available</div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">

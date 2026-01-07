@@ -7302,6 +7302,7 @@ export default function App() {
           }}
           hasNext={filteredItems.findIndex(i => i.id === selectedItem.id) < filteredItems.length - 1}
           hasPrev={filteredItems.findIndex(i => i.id === selectedItem.id) > 0}
+          ListingGenerator={ListingGenerator}
         />
       )}
       
