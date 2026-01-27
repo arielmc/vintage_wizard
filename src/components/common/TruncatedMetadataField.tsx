@@ -26,6 +26,25 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mobileDrawerRef = useRef<HTMLDivElement | null>(null);
+  // #region agent log
+  useEffect(() => {
+    if (!isMobile || !isEditing) return;
+    const t = setTimeout(() => {
+      const el = mobileDrawerRef.current;
+      if (el) {
+        const c = getComputedStyle(el);
+        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'TruncatedMetadataField.tsx:mobile-drawer', message: 'mobile drawer open', data: { overflowY: c.overflowY, maxHeight: c.maxHeight, clientHeight: el.clientHeight, innerHeight: window.innerHeight }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H1' }) }).catch(() => {});
+      }
+      const ta = textareaRef.current;
+      if (ta) {
+        const ct = getComputedStyle(ta);
+        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'TruncatedMetadataField.tsx:mobile-drawer-textarea', message: 'mobile drawer textarea', data: { overflowY: ct.overflowY, minHeight: ct.minHeight }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H4' }) }).catch(() => {});
+      }
+    }, 200);
+    return () => clearTimeout(t);
+  }, [isMobile, isEditing]);
+  // #endregion
 
   const displayValue = value || placeholder || "";
 
@@ -149,6 +168,7 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
           }}
         />
         <div
+          ref={mobileDrawerRef}
           role="dialog"
           aria-modal="true"
           style={{
@@ -156,15 +176,20 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
             bottom: 0,
             left: 0,
             right: 0,
+            maxHeight: '85vh',
             background: 'white',
             borderRadius: '20px 20px 0 0',
             padding: '12px 20px 32px',
             boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.15)',
             zIndex: 999,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <div style={{ width: '36px', height: '4px', background: '#D4CFC7', borderRadius: '2px', margin: '0 auto 16px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ width: '36px', height: '4px', background: '#D4CFC7', borderRadius: '2px', margin: '0 auto 16px', flexShrink: 0 }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0 }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9CA3AF' }}>{label}</span>
             <button
               onClick={handleCancel}
@@ -180,6 +205,8 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
             style={{
               width: '100%',
               minHeight: '120px',
+              maxHeight: '40vh',
+              overflowY: 'auto',
               padding: '14px 16px',
               border: '1.5px solid #E5E0D9',
               borderRadius: '12px',
@@ -189,10 +216,11 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
               resize: 'none',
               color: '#2D2A26',
               outline: 'none',
+              WebkitOverflowScrolling: 'touch',
             }}
             placeholder={placeholder}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexShrink: 0 }}>
             <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{editValue.length}/{maxLength}</span>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button

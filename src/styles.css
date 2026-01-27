@@ -22,3 +22,20 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Mobile web only: scroll/expand fixes for modals and description boxes */
+@media (max-width: 767px) {
+  .mobile-web-modal-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-web-textarea-scroll {
+    overflow-y: auto !important;
+    max-height: 40vh !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-web-notes-scroll {
+    overflow-y: auto !important;
+    max-height: 25vh !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

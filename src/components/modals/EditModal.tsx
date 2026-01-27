@@ -104,7 +104,19 @@ const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDe
   const [transitionDirection, setTransitionDirection] = useState(null);
   const addPhotoInputRef = useRef(null);
   const modalContentRef = useRef(null);
-  
+  // #region agent log
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const scrollRoot = modalContentRef.current?.parentElement;
+      if (scrollRoot) {
+        const c = getComputedStyle(scrollRoot);
+        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'EditModal.tsx:scroll-root', message: 'EditModal scroll root', data: { overflowY: c.overflowY, overflowX: c.overflowX, touchAction: c.touchAction }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H2' }) }).catch(() => {});
+      }
+    }, 100);
+    return () => clearTimeout(t);
+  }, []);
+  // #endregion
+
   // Chat about item state
   const [showChat, setShowChat] = useState(false);
   const [showMoreFields, setShowMoreFields] = useState(false);
@@ -459,7 +471,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDe
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#FDFBF7] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-[#FDFBF7] overflow-y-auto mobile-web-modal-scroll">
       {/* Save Prompt Dialog */}
       {showSavePrompt && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 animate-in fade-in duration-150">
@@ -996,7 +1008,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDe
                           }
                         }}
                         placeholder="AI will generate a detailed description..."
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm leading-relaxed"
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white text-sm leading-relaxed mobile-web-textarea-scroll"
                         style={{ minHeight: '150px', resize: 'none', overflow: 'hidden' }}
                       />
                     </div>
@@ -1130,7 +1142,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, user, onClose, onSave, onDe
                           }
                        }}
                         placeholder="Add provenance, history, or notes... These details + any edits above are included when you Re-analyze with AI"
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-sm leading-relaxed placeholder:text-stone-400 resize-none lg:resize-none"
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-500 focus:bg-white text-sm leading-relaxed placeholder:text-stone-400 resize-none lg:resize-none mobile-web-notes-scroll"
                         style={{ minHeight: '60px' }}
                 />
               </div>

@@ -2822,7 +2822,7 @@ Return ONLY valid JSON, no markdown or extra text.`;
               e.target.style.height = e.target.scrollHeight + 'px';
             }
           }}
-          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white leading-relaxed"
+          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white leading-relaxed mobile-web-textarea-scroll"
           style={{ minHeight: '150px', resize: 'none', overflow: 'hidden' }}
           placeholder="Enter listing description..."
         />
