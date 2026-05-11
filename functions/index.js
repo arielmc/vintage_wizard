@@ -21,8 +21,6 @@ const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-console.log("[BOOT] index.js loaded build=2026-05-11-debug-1");
-
 // ============================================
 // CONFIGURATION
 // ============================================
@@ -231,23 +229,25 @@ async function callGemini(payload, apiKey) {
   return response.json();
 }
 
+// Production error wrapper: turns unhandled exceptions into proper HttpsErrors
+// with intelligible messages, and logs everything to Cloud Logging at the right
+// severity. Without this, an unhandled throw becomes a generic "internal" with
+// no message — opaque to both the client and the operator.
 function wrapHandler(name, fn) {
   return async (request) => {
-    console.log(`[${name}] ENTER uid=${request.auth && request.auth.uid}`);
     try {
-      const result = await fn(request);
-      console.log(`[${name}] OK`);
-      return result;
+      return await fn(request);
     } catch (err) {
       if (err instanceof HttpsError) {
-        console.warn(`[${name}] HttpsError code=${err.code} message=${err.message}`);
-        try { logger.warn(`${name} threw HttpsError`, { code: err.code, message: err.message }); } catch (_) {}
+        logger.warn(`${name} threw HttpsError`, { code: err.code, message: err.message });
         throw err;
       }
       const msg = (err && err.message) || String(err);
-      const stack = (err && err.stack) || "";
-      console.error(`[${name}] UNHANDLED: ${msg}\n${stack}`);
-      try { logger.error(`${name} unhandled exception`, { message: msg, stack, name: err && err.name }); } catch (_) {}
+      logger.error(`${name} unhandled exception`, {
+        message: msg,
+        stack: err && err.stack,
+        name: err && err.name,
+      });
       throw new HttpsError("internal", msg || "Unhandled exception in function.");
     }
   };
@@ -266,10 +266,6 @@ exports.analyzeImages = onCall(
     ],
   },
   wrapHandler("analyzeImages", async (request) => {
-    logger.info("analyzeImages invoked", {
-      uid: request.auth && request.auth.uid,
-      imageCount: Array.isArray(request.data && request.data.images) ? request.data.images.length : 0,
-    });
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be logged in to analyze images.");
     }
@@ -349,7 +345,6 @@ exports.generateText = onCall(
     ],
   },
   wrapHandler("generateText", async (request) => {
-    logger.info("generateText invoked", { uid: request.auth && request.auth.uid });
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be logged in.");
     }
@@ -381,7 +376,6 @@ exports.askAboutItem = onCall(
     ],
   },
   wrapHandler("askAboutItem", async (request) => {
-    logger.info("askAboutItem invoked", { uid: request.auth && request.auth.uid });
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be logged in.");
     }
