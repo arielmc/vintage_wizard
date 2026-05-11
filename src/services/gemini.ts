@@ -13,6 +13,11 @@ const askAboutItemCallable = httpsCallable<
   string
 >(functions, 'askAboutItem');
 
+const generateTextCallable = httpsCallable<
+  { prompt: string; temperature?: number; jsonResponse?: boolean },
+  string
+>(functions, 'generateText');
+
 /**
  * Analyze images via the Cloud Function proxy. The Gemini key lives in
  * Firebase Secret Manager and never reaches the browser.
@@ -41,6 +46,18 @@ export async function analyzeImagesWithGemini(
     console.error('Analysis failed:', error);
     throw error;
   }
+}
+
+/**
+ * Generate freeform text (e.g. tone-tuned listing copy) via the Cloud
+ * Function proxy.
+ */
+export async function generateListingCopy(
+  prompt: string,
+  temperature = 0.7
+): Promise<string> {
+  const result = await generateTextCallable({ prompt, temperature });
+  return result.data;
 }
 
 /**
