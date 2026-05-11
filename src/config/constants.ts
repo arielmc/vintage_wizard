@@ -18,6 +18,6 @@ export const VALID_IMAGE_TYPES: readonly string[] = [
   'image/heif'
 ] as const;
 
-// Gemini API configuration
-export const GEMINI_API_KEY: string | undefined = process.env.REACT_APP_GEMINI_API_KEY;
-export const GEMINI_URL: string = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Gemini calls go through the `analyzeImages` / `askAboutItem` Cloud Functions.
+// The key lives in Firebase Secret Manager (see functions/index.js) and is
+// intentionally absent from the browser bundle.

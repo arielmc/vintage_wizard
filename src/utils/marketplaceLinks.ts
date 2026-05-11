@@ -1,22 +1,25 @@
 import type { MarketplaceLink } from '../types';
 
-/**
- * Generate marketplace search links based on category
- * 
- * Site-specific query strategies:
- * - eBay: Handles detailed queries well (brand + item + era + details)
- * - Discogs: Needs ONLY artist + title (no format, year, label, or catalog numbers)
- * - Reverb: Good with broad instrument/gear terms
- * - Auction sites: Maker + object type + era
- * - Most retail sites: Broad 2-4 word queries work best
- */
+// Defensive: AI responses occasionally arrive as arrays or numbers instead of strings.
+// Coerce so callers can rely on string methods (.replace, .trim, etc.).
+const toQueryString = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.filter((v) => typeof v === 'string' || typeof v === 'number').join(' ');
+  if (value == null) return '';
+  return String(value);
+};
+
 export const getMarketplaceLinks = (
   category: string | undefined,
-  searchTerms: string | undefined,
-  broadTerms?: string,
-  discogsTerms?: string,
-  auctionTerms?: string
+  searchTermsInput: string | string[] | undefined,
+  broadTermsInput?: string | string[],
+  discogsTermsInput?: string | string[],
+  auctionTermsInput?: string | string[]
 ): MarketplaceLink[] => {
+  const searchTerms = toQueryString(searchTermsInput);
+  const broadTerms = toQueryString(broadTermsInput) || undefined;
+  const discogsTerms = toQueryString(discogsTermsInput) || undefined;
+  const auctionTerms = toQueryString(auctionTermsInput) || undefined;
   if (!searchTerms) return [];
   
   // eBay gets the full detailed query

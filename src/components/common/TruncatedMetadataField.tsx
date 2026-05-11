@@ -27,24 +27,6 @@ const TruncatedMetadataField: React.FC<TruncatedMetadataFieldProps> = ({
   const fieldRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mobileDrawerRef = useRef<HTMLDivElement | null>(null);
-  // #region agent log
-  useEffect(() => {
-    if (!isMobile || !isEditing) return;
-    const t = setTimeout(() => {
-      const el = mobileDrawerRef.current;
-      if (el) {
-        const c = getComputedStyle(el);
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'TruncatedMetadataField.tsx:mobile-drawer', message: 'mobile drawer open', data: { overflowY: c.overflowY, maxHeight: c.maxHeight, clientHeight: el.clientHeight, innerHeight: window.innerHeight }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H1' }) }).catch(() => {});
-      }
-      const ta = textareaRef.current;
-      if (ta) {
-        const ct = getComputedStyle(ta);
-        fetch('http://127.0.0.1:7242/ingest/ed12c250-0ade-4741-accb-fc91905f9b50', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'TruncatedMetadataField.tsx:mobile-drawer-textarea', message: 'mobile drawer textarea', data: { overflowY: ct.overflowY, minHeight: ct.minHeight }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H4' }) }).catch(() => {});
-      }
-    }, 200);
-    return () => clearTimeout(t);
-  }, [isMobile, isEditing]);
-  // #endregion
 
   const displayValue = value || placeholder || "";
 

@@ -3,6 +3,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getFunctions, Functions } from 'firebase/functions';
 import { getAnalytics, Analytics, logEvent } from 'firebase/analytics';
 
 // Firebase configuration from environment
@@ -21,6 +22,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);
 
 // Initialize Analytics (only in browser)
 let analytics: Analytics | null = null;
@@ -41,6 +43,7 @@ interface FirebaseContextType {
   auth: Auth;
   db: Firestore;
   storage: FirebaseStorage;
+  functions: Functions;
   analytics: Analytics | null;
   appId: string;
   logAnalyticsEvent: (eventName: string, eventParams?: Record<string, unknown>) => void;
@@ -56,6 +59,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     auth,
     db,
     storage,
+    functions,
     analytics,
     appId: APP_ID,
     logAnalyticsEvent: (eventName: string, eventParams: Record<string, unknown> = {}) => {
@@ -86,4 +90,4 @@ export const useFirebase = (): FirebaseContextType => {
 };
 
 // Export individual instances for direct import (backwards compatibility)
-export { app, auth, db, storage, analytics };
+export { app, auth, db, storage, functions, analytics };

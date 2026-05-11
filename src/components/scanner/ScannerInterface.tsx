@@ -7,7 +7,7 @@ export interface ScannerInterfaceProps {
 }
 
 /**
- * ScannerInterface - Native camera component for scanning multiple items
+ * ScannerInterface - Web camera component for scanning multiple items
  * Allows capturing multiple photos per item, then moving to the next item
  */
 const ScannerInterface: React.FC<ScannerInterfaceProps> = ({ onFinishSession, onCancel }) => {

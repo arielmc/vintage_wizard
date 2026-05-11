@@ -1,9 +1,93 @@
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../config/firebase";
+import { storage } from "../contexts/FirebaseContext";
 import { MAX_BASE64_SIZE_BYTES, VALID_IMAGE_TYPES } from "../config/constants";
 
 // URL Cache - Persists across component unmounts/remounts
 const fileUrlCache = new WeakMap<File, string>();
+
+/**
+ * Convert URL to base64 using Image + Canvas (bypasses CORS)
+ */
+async function urlToBase64(url: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const maxSize = 1024;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize;
+            width = maxSize;
+          } else {
+            width = (width / height) * maxSize;
+            height = maxSize;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = async () => {
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      } catch {
+        resolve(null);
+      }
+    };
+    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+  });
+}
+
+/**
+ * Ensure image (string URL, Blob, File, or base64) is in base64 format
+ */
+export async function ensureBase64(
+  img: string | Blob | File | null | undefined
+): Promise<string | null> {
+  if (!img) return null;
+  if (typeof img === 'string' && img.startsWith('data:image')) return img;
+  // File extends Blob, so this handles both
+  if (img instanceof Blob) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(img);
+    });
+  }
+  if (typeof img === 'string' && img.startsWith('blob:')) {
+    try {
+      const response = await fetch(img);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+  if (typeof img === 'string' && img.startsWith('http')) {
+    return await urlToBase64(img);
+  }
+  return null;
+}
 
 /**
  * Get or create object URL for a File object
