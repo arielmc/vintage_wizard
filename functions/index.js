@@ -203,6 +203,33 @@ function stripDataUriPrefix(dataUri) {
   return dataUri;
 }
 
+// AI models sometimes return array-shaped values for fields the client expects
+// as strings (e.g. search_terms came back as ["margaret", "mead", "book"]
+// instead of "margaret mead book", crashing downstream .replace calls).
+// Coerce known string fields once on the server so every client call site
+// can rely on the type.
+const STRING_FIELDS = [
+  "title", "maker", "style", "materials", "markings", "era", "condition",
+  "category", "confidence", "confidence_reason", "reasoning",
+  "details_description", "sales_description", "sales_blurb", "listing_description",
+  "search_terms", "search_terms_broad", "search_terms_discogs", "search_terms_auction",
+];
+
+function coerceToString(value) {
+  if (value == null) return value; // preserve null/undefined
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.filter((v) => typeof v === "string" || typeof v === "number").join(" ");
+  return String(value);
+}
+
+function normalizeAIResponse(parsed) {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  for (const field of STRING_FIELDS) {
+    if (field in parsed) parsed[field] = coerceToString(parsed[field]);
+  }
+  return parsed;
+}
+
 async function callGemini(payload, apiKey) {
   if (!apiKey) {
     logger.error("GEMINI_API_KEY secret is empty or unbound at call time.");
@@ -315,6 +342,8 @@ exports.analyzeImages = onCall(
     } catch (e) {
       throw new HttpsError("internal", "Failed to parse Gemini JSON response.");
     }
+
+    normalizeAIResponse(parsed);
 
     if (parsed && typeof parsed === "object") {
       if (!parsed.sales_blurb && parsed.details_description) {
