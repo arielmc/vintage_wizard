@@ -273,4 +273,15 @@ const ItemCard: React.FC<ItemCardProps> = ({
   );
 };
 
-export default ItemCard;
+// Skip re-renders driven only by parent state changes — re-render only when
+// the underlying item reference, selection state, or selection mode actually
+// changes. Handler props are intentionally ignored: they're recreated each
+// App render but their behavior is stable, so identity churn shouldn't force
+// the entire grid to re-render on every keystroke / hover elsewhere.
+export default React.memo(ItemCard, (prev, next) => {
+  return (
+    prev.item === next.item &&
+    prev.isSelected === next.isSelected &&
+    prev.isSelectionMode === next.isSelectionMode
+  );
+});
