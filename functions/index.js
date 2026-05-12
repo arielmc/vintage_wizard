@@ -17,6 +17,7 @@ const nodemailer = require("nodemailer");
 admin.initializeApp();
 const db = admin.firestore();
 
+// Build tag: 2026-05-11-r2 (forces hash change so deploys pick up source edits)
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
